@@ -28,9 +28,11 @@ import net.verity.item.VerityInventoryItem;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Map;
@@ -234,7 +236,11 @@ public class VerityMod implements ModInitializer {
                     double tz = player.getZ() + view.z * 5.0D;
                     double ty = player.getY();
 
-                    BlockPos spawnPos = findGround(level, new BlockPos((int) tx, (int) ty, (int) tz));
+                    BlockPos spawnPos = findGround(level, BlockPos.containing(tx, ty, tz), player.blockPosition());
+                    if (spawnPos == null) {
+                        INTRO_TIMERS.put(uuid, 20);
+                        continue;
+                    }
 
                     // Place the box
                     level.setBlockAndUpdate(spawnPos, CARDBOARD_BOX.defaultBlockState());
@@ -297,21 +303,74 @@ public class VerityMod implements ModInitializer {
                 sound, creepy ? SoundSource.HOSTILE : SoundSource.NEUTRAL, 0.85F, 1.0F);
     }
 
-    private static BlockPos findGround(ServerLevel level, BlockPos startPos) {
+    private static BlockPos findGround(ServerLevel level, BlockPos targetPos, BlockPos fallbackCenter) {
+        BlockPos exact = findGroundInColumn(level, targetPos);
+        if (exact != null) {
+            return exact;
+        }
+
+        for (int radius = 1; radius <= 4; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.abs(dx) != radius && Math.abs(dz) != radius) {
+                        continue;
+                    }
+
+                    BlockPos candidate = findGroundInColumn(level, targetPos.offset(dx, 0, dz));
+                    if (candidate != null) {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        for (int radius = 1; radius <= 3; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    BlockPos candidate = findGroundInColumn(level, fallbackCenter.offset(dx, 0, dz));
+                    if (candidate != null) {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static BlockPos findGroundInColumn(ServerLevel level, BlockPos startPos) {
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(startPos.getX(), startPos.getY(), startPos.getZ());
-        for (int i = 0; i < 20; i++) {
-            if (level.getBlockState(mutable).isAir() && !level.getBlockState(mutable.below()).getCollisionShape(level, mutable.below()).isEmpty()) {
+        for (int dy = 0; dy >= -64; dy--) {
+            mutable.set(startPos.getX(), startPos.getY() + dy, startPos.getZ());
+            if (canPlaceIntroBoxAt(level, mutable)) {
                 return mutable.immutable();
             }
-            mutable.move(0, -1, 0);
         }
-        mutable.set(startPos.getX(), startPos.getY(), startPos.getZ());
-        for (int i = 0; i < 20; i++) {
-            if (level.getBlockState(mutable).isAir() && !level.getBlockState(mutable.below()).getCollisionShape(level, mutable.below()).isEmpty()) {
+
+        for (int dy = 1; dy <= 32; dy++) {
+            mutable.set(startPos.getX(), startPos.getY() + dy, startPos.getZ());
+            if (canPlaceIntroBoxAt(level, mutable)) {
                 return mutable.immutable();
             }
-            mutable.move(0, 1, 0);
         }
-        return startPos;
+
+        return null;
+    }
+
+    private static boolean canPlaceIntroBoxAt(ServerLevel level, BlockPos pos) {
+        if (!level.getWorldBorder().isWithinBounds(pos)) {
+            return false;
+        }
+
+        BlockState state = level.getBlockState(pos);
+        BlockState aboveState = level.getBlockState(pos.above());
+        BlockPos belowPos = pos.below();
+        BlockState belowState = level.getBlockState(belowPos);
+
+        boolean replaceableSpace = state.getCollisionShape(level, pos).isEmpty();
+        boolean headClear = aboveState.getCollisionShape(level, pos.above()).isEmpty();
+        boolean solidGround = belowState.isFaceSturdy(level, belowPos, Direction.UP);
+
+        return replaceableSpace && headClear && solidGround;
     }
 }

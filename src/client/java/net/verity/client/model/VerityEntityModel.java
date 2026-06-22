@@ -9,16 +9,15 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.verity.client.VerityClientConfig;
 import net.verity.entity.VerityEntity;
 
 public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
     private final ModelPart root;
     private final ModelPart sphere;
-
     // Load original Bedrock polygon meshes
     private static final BedrockMesh BALL_MESH = new BedrockMesh(
-            "/assets/verity/models/verityball.geo.json", "ball", 0.0F, 8.0F, 0.0F, true, true
-    );
+            "/assets/verity/models/verityball.geo.json", "ball", 0.0F, 8.0F, 0.0F, true, true);
 
     private VerityEntity currentEntity;
     private float age;
@@ -46,28 +45,39 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
     }
 
     @Override
-    public void setupAnim(VerityEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+    public void setupAnim(VerityEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
+            float netHeadYaw, float headPitch) {
         this.currentEntity = entity;
         this.age = ageInTicks;
 
         this.root().getAllParts().forEach(ModelPart::resetPose);
 
-        // Rolling animation when moving
-        float rollAngle = limbSwing * 1.5F;
-        this.sphere.xRot = rollAngle;
+        // yaw: Bedrock mesh "forward" needs an offset relative to Java's look yaw
+        float yawOffset = VerityClientConfig.getFaceYawOffsetDegrees();
 
-        // Turn sphere to face target with the Bedrock mesh's side-facing texture corrected.
-        this.sphere.yRot = (netHeadYaw - 90.0F) * ((float) Math.PI / 180F);
-        this.sphere.xRot += headPitch * ((float) Math.PI / 180F);
+        // roll: a decaying angle owned by the entity (updated in tick(), not here).
+        // It grows while the ball is rolling/moving and decays back to 0 when idle,
+        // so the face naturally returns to facing the look direction over time.
+        // NOTE: this is already in the same "natural" (radian-scale) units the old
+        // limbSwing-based value used — do NOT multiply by Math.PI/180F here, that
+        // would shrink the roll ~57x and make it visually disappear.
+        float rollAngle = entity.getRollAngle();
+
+        // pitch: Bedrock mesh's vertical face direction is flipped relative to
+        // Java's look pitch, hence the negation.
+        this.sphere.xRot = rollAngle - headPitch * ((float) Math.PI / 180F);
+        this.sphere.yRot = (netHeadYaw + yawOffset) * ((float) Math.PI / 180F);
+        this.sphere.zRot = 0.0F;
     }
 
     @Override
-    public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int packedLight, int packedOverlay, int color) {
+    public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int packedLight, int packedOverlay,
+            int color) {
         poseStack.pushPose();
 
         // Normal phase: render the original Bedrock sphere mesh
         this.sphere.translateAndRotate(poseStack);
-        
+
         // Scale sphere by 0.4 (matching Bedrock scale: 0.4)
         poseStack.scale(0.4F, 0.4F, 0.4F);
 

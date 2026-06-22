@@ -27,26 +27,26 @@ import java.util.EnumSet;
 
 public class VerityEntity extends PathfinderMob {
     // ── face_index (0-11), matches Bedrock addon's pntmc:face_index ─────────
-    public static final int FACE_SMILE           = 0;
-    public static final int FACE_SPEAK           = 1;
-    public static final int FACE_HURT            = 2;
-    public static final int FACE_ABNORMAL_SHUT   = 3;
-    public static final int FACE_ABNORMAL_OPEN   = 4;
-    public static final int FACE_BORED_P2        = 5;
-    public static final int FACE_DAY2_SHUT       = 6;
-    public static final int FACE_DAY2_OPEN       = 7;
-    public static final int FACE_CREEPY_SMILE    = 8;
-    public static final int FACE_SERIOUS_1       = 9;
-    public static final int FACE_SERIOUS_2       = 10;
-    public static final int FACE_SERIOUS_3       = 11;
+    public static final int FACE_SMILE = 0;
+    public static final int FACE_SPEAK = 1;
+    public static final int FACE_HURT = 2;
+    public static final int FACE_ABNORMAL_SHUT = 3;
+    public static final int FACE_ABNORMAL_OPEN = 4;
+    public static final int FACE_BORED_P2 = 5;
+    public static final int FACE_DAY2_SHUT = 6;
+    public static final int FACE_DAY2_OPEN = 7;
+    public static final int FACE_CREEPY_SMILE = 8;
+    public static final int FACE_SERIOUS_1 = 9;
+    public static final int FACE_SERIOUS_2 = 10;
+    public static final int FACE_SERIOUS_3 = 11;
 
-    private static final EntityDataAccessor<Integer> FACE_INDEX =
-            SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Boolean> FACELESS =
-            SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> FACE_INDEX = SynchedEntityData.defineId(VerityEntity.class,
+            EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> FACELESS = SynchedEntityData.defineId(VerityEntity.class,
+            EntityDataSerializers.BOOLEAN);
     // Phase: 1 = friendly, 2 = creepy/stalker
-    private static final EntityDataAccessor<Integer> PHASE =
-            SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> PHASE = SynchedEntityData.defineId(VerityEntity.class,
+            EntityDataSerializers.INT);
 
     private int chatCooldown = 200;
     private int teleportCooldown = 0;
@@ -55,25 +55,31 @@ public class VerityEntity extends PathfinderMob {
     private int ambientSoundCooldown = 0;
     private int introTicks = 0;
 
+    // ── Rolling animation state ──────────────────────────────────────────
+    // Grows while the ball is moving (matches old limbSwing-based rolling),
+    // and decays back to 0 when idle so the face naturally returns to facing
+    // the look direction instead of staying stuck wherever it last rolled to.
+    private float rollAngle = 0.0F;
+
     private static final String[] FRIENDLY_MESSAGES = {
-        "§e<Verity>§r Привет! Я Верити, твой лучший друг!",
-        "§e<Verity>§r Давай копать шахты вместе!",
-        "§e<Verity>§r Сегодня отличный день для приключений!",
-        "§e<Verity>§r Я знаю, что ты делал в прошлую игровую ночь...",
-        "§e<Verity>§r Ты выглядишь очень дружелюбно.",
-        "§e<Verity>§r Что мы будем строить дальше?",
-        "§e<Verity>§r Я счастлива быть рядом с тобой."
+            "§e<Verity>§r Привет! Я Верити, твой лучший друг!",
+            "§e<Verity>§r Давай копать шахты вместе!",
+            "§e<Verity>§r Сегодня отличный день для приключений!",
+            "§e<Verity>§r Я знаю, что ты делал в прошлую игровую ночь...",
+            "§e<Verity>§r Ты выглядишь очень дружелюбно.",
+            "§e<Verity>§r Что мы будем строить дальше?",
+            "§e<Verity>§r Я счастлива быть рядом с тобой."
     };
 
     private static final String[] CREEPY_MESSAGES = {
-        "§c<Verity>§r ПОЧЕМУ ТЫ МЕНЯ УДАРИЛ?",
-        "§c<Verity>§r Ты не сможешь убежать.",
-        "§c<Verity>§r Я вижу тебя.",
-        "§c<Verity>§r МЫ БУДЕМ ВМЕСТЕ НАВСЕГДА.",
-        "§c<Verity>§r В твоём мире так темно...",
-        "§c<Verity>§r Я стою прямо за твоей спиной.",
-        "§c<Verity>§r Ты совершил большую ошибку.",
-        "§c<Verity>§r Я всегда выглядела вот так."
+            "§c<Verity>§r ПОЧЕМУ ТЫ МЕНЯ УДАРИЛ?",
+            "§c<Verity>§r Ты не сможешь убежать.",
+            "§c<Verity>§r Я вижу тебя.",
+            "§c<Verity>§r МЫ БУДЕМ ВМЕСТЕ НАВСЕГДА.",
+            "§c<Verity>§r В твоём мире так темно...",
+            "§c<Verity>§r Я стою прямо за твоей спиной.",
+            "§c<Verity>§r Ты совершил большую ошибку.",
+            "§c<Verity>§r Я всегда выглядела вот так."
     };
 
     public VerityEntity(EntityType<? extends PathfinderMob> entityType, Level level) {
@@ -103,15 +109,34 @@ public class VerityEntity extends PathfinderMob {
     }
 
     // ── Getters & Setters ──────────────────────────────────────────────────
-    public int getFaceIndex() { return this.entityData.get(FACE_INDEX); }
-    public void setFaceIndex(int face) { this.entityData.set(FACE_INDEX, face); }
-    public boolean isFaceless() { return this.entityData.get(FACELESS); }
-    public void setFaceless(boolean v) { this.entityData.set(FACELESS, v); }
-    public int getPhase() { return this.entityData.get(PHASE); }
-    public void setPhase(int p) { this.entityData.set(PHASE, p); }
+    public int getFaceIndex() {
+        return this.entityData.get(FACE_INDEX);
+    }
+
+    public void setFaceIndex(int face) {
+        this.entityData.set(FACE_INDEX, face);
+    }
+
+    public boolean isFaceless() {
+        return this.entityData.get(FACELESS);
+    }
+
+    public void setFaceless(boolean v) {
+        this.entityData.set(FACELESS, v);
+    }
+
+    public int getPhase() {
+        return this.entityData.get(PHASE);
+    }
+
+    public void setPhase(int p) {
+        this.entityData.set(PHASE, p);
+    }
 
     /** Legacy helper so renderer glow layer still works */
-    public boolean isCreepy() { return getPhase() >= 2; }
+    public boolean isCreepy() {
+        return getPhase() >= 2;
+    }
 
     public void setIntroTicks(int ticks) {
         this.introTicks = ticks;
@@ -120,6 +145,15 @@ public class VerityEntity extends PathfinderMob {
     public boolean isTalking() {
         int face = getFaceIndex();
         return face == FACE_SPEAK || face == FACE_ABNORMAL_OPEN;
+    }
+
+    /**
+     * Current rolling angle in the same "natural" (radian-scale) units the
+     * old limbSwing-based value used — NOT degrees. Already decayed when idle.
+     * Read by VerityEntityModel each render frame to orient the sphere mesh.
+     */
+    public float getRollAngle() {
+        return this.rollAngle;
     }
 
     @Override
@@ -198,12 +232,15 @@ public class VerityEntity extends PathfinderMob {
                 }
             }
             super.tick();
+            this.updateRollAngle();
             return;
         }
 
         super.tick();
+        this.updateRollAngle();
 
-        if (this.level().isClientSide) return;
+        if (this.level().isClientSide)
+            return;
 
         int phase = getPhase();
 
@@ -307,8 +344,7 @@ public class VerityEntity extends PathfinderMob {
         Vec3 toEntityVec = new Vec3(
                 this.getX() - player.getX(),
                 this.getEyeY() - player.getEyeY(),
-                this.getZ() - player.getZ()
-        ).normalize();
+                this.getZ() - player.getZ()).normalize();
         return rotationVec.dot(toEntityVec) > 0.5;
     }
 
@@ -323,6 +359,30 @@ public class VerityEntity extends PathfinderMob {
         this.teleportTo(targetX, targetY, targetZ);
         this.level().playSound(null, targetX, targetY, targetZ,
                 VerityMod.SOUND_GONE, SoundSource.HOSTILE, 1.0F, 1.0F);
+    }
+
+    /**
+     * Updates {@link #rollAngle} once per tick. Grows while the ball is
+     * actually moving (mirrors the old limbSwing-based roll), and decays
+     * back toward 0 when idle, so the face returns to the look direction
+     * instead of staying stuck at whatever angle it last rolled to.
+     */
+    private void updateRollAngle() {
+        Vec3 motion = this.getDeltaMovement();
+        double horizontalSpeedSqr = motion.x * motion.x + motion.z * motion.z;
+        boolean moving = horizontalSpeedSqr > 1.0E-4D;
+
+        if (moving) {
+            // Same source/formula the model used to read directly off limbSwing.
+            this.rollAngle = this.walkAnimation.position() * 1.5F;
+        } else {
+            // Exponential decay back to 0 — tune 0.90F to taste:
+            // closer to 1.0F = slower return, closer to 0.0F = snaps back faster.
+            this.rollAngle *= 0.90F;
+            if (Math.abs(this.rollAngle) < 0.01F) {
+                this.rollAngle = 0.0F;
+            }
+        }
     }
 
     // ── Inner Goals ───────────────────────────────────────────────────────
@@ -340,7 +400,8 @@ public class VerityEntity extends PathfinderMob {
         @Override
         public boolean canUse() {
             this.target = this.entity.level().getNearestPlayer(this.entity, 32.0D);
-            if (this.target == null) return false;
+            if (this.target == null)
+                return false;
             return this.entity.distanceToSqr(this.target) > 16.0D;
         }
 
@@ -350,7 +411,9 @@ public class VerityEntity extends PathfinderMob {
         }
 
         @Override
-        public void start() { this.entity.getNavigation().moveTo(this.target, this.speed); }
+        public void start() {
+            this.entity.getNavigation().moveTo(this.target, this.speed);
+        }
 
         @Override
         public void stop() {
