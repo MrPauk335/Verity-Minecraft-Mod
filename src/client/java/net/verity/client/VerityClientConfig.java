@@ -12,7 +12,7 @@ public final class VerityClientConfig {
             .getConfigDir()
             .resolve("verity-client.properties");
     private static final long RELOAD_INTERVAL_MS = 250L;
-    private static final float DEFAULT_FACE_YAW_OFFSET_DEGREES = -90.0F;
+    private static final float DEFAULT_FACE_YAW_OFFSET_DEGREES = 180.0F;
 
     private static long nextReloadTimeMs = 0L;
     private static long lastModifiedMs = Long.MIN_VALUE;
@@ -64,7 +64,7 @@ public final class VerityClientConfig {
                 # Verity client-side tuning.
                 # Change this while Minecraft is running to rotate Verity's face relative to the F3+B blue look line.
                 # Try: -180, -90, 0, 90, 180
-                face_yaw_offset_degrees=-90
+                face_yaw_offset_degrees=180
                 """;
         Files.writeString(CONFIG_PATH, text);
     }
