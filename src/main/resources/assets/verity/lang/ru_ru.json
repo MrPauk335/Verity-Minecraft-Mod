@@ -1,0 +1,18 @@
+{
+  "entity.verity.verity": "Верити",
+  "item.verity.verity_spawn_egg": "Яйцо призыва Верити",
+  "entity.verity.verity.description": "Жуткий желтый шар из крипипасты/ARG Верити.",
+  "block.verity.cardboard_box": "Картонная коробка",
+  "item.verity.cardboard_box": "Картонная коробка",
+  "entity.verity.verity_monster": "Верити",
+  "item.verity.verity_monster_spawn_egg": "Яйцо призыва Монстра Верити",
+  "item.verity.verity_inventory_1": "Verity™",
+  "item.verity.verity_inventory_2": "Verity™",
+  "item.verity.verity_inventory_3": "Verity™",
+  "message.verity.held.friendly.0": "§e<Verity>§r Я всё ещё здесь.",
+  "message.verity.held.friendly.1": "§e<Verity>§r Ты можешь носить меня, но я всё равно слышу тебя.",
+  "message.verity.held.friendly.2": "§e<Verity>§r Не потеряй меня.",
+  "message.verity.held.creepy.0": "§c<Verity>§r Я всё ещё с тобой.",
+  "message.verity.held.creepy.1": "§c<Verity>§r У тебя тёплые руки.",
+  "message.verity.held.creepy.2": "§c<Verity>§r Я вижу и отсюда."
+}

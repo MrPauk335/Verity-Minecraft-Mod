@@ -1,0 +1,18 @@
+{
+  "entity.verity.verity": "Verity",
+  "item.verity.verity_spawn_egg": "Verity Spawn Egg",
+  "entity.verity.verity.description": "A creepy yellow ball entity from the Verity ARG.",
+  "block.verity.cardboard_box": "Cardboard Box",
+  "item.verity.cardboard_box": "Cardboard Box",
+  "entity.verity.verity_monster": "Verity",
+  "item.verity.verity_monster_spawn_egg": "Verity Monster Spawn Egg",
+  "item.verity.verity_inventory_1": "Verity™",
+  "item.verity.verity_inventory_2": "Verity™",
+  "item.verity.verity_inventory_3": "Verity™",
+  "message.verity.held.friendly.0": "§e<Verity>§r Still here.",
+  "message.verity.held.friendly.1": "§e<Verity>§r You can carry me, but I can still hear you.",
+  "message.verity.held.friendly.2": "§e<Verity>§r Don't lose me.",
+  "message.verity.held.creepy.0": "§c<Verity>§r I am still with you.",
+  "message.verity.held.creepy.1": "§c<Verity>§r Your hands are warm.",
+  "message.verity.held.creepy.2": "§c<Verity>§r I can see from here."
+}

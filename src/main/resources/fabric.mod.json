@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "verity",
+	"version": "${version}",
+	"name": "Verity Mod",
+	"description": "A creepypasta mod about Verity, the yellow ball companion.",
+	"authors": [
+		"Antigravity"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/verity/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.verity.VerityMod"
+		],
+		"client": [
+			"net.verity.client.VerityModClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
