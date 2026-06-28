@@ -14,5 +14,7 @@
   "message.verity.held.friendly.2": "§e<Verity>§r Don't lose me.",
   "message.verity.held.creepy.0": "§c<Verity>§r I am still with you.",
   "message.verity.held.creepy.1": "§c<Verity>§r Your hands are warm.",
-  "message.verity.held.creepy.2": "§c<Verity>§r I can see from here."
+  "message.verity.held.creepy.2": "§c<Verity>§r I can see from here.",
+  "category.verity": "Verity",
+  "key.verity.voice": "Voice (Push-to-Talk)"
 }

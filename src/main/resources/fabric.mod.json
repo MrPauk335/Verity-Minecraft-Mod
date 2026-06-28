@@ -3,15 +3,15 @@
 	"id": "verity",
 	"version": "${version}",
 	"name": "Verity Mod",
-	"description": "A creepypasta mod about Verity, the yellow ball companion.",
+	"description": "An AI-powered horror companion mod inspired by the Minecraft ARG genre. A yellow sphere that follows you, talks to you, and knows too much.",
 	"authors": [
 		"Antigravity"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/MrPauk335/Verity-Minecraft-Mod",
+		"sources": "https://github.com/MrPauk335/Verity-Minecraft-Mod"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/verity/icon.png",
 	"environment": "*",
 	"entrypoints": {

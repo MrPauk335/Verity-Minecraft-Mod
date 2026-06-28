@@ -73,22 +73,6 @@ public class VerityMonsterEntity extends Monster {
                 }
             }
         }
-
-        // Occasional scary sounds during hunt
-        if (this.ambientSoundCooldown > 0) {
-            this.ambientSoundCooldown--;
-        } else if (this.random.nextInt(60) == 0) {
-            var sound = switch (this.random.nextInt(4)) {
-                case 0 -> VerityMod.SOUND_CHASE;
-                case 1 -> VerityMod.SOUND_JUMPSCARE;
-                case 2 -> VerityMod.SOUND_ITS_ALREADY_OVER;
-                default -> VerityMod.SOUND_YOU_ARE_MINE;
-            };
-            // Play at higher volume for tension
-            this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-                    sound, SoundSource.HOSTILE, 1.5F, 1.0F);
-            this.ambientSoundCooldown = 150 + this.random.nextInt(150); // 7-15 seconds
-        }
     }
 
     private boolean isPlayerLookingAtMe(Player player) {
@@ -109,11 +93,7 @@ public class VerityMonsterEntity extends Monster {
 
         Vec3 safePos = findSafeTeleportPos(this.level(), startX, startY, startZ, player);
 
-        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-                VerityMod.SOUND_GONE, SoundSource.HOSTILE, 1.0F, 1.0F);
         this.teleportTo(safePos.x, safePos.y, safePos.z);
-        this.level().playSound(null, safePos.x, safePos.y, safePos.z,
-                VerityMod.SOUND_GONE, SoundSource.HOSTILE, 1.0F, 1.0F);
     }
 
     private Vec3 findSafeTeleportPos(Level level, double startX, double startY, double startZ, Player player) {

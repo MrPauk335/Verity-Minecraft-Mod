@@ -24,6 +24,15 @@ loom {
 		}
 	}
 
+	runs {
+		client {
+			// log4j2 config is handled by Fabric/Minecraft automatically
+		}
+		server {
+			// log4j2 config is handled by Fabric/Minecraft automatically
+		}
+	}
+
 }
 
 dependencies {

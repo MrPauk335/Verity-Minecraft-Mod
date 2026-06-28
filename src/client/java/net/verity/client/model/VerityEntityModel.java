@@ -33,7 +33,7 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
 
         // Create an empty sphere bone for transformations
         rootDefinition.addOrReplaceChild("sphere", CubeListBuilder.create(),
-                PartPose.offset(0.0F, 24.0F - 3.2F, 0.0F) // sphere radius is 0.2 blocks (3.2 units) when scaled by 0.4
+                PartPose.offset(0.0F, 24.0F - 4.0F, 0.0F) // sphere radius is 0.25 blocks (4 units) at scale 0.5
         );
 
         return LayerDefinition.create(meshDefinition, 64, 64);
@@ -55,19 +55,15 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
         // yaw: Bedrock mesh "forward" needs an offset relative to Java's look yaw
         float yawOffset = VerityClientConfig.getFaceYawOffsetDegrees();
 
-        // roll: a decaying angle owned by the entity (updated in tick(), not here).
-        // It grows while the ball is rolling/moving and decays back to 0 when idle,
-        // so the face naturally returns to facing the look direction over time.
-        // NOTE: this is already in the same "natural" (radian-scale) units the old
-        // limbSwing-based value used — do NOT multiply by Math.PI/180F here, that
-        // would shrink the roll ~57x and make it visually disappear.
+        // roll pitch: forward/back rolling direction
         float rollAngle = entity.getRollAngle();
+        // roll strafe: side-to-side lean when moving laterally
+        float rollStrafe = entity.getRollStrafe();
 
-        // pitch: Bedrock mesh's vertical face direction is flipped relative to
-        // Java's look pitch, hence the negation.
         this.sphere.xRot = rollAngle - headPitch * ((float) Math.PI / 180F);
         this.sphere.yRot = (netHeadYaw + yawOffset) * ((float) Math.PI / 180F);
-        this.sphere.zRot = 0.0F;
+        // Lateral lean — applied as zRot (inverted: right movement → lean right)
+        this.sphere.zRot = -rollStrafe;
     }
 
     @Override
@@ -78,10 +74,11 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
         // Normal phase: render the original Bedrock sphere mesh
         this.sphere.translateAndRotate(poseStack);
 
-        // Scale sphere by 0.4 (matching Bedrock scale: 0.4)
-        poseStack.scale(0.4F, 0.4F, 0.4F);
+        // Base scale
+        float baseScale = 0.5F;
+        poseStack.scale(baseScale, baseScale, baseScale);
 
-        // Implementing original Bedrock's talk_pulse animation when speaking
+        // ── Talk pulse animation when speaking ────────────────────────────
         if (this.currentEntity != null && this.currentEntity.isTalking()) {
             float talkSpeed = 0.4F;
             float pulse = Math.abs((float) Math.sin(this.age * Math.PI * talkSpeed));
@@ -89,6 +86,26 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
             float sy = 1.0F + pulse * 0.45F;
             float sz = 1.0F - pulse * 0.20F;
             poseStack.scale(sx, sy, sz);
+        }
+
+        // ── Intro: hover bob when suspended in air (introPhase == 1) ─────
+        if (this.currentEntity != null && this.currentEntity.getIntroPhase() == 1) {
+            float bob = (float) Math.sin(this.age * 0.25) * 0.08F;
+            poseStack.translate(0.0F, bob, 0.0F);
+        }
+
+        // ── Intro: squash/stretch bounce effect (introPhase == 3) ────────
+        if (this.currentEntity != null && this.currentEntity.getIntroPhase() == 3) {
+            int squashTick = this.currentEntity.getIntroSquashTimer();
+            if (squashTick > 0) {
+                // 0–8: squash on land, then spring back via lerp
+                float t = squashTick / 8.0F; // 1.0 → 0.0
+                // At impact (t=1): wide and flat. At recovery (t=0): normal (1,1,1)
+                float squashX = 1.0F + t * 0.45F;   // wider
+                float squashY = 1.0F - t * 0.50F;   // flatter
+                float squashZ = 1.0F + t * 0.45F;
+                poseStack.scale(squashX, squashY, squashZ);
+            }
         }
 
         BALL_MESH.render(poseStack, vertexConsumer, packedLight, packedOverlay, color);

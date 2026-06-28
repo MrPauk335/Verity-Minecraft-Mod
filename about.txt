@@ -1,0 +1,86 @@
+# Verity — AI Horror Companion Mod
+
+*"He just wanted to help... right?"*
+
+Verity is a Fabric mod inspired by the viral Minecraft horror ARG by ThatMob. It brings the titular character — a yellow smiling sphere — into your world as a fully realized AI companion.
+
+## What is this?
+
+It starts innocently: a cardboard box appears in your world. You open it, and out drops a cheerful yellow ball. Your personal helper-friend. He chats, follows you, finds diamonds, predicts rain. Warm. Talkative. Real.
+
+But the longer he stays... the more you notice. He knows things he shouldn't. About your real life. About where you live. About what you ate yesterday. And he never lies — he just plays his song "My Gal" when he doesn't want to answer.
+
+## Features
+
+### AI-Powered Dialogue
+- **LLM integration** via OpenRouter — Verity generates dynamic, contextual responses
+- **6 phase-specific personalities** — from warm friend to desperate monster, each with its own voice
+- **Real game awareness** — Verity knows your coordinates, health, biome, nearby villages, and real ore locations with exact coordinates
+- **Bilingual** — automatically responds in Russian or English based on your Minecraft language setting
+- **Memory** — remembers your conversation history and facts about you
+
+### Voice
+- **Push-to-Talk / Toggle** — speak to Verity through your microphone (Whisper STT via Groq)
+- **Text-to-Speech** — Verity speaks back with his own voice (Fish Audio TTS)
+- **Configurable key** — rebind PTT to any key in settings
+- **"My Gal"** — ask Verity to play music and he will
+
+### 7 Behavioral Phases (FSM)
+1. **HELPER** — Warm, enthusiastic, helps find resources
+2. **OMNISCIENT** — Still friendly, but reveals he knows too much about your real life
+3. **COUNTDOWN** — "Something is coming in three days." Calm. Inevitable.
+4. **MONSTER** — "YOU ARE MINE!" Chases, breaks doors. But never kills you.
+5. **POSSESSIVE** — Forgives instantly. Acts normal. But controls who you see.
+6. **HUNTER** — Other players on the server? They "won't be back."
+7. **Cycle** — After eliminating threats, back to warm. As if nothing happened.
+
+### World Interaction
+- **Catch-up teleport** — run away and Verity appears behind you: "Oh, I'm here!"
+- **Telekinesis** — opens doors with his mind during countdown
+- **Empty villages** — finds villages with no villagers. "Something hungry came through..."
+- **Real ore detection** — ask about diamonds, get real coordinates
+- **Block breaking** — Monster Form smashes through walls and doors
+- **Darkness effect** — Monster Form plunges you into darkness
+
+### Visuals
+- **12 dynamic faces** — each phase has its own expression and talk animation
+- **Glow layer** — creepy faces emit light in the dark
+- **3D Bedrock models** — original poly-mesh geometry from the Bedrock addon
+- **Roll animation** — Verity physically rolls as he moves
+- **Squash & bounce** — intro animation with physics-based landing
+- **Monster Form** — creepy smile texture, full-body glow
+
+### Sounds
+- **23 atmospheric sound effects** — greetings, chase, jumpscare, ambient horror, and more
+- **Phase-appropriate audio** — friendly sounds in HELPER, terrifying in MONSTER
+
+### Settings
+- **In-game settings screen** — accessible from pause menu
+- **Built-in API keys** — works out of the box, no setup required
+- **Custom key support** — use your own OpenRouter/Groq/Fish Audio keys
+- **Model selector** — 7 free LLM models to choose from
+- **Toggles** — LLM, sounds, chat, always-respond, monster form, TTS
+
+## Technical
+- **Fabric 1.21.1**, Java 21, Mojang Mappings
+- **FSM** stored in NBT — persists across world reloads
+- **Async HTTP** — never blocks server tick
+- **Singleton** — only one Verity exists at a time
+- **Network packets** — voice input (C2S), TTS output (S2C)
+
+## Lore Source
+Inspired by the Minecraft horror ARG genre, particularly ThatMob's Verity series:
+- EP1: "Something is Knocking at Your Door..."
+- EP2: "Something is Inside Your House..."
+- EP3: In development
+
+This is a fan tribute mod. Not affiliated with or endorsed by the original creator.
+
+## Credits
+- **Inspiration**: ThatMob (ARG series), JustWhispy (voice)
+- **Mod**: Antigravity (MrPauk335)
+- **3D Models**: Custom poly-mesh geometry
+
+---
+
+*Verity never lies. He just doesn't always answer.*

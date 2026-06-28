@@ -43,7 +43,9 @@ public class VerityInventoryItem extends Item {
         if (!level.isClientSide) {
             VerityEntity entity = new VerityEntity(VerityMod.VERITY_ENTITY, level);
             entity.setFaceIndex(this.placedFace);
-            entity.setPhase(this.placedPhase);
+            // Восстанавливаем фазу и память из статического хранилища
+            VerityEntity.VerityPhase savedPhase = VerityMod.getHeldPhase();
+            entity.setVerityPhase(savedPhase);
             Vec3 pos = Vec3.atBottomCenterOf(spawnPos);
             entity.moveTo(pos.x, pos.y, pos.z, player != null ? player.getYRot() : 0.0F, 0.0F);
 
@@ -52,7 +54,10 @@ public class VerityInventoryItem extends Item {
             }
 
             level.addFreshEntity(entity);
-            level.playSound(null, spawnPos, VerityMod.SOUND_ASKME, SoundSource.NEUTRAL, 0.8F, 1.0F);
+
+            // Восстанавливаем историю и факты
+            entity.getDialogueController().setDialogueHistory(VerityMod.getHeldHistory());
+            entity.getDialogueController().setKnownFacts(VerityMod.getHeldFacts());
 
             ItemStack stack = context.getItemInHand();
             if (player == null || !player.getAbilities().instabuild) {
