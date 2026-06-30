@@ -1,5 +1,35 @@
 # Verity Mod — Changelog
 
+## v0.7.0-beta
+
+### Horror (Verity itself is scary now)
+- **Darkness pulses** — brief Darkness effect when standing near Verity (OMNISCIENT+)
+- **Face glitch** — face randomly switches to creepy/abnormal for 3-8 ticks, then back
+- **Staring** — Verity stops following and stares at player for 5-10 seconds
+- **Whispers** — random creepy messages without LLM: "...ты один?", "...я слышу тебя", "...скоро", "...три"
+- **Doors open themselves** — doors in 4-block radius open randomly (OMNISCIENT+, not just COUNTDOWN)
+- **My Gal at night** — music plays softly at night without request
+- **Sleep teleport** — after sleeping, Verity may appear next to bed with Darkness effect
+- **Nearby weakness** — short Darkness when player gets within 3 blocks
+
+### AI / LLM
+- **Dead model replaced** — `openrouter/owl-alpha` (404) → `meta-llama/llama-3.3-70b-instruct:free`
+- **Fallback chain reordered** — llama-3.3-70b → nemotron-3-super-120b → qwen3-next-80b → gemma-4-26b
+- **Canonical prompts** — all 6 phase prompts rewritten to match ThatMob's original Verity speech patterns
+- **Max 15 words per response** — Verity speaks short and flat like canon ("Yes", "You could've", "You have me")
+- **Response quality filter** — rejects short (<5 chars), gibberish, and truncated responses
+- **Emoji & bracket tag stripper** — removes 🔍, [excited], [soft] etc. from LLM output
+- **Canonical fallback phrases** — when all models rate-limited, Verity says phase-appropriate canon lines
+- **max_tokens 150 → 256** — prevents truncated responses on weaker models
+
+### Fixes
+- **My Gal sound** — now plays at player position instead of entity position (was inaudible when Verity far)
+- **Config migration v4→v5** — auto-replaces owl-alpha, updates fallback list, increases max_tokens
+
+### Technical
+- **7 available models** — llama-3.3-70b, nemotron-3-super-120b, qwen3-next-80b, qwen3-coder, gpt-oss-120b, hermes-3-405b, gemma-4-26b
+- **Settings screen updated** — new model display names
+
 ## v0.6.0-beta
 
 ### Monster Form
@@ -10,7 +40,7 @@
 - **No Thread.sleep** — roof gravity via tick timer (30 ticks), no server freeze
 
 ### AI / LLM
-- **Owl Alpha default model** — better Russian than Gemma (which was rate limited + hallucinated)
+- **Default model** — best free Russian model as default
 - **Fact checking in prompt** — rule 9: verify every statement against context, rule 10: don't invent
 - **Male gender fix** — "я рад" not "я рада", rule 11
 - **Day 2-3 insanity** — repeats player's phrases (echo), "Три дня." / "Тик-так." / "Скоро.", less frequent
@@ -40,7 +70,7 @@
 - `/verity day <0-3>` — set countdown day
 
 ### Technical
-- **Config migration v4** — auto-upgrade to owl-alpha
+- **Config migration v4** — auto-upgrade model settings
 - **Duplicate tick() removed** — was causing compile errors
 - **README.md rewritten** — full feature list, commands, credits
 - **fabric.mod.json** — MIT license, better description, GitHub links
