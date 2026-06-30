@@ -1,5 +1,7 @@
 # Verity Mod — Changelog
 
+## v0.6.0-beta
+
 ## v0.5.0-beta
 
 ### AI / LLM

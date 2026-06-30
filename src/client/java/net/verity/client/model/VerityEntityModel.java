@@ -18,6 +18,26 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
     // Load original Bedrock polygon meshes
     private static final BedrockMesh BALL_MESH = new BedrockMesh(
             "/assets/verity/models/verityball.geo.json", "ball", 0.0F, 8.0F, 0.0F, true, true);
+    private static BedrockMesh MONSTER_MESH = null;
+    private static boolean monsterMeshLoaded = false;
+    private static boolean monsterMeshFailed = false;
+
+    private static BedrockMesh getMonsterMesh() {
+        if (monsterMeshLoaded) return MONSTER_MESH;
+        if (monsterMeshFailed) return null;
+        monsterMeshLoaded = true;
+        try {
+            MONSTER_MESH = new BedrockMesh(
+                    "/assets/verity/models/verity_monster.geo.json", "bb_main", 0.0F, 0.0F, 0.0F, true, true);
+            net.verity.VerityMod.LOGGER.info("Verity monster mesh loaded successfully: {} polygons", 
+                    MONSTER_MESH != null ? "OK" : "NULL");
+        } catch (Throwable e) {
+            monsterMeshFailed = true;
+            net.verity.VerityMod.LOGGER.error("Failed to load monster mesh: {}", e.getMessage());
+            e.printStackTrace();
+        }
+        return MONSTER_MESH;
+    }
 
     private VerityEntity currentEntity;
     private float age;
@@ -71,44 +91,48 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
             int color) {
         poseStack.pushPose();
 
-        // Normal phase: render the original Bedrock sphere mesh
-        this.sphere.translateAndRotate(poseStack);
+        boolean isMonster = this.currentEntity != null && this.currentEntity.isMonsterForm();
 
-        // Base scale
-        float baseScale = 0.5F;
-        poseStack.scale(baseScale, baseScale, baseScale);
+        BedrockMesh monsterMesh = getMonsterMesh();
+        if (isMonster && monsterMesh != null) {
+            // ── MONSTER FORM: 3D-модель монстра ──
+            // Bedrock model: Y is up, pivot at feet
+            poseStack.translate(0.0F, 1.5F, 0.0F); // Minecraft model origin is 1.5 above ground
+            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180.0F)); // Bedrock faces backwards
+            float monsterScale = 2.0F;
+            poseStack.scale(monsterScale, monsterScale, monsterScale);
+            monsterMesh.render(poseStack, vertexConsumer, packedLight, packedOverlay, color);
+        } else {
+            // ── NORMAL FORM: шар ──
+            this.sphere.translateAndRotate(poseStack);
 
-        // ── Talk pulse animation when speaking ────────────────────────────
-        if (this.currentEntity != null && this.currentEntity.isTalking()) {
-            float talkSpeed = 0.4F;
-            float pulse = Math.abs((float) Math.sin(this.age * Math.PI * talkSpeed));
-            float sx = 1.0F - pulse * 0.20F;
-            float sy = 1.0F + pulse * 0.45F;
-            float sz = 1.0F - pulse * 0.20F;
-            poseStack.scale(sx, sy, sz);
-        }
+            float baseScale = 0.5F;
+            poseStack.scale(baseScale, baseScale, baseScale);
 
-        // ── Intro: hover bob when suspended in air (introPhase == 1) ─────
-        if (this.currentEntity != null && this.currentEntity.getIntroPhase() == 1) {
-            float bob = (float) Math.sin(this.age * 0.25) * 0.08F;
-            poseStack.translate(0.0F, bob, 0.0F);
-        }
-
-        // ── Intro: squash/stretch bounce effect (introPhase == 3) ────────
-        if (this.currentEntity != null && this.currentEntity.getIntroPhase() == 3) {
-            int squashTick = this.currentEntity.getIntroSquashTimer();
-            if (squashTick > 0) {
-                // 0–8: squash on land, then spring back via lerp
-                float t = squashTick / 8.0F; // 1.0 → 0.0
-                // At impact (t=1): wide and flat. At recovery (t=0): normal (1,1,1)
-                float squashX = 1.0F + t * 0.45F;   // wider
-                float squashY = 1.0F - t * 0.50F;   // flatter
-                float squashZ = 1.0F + t * 0.45F;
-                poseStack.scale(squashX, squashY, squashZ);
+            // Talk pulse
+            if (this.currentEntity != null && this.currentEntity.isTalking()) {
+                float talkSpeed = 0.4F;
+                float pulse = Math.abs((float) Math.sin(this.age * Math.PI * talkSpeed));
+                poseStack.scale(1.0F - pulse * 0.20F, 1.0F + pulse * 0.45F, 1.0F - pulse * 0.20F);
             }
-        }
 
-        BALL_MESH.render(poseStack, vertexConsumer, packedLight, packedOverlay, color);
+            // Intro hover bob
+            if (this.currentEntity != null && this.currentEntity.getIntroPhase() == 1) {
+                float bob = (float) Math.sin(this.age * 0.25) * 0.08F;
+                poseStack.translate(0.0F, bob, 0.0F);
+            }
+
+            // Intro squash
+            if (this.currentEntity != null && this.currentEntity.getIntroPhase() == 3) {
+                int squashTick = this.currentEntity.getIntroSquashTimer();
+                if (squashTick > 0) {
+                    float t = squashTick / 8.0F;
+                    poseStack.scale(1.0F + t * 0.45F, 1.0F - t * 0.50F, 1.0F + t * 0.45F);
+                }
+            }
+
+            BALL_MESH.render(poseStack, vertexConsumer, packedLight, packedOverlay, color);
+        }
 
         poseStack.popPose();
     }

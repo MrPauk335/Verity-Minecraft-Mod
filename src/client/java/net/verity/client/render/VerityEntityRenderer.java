@@ -29,21 +29,18 @@ public class VerityEntityRenderer extends MobRenderer<VerityEntity, VerityEntity
         ResourceLocation.parse("verity:textures/entity/verity_face_serious3.png"),
     };
     private static final ResourceLocation BLANK_TEXTURE = ResourceLocation.parse("verity:textures/entity/verity_face_serious1.png");
-    // Monster form на шаре: жуткое лицо (day2_open), не текстура 3D-модели монстра
-    private static final ResourceLocation MONSTER_GLOW_TEXTURE = ResourceLocation.parse("verity:textures/entity/verity_face_day2_open.png");
-    private static final ResourceLocation MONSTER_SPHERE_TEXTURE = ResourceLocation.parse("verity:textures/entity/verity_face_creepysmile.png");
+    private static final ResourceLocation MONSTER_TEXTURE = ResourceLocation.parse("verity:textures/entity/verity_monster.png");
 
     public VerityEntityRenderer(EntityRendererProvider.Context context) {
         super(context, new VerityEntityModel(context.bakeLayer(VerityModClient.MODEL_SPHERE_LAYER)), 0.25F);
-        // Glow layer for creepy face states in sphere phase
         this.addLayer(new VerityGlowLayer(this));
     }
 
     @Override
     public ResourceLocation getTextureLocation(VerityEntity entity) {
         if (entity.isMonsterForm()) {
-            // Шар в monster form — жуткая улыбка, не 3D-модель монстра
-            return MONSTER_SPHERE_TEXTURE;
+            // 3D-модель монстра — текстура монстра
+            return MONSTER_TEXTURE;
         }
         if (entity.isFaceless()) {
             return BLANK_TEXTURE;
@@ -66,10 +63,10 @@ public class VerityEntityRenderer extends MobRenderer<VerityEntity, VerityEntity
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
             if (entity.isMonsterForm()) {
-                // Monster form на шаре: full-bright жуткое свечение
+                // Monster form: full-bright glow на 3D-модели
                 int fullBright = 0xF000F0;
                 this.getParentModel().renderToBuffer(poseStack,
-                        bufferSource.getBuffer(RenderType.entityTranslucentEmissive(MONSTER_SPHERE_TEXTURE)),
+                        bufferSource.getBuffer(RenderType.entityTranslucentEmissive(MONSTER_TEXTURE)),
                         fullBright, net.minecraft.client.renderer.entity.LivingEntityRenderer.getOverlayCoords(entity, 0.0F),
                         0xFFFFFFFF);
                 return;

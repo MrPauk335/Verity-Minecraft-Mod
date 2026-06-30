@@ -303,7 +303,7 @@ public class VeritySettingsScreen extends Screen {
             p.setProperty("chat_enabled",        String.valueOf(this.chatEnabled));
             p.setProperty("always_respond",      String.valueOf(this.alwaysRespond));
             p.setProperty("monster_form_enabled",String.valueOf(this.monsterFormEnabled));
-            p.setProperty("config_version",      "3");
+            p.setProperty("config_version",      "4");
             Files.createDirectories(CONFIG_PATH.getParent());
             try (PrintWriter pw = new PrintWriter(
                     Files.newBufferedWriter(CONFIG_PATH, StandardCharsets.UTF_8))) {

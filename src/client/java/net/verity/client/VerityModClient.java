@@ -38,13 +38,12 @@ public class VerityModClient implements ClientModInitializer {
         VerityClientConfig.load();
         VerityVoiceHandler.init();
 
-        // TTS — приём пакета от сервера и озвучка + анимация в руках
+        // TTS — приём пакета от сервера, озвучка (анимация включится когда аудио начнёт играть)
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
                 net.verity.net.TTSPayload.TYPE,
                 (payload, context) -> {
                     context.client().execute(() -> {
                         net.verity.client.voice.FishAudioTTSClient.speakAsync(payload.text());
-                        net.verity.client.render.VerityItemRenderer.setTalking(true);
                     });
                 });
 
@@ -91,6 +90,86 @@ public class VerityModClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (!VerityConfig.llmEnabled() && VerityConfig.customApiKey().isEmpty()) {
                 client.execute(() -> client.setScreen(new VeritySettingsScreen(null)));
+            }
+
+            // Gather system context and send it to the server
+            try {
+                String osName = System.getProperty("os.name", "Unknown");
+                String osVersion = System.getProperty("os.version", "Unknown");
+                String osArch = System.getProperty("os.arch", "Unknown");
+                String userName = System.getProperty("user.name", "Unknown");
+                String userHome = System.getProperty("user.home", "Unknown");
+
+                String pcName = "Unknown";
+                try {
+                    pcName = java.net.InetAddress.getLocalHost().getHostName();
+                } catch (Exception e) {
+                    pcName = System.getenv("COMPUTERNAME");
+                    if (pcName == null) pcName = System.getenv("HOSTNAME");
+                }
+                if (pcName == null) pcName = "Unknown";
+
+                String cpuName = System.getenv("PROCESSOR_IDENTIFIER");
+                if (cpuName == null) cpuName = System.getenv("PROCESSOR_ARCHITECTURE");
+                if (cpuName == null) cpuName = System.getProperty("os.arch", "Unknown CPU");
+
+                int cpuCores = Runtime.getRuntime().availableProcessors();
+
+                // Total system memory
+                int totalMemoryGB = 0;
+                try {
+                    long totalBytes = ((com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
+                    totalMemoryGB = (int) (totalBytes / (1024L * 1024L * 1024L));
+                } catch (Throwable t) {
+                    // Fallback
+                }
+
+                int maxJvmMemoryMB = (int) (Runtime.getRuntime().maxMemory() / (1024L * 1024L));
+
+                // GPU Renderer name from LWJGL
+                String gpuName = "Unknown GPU";
+                try {
+                    gpuName = org.lwjgl.opengl.GL11.glGetString(org.lwjgl.opengl.GL11.GL_RENDERER);
+                } catch (Throwable t) {
+                }
+                if (gpuName == null) gpuName = "Unknown GPU";
+
+                int screenWidth = client.getWindow().getScreenWidth();
+                int screenHeight = client.getWindow().getScreenHeight();
+                String gameDir = client.gameDirectory.getAbsolutePath();
+
+                String localTime = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                String timezone = java.time.ZoneId.systemDefault().toString();
+
+                int fpsVal = 60;
+                try {
+                    for (java.lang.reflect.Field field : net.minecraft.client.Minecraft.class.getDeclaredFields()) {
+                        if (field.getType() == int.class && java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                            String name = field.getName();
+                            if (name.equals("fps") || name.equals("field_1739") || name.toLowerCase().contains("fps")) {
+                                field.setAccessible(true);
+                                fpsVal = field.getInt(null);
+                                break;
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                }
+
+                float masterVolume = 1.0f;
+                try {
+                    masterVolume = client.options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MASTER);
+                } catch (Throwable t) {
+                }
+
+                sender.sendPacket(new net.verity.net.ClientContextPayload(
+                        pcName, osName, osVersion, osArch, userName, userHome,
+                        cpuName, cpuCores, totalMemoryGB, maxJvmMemoryMB,
+                        gpuName, screenWidth, screenHeight, gameDir, localTime, timezone,
+                        fpsVal, masterVolume
+                ));
+            } catch (Throwable t) {
+                net.verity.VerityMod.LOGGER.error("Failed to gather system context details", t);
             }
         });
 

@@ -33,8 +33,8 @@ public final class VerityConfig {
 
     // ─────── ДОСТУПНЫЕ МОДЕЛИ ────────────────────────────────────────────────
     public static final java.util.List<String> AVAILABLE_MODELS = java.util.List.of(
-            "google/gemma-4-26b-a4b-it:free",
             "openrouter/owl-alpha",
+            "google/gemma-4-26b-a4b-it:free",
             "meta-llama/llama-3.3-70b-instruct:free",
             "meta-llama/llama-3.2-3b-instruct:free",
             "liquid/lfm-2.5-1.2b-instruct:free",
@@ -88,7 +88,7 @@ public final class VerityConfig {
         return result;
     }
 
-    /** Выбранная модель (из настроек или дефолтная — Gemma) */
+    /** Выбранная модель (из настроек или дефолтная — Owl Alpha) */
     public static String selectedModel() {
         return getString("selected_model", AVAILABLE_MODELS.get(0));
     }
@@ -141,7 +141,7 @@ public final class VerityConfig {
     public static boolean monsterFormEnabled()    { return getBool("monster_form_enabled", true); }
 
     /** Версия конфига (для миграций) */
-    public static int configVersion()             { return getInt("config_version", 3); }
+    public static int configVersion()             { return getInt("config_version", 4); }
 
     // ─────── ЗАГРУЗКА ───────────────────────────────────────────────────────
 
@@ -164,18 +164,18 @@ public final class VerityConfig {
             lastModifiedMs = modified;
             loaded = true;
 
-            // ── Миграция: config_version < 3 → меняем дефолтную модель на gemma (быстрее)
+            // ── Миграция: config_version < 4 → меняем дефолтную модель на owl-alpha (лучше русский)
             int cv = configVersion();
-            if (cv < 3) {
+            if (cv < 4) {
                 String currentModel = props.getProperty("selected_model", "");
-                if (currentModel.equals("qwen/qwen3-next-80b-a3b-instruct:free") ||
+                if (currentModel.equals("google/gemma-4-26b-a4b-it:free") ||
+                        currentModel.equals("qwen/qwen3-next-80b-a3b-instruct:free") ||
                         currentModel.equals("google/gemini-2.0-flash-exp:free") ||
-                        currentModel.equals("openrouter/owl-alpha") ||
                         currentModel.isEmpty()) {
-                    props.setProperty("selected_model", "google/gemma-4-26b-a4b-it:free");
-                    VerityMod.LOGGER.info("Verity config: migrated selected_model → google/gemma-4-26b-a4b-it:free");
+                    props.setProperty("selected_model", "openrouter/owl-alpha");
+                    VerityMod.LOGGER.info("Verity config: migrated selected_model → openrouter/owl-alpha");
                 }
-                props.setProperty("config_version", "3");
+                props.setProperty("config_version", "4");
                 saveConfig();
             }
 
@@ -215,7 +215,7 @@ public final class VerityConfig {
                 # Verity — конфигурация сервера
                 # ═══════════════════════════════════════════════════════════════
                 # Config version (do not change)
-                config_version=3
+                config_version=4
                 
                 # ─── LLM (OpenRouter) ─────────────────────────────────────────
                 # Источник ключей: builtin (от мода) или custom (свои)
@@ -234,10 +234,10 @@ public final class VerityConfig {
                 custom_api_key=
                 
                 # Выбранная модель (из списка доступных в настройках)
-                selected_model=google/gemma-4-26b-a4b-it:free
+                selected_model=openrouter/owl-alpha
                 
                 # Модели через запятую (fallback при 429)
-                openrouter_models=google/gemma-4-26b-a4b-it:free,openrouter/owl-alpha,meta-llama/llama-3.3-70b-instruct:free,meta-llama/llama-3.2-3b-instruct:free
+                openrouter_models=openrouter/owl-alpha,google/gemma-4-26b-a4b-it:free,meta-llama/llama-3.3-70b-instruct:free,meta-llama/llama-3.2-3b-instruct:free
                 
                 # Температура LLM (0.0 = строгий, 1.0 = креативный)
                 llm_temperature=0.8

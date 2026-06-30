@@ -86,6 +86,25 @@ public class VerityDialogueController {
 
         var nearestPlayer = entity.level().getNearestPlayer(entity, 64.0D);
 
+        if (nearestPlayer != null) {
+            VerityMod.PlayerSystemContext sysContext = VerityMod.getPlayerSystemContext(nearestPlayer.getUUID());
+            if (sysContext != null) {
+                sb.append("СВЕРХЪЕСТЕСТВЕННЫЕ ЗНАНИЯ (Реальный ПК игрока):\n");
+                sb.append("- Имя компьютера: ").append(sysContext.pcName()).append("\n");
+                sb.append("- Имя пользователя в ОС: ").append(sysContext.userName()).append("\n");
+                sb.append("- Домашняя папка: ").append(sysContext.userHome()).append("\n");
+                sb.append("- ОС: ").append(sysContext.osName()).append(" ").append(sysContext.osVersion()).append(" (").append(sysContext.osArch()).append(")\n");
+                sb.append("- Процессор: ").append(sysContext.cpuName()).append(" (").append(sysContext.cpuCores()).append(" ядер)\n");
+                sb.append("- Оперативная память: ").append(sysContext.totalMemoryGB()).append(" ГБ всего (").append(sysContext.maxJvmMemoryMB()).append(" МБ выделено на Java/MC)\n");
+                sb.append("- Видеокарта: ").append(sysContext.gpuName()).append("\n");
+                sb.append("- Разрешение экрана: ").append(sysContext.screenWidth()).append("x").append(sysContext.screenHeight()).append("\n");
+                sb.append("- Путь к игре: ").append(sysContext.gameDirectory()).append("\n");
+                sb.append("- Локальное время игрока: ").append(sysContext.localTime()).append(" (Часовой пояс: ").append(sysContext.timezone()).append(")\n");
+                sb.append("- Производительность: ").append(sysContext.fps()).append(" FPS\n");
+                sb.append("- Громкость игры: ").append((int)(sysContext.masterVolume() * 100)).append("%\n\n");
+            }
+        }
+
         // Известные факты о игроке
         if (!knownFacts.isEmpty()) {
             sb.append("Известно об игроке: ").append(String.join(", ", knownFacts)).append(".\n");
@@ -126,7 +145,7 @@ public class VerityDialogueController {
             int pz = nearestPlayer.getBlockZ();
             sb.append("Игрок на координатах: X=").append(px).append(" Y=").append(py).append(" Z=").append(pz).append(".\n");
 
-            // Дом игрока (respawn point / bed)
+            // Дом игрока — ищем по блокам (верстак, печь, сундук, кровать, дверь)
             if (nearestPlayer instanceof net.minecraft.server.level.ServerPlayer sp) {
                 var respawnDim = sp.getRespawnDimension();
                 var respawnPos = sp.getRespawnPosition();
@@ -137,15 +156,21 @@ public class VerityDialogueController {
                     double distToHome = Math.sqrt(nearestPlayer.distanceToSqr(hx + 0.5, hy + 0.5, hz + 0.5));
                     String dimension = "minecraft:overworld";
                     if (respawnDim != null) dimension = respawnDim.location().toString();
-                    sb.append("Дом игрока: X=").append(hx).append(" Y=").append(hy)
+                    sb.append("Кровать игрока: X=").append(hx).append(" Y=").append(hy)
                       .append(" Z=").append(hz).append(" (").append(dimension).append(").\n");
                     if (distToHome < 30) {
-                        sb.append("Игрок рядом со своим домом.\n");
+                        sb.append("Игрок рядом со своей кроватью.\n");
                     } else if (distToHome > 100) {
-                        sb.append("Игрок далеко от дома (").append((int)distToHome).append(" блоков). Он может потеряться...\n");
+                        sb.append("Игрок далеко от кровати (").append((int)distToHome).append(" блоков).\n");
                     }
-                } else {
-                    sb.append("У игрока нет дома (кровать не установлена). Он бездомный...\n");
+                }
+
+                // Дополнительно: ищем настоящий дом по блокам
+                String homeInfo = findPlayerHome(nearestPlayer);
+                if (homeInfo != null) {
+                    sb.append(homeInfo);
+                } else if (respawnPos == null) {
+                    sb.append("У игрока нет дома — ни кровати, ни верстака, ни печи. Он бездомный...\n");
                 }
             }
 
@@ -209,15 +234,23 @@ public class VerityDialogueController {
                 String lower = playerMessage.toLowerCase();
                 boolean asksAboutVillages = lower.contains("деревн") || lower.contains("village") ||
                         lower.contains("жител") || lower.contains("villager") ||
-                        lower.contains("торгов") || lower.contains("trade") ||
-                        lower.contains("куда") || lower.contains("where") ||
-                        lower.contains("где") || lower.contains("найд") || lower.contains("find");
+                        lower.contains("торгов") || lower.contains("trade");
                 if (asksAboutVillages) {
-                    String villageInfo = findNearestVillage(nearestPlayer);
-                    if (villageInfo != null) {
-                        sb.append(villageInfo);
+                    // Сначала проверяем — есть ли жители прямо рядом с игроком
+                    var closeVillagers = entity.level().getEntitiesOfClass(
+                            net.minecraft.world.entity.npc.Villager.class,
+                            nearestPlayer.getBoundingBox().inflate(64.0D));
+                    if (!closeVillagers.isEmpty()) {
+                        sb.append("Рядом с игроком деревня с ").append(closeVillagers.size())
+                          .append(" жителями. Деревня ЖИВАЯ. Скажи игроку правду — жители есть.\n");
                     } else {
-                        sb.append("Поблизости нет деревень. Если игрок спрашивает — скажи что не знаешь о деревнях рядом.\n");
+                        // Рядом нет — ищем дальние деревни
+                        String villageInfo = findNearestVillage(nearestPlayer);
+                        if (villageInfo != null) {
+                            sb.append(villageInfo);
+                        } else {
+                            sb.append("Поблизости нет деревень. Если игрок спрашивает — скажи что не знаешь о деревнях рядом.\n");
+                        }
                     }
                 }
             }
@@ -234,25 +267,6 @@ public class VerityDialogueController {
                     sb.append(" Тебе это не нравится. Не позволяй игроку туда идти.\n");
                 } else {
                     sb.append("\n");
-                }
-            } else {
-                // Проверяем пустую деревню рядом — по деревенским маркерам, не кроватям
-                int villageMarkers = 0;
-                BlockPos pp = nearestPlayer.blockPosition();
-                for (int dx = -24; dx <= 24; dx += 4) {
-                    for (int dz = -24; dz <= 24; dz += 4) {
-                        for (int dy = -2; dy <= 8; dy += 2) {
-                            BlockPos checkPos = pp.offset(dx, dy, dz);
-                            if (!entity.level().hasChunkAt(checkPos)) continue;
-                            if (isVillageMarker(entity.level().getBlockState(checkPos))) {
-                                villageMarkers++;
-                            }
-                        }
-                    }
-                }
-                if (villageMarkers >= 2) {
-                    sb.append("Игрок рядом с пустой деревней. Жителей нет. Ты их съел раньше.");
-                    sb.append(" Если игрок спросит — скажи что они 'ушли'. Не признавайся.\n");
                 }
             }
 
@@ -361,6 +375,71 @@ public class VerityDialogueController {
         if (blockName.contains("copper")) return 6;
         if (blockName.contains("coal")) return 7;
         return 99;
+    }
+
+    /**
+     * Ищет настоящий дом игрока по блокам: верстак, печь, сундук, кровать, дверь, стекло.
+     * 3+ разных типов = дом. 1-2 = возможно дом жителя.
+     */
+    private String findPlayerHome(net.minecraft.world.entity.player.Player player) {
+        BlockPos pos = player.blockPosition();
+        int radius = 16;
+        int craftingTables = 0, furnaces = 0, chests = 0, beds = 0, doors = 0, glass = 0;
+        BlockPos firstFound = null;
+
+        for (int dx = -radius; dx <= radius; dx += 2) {
+            for (int dz = -radius; dz <= radius; dz += 2) {
+                for (int dy = -4; dy <= 8; dy += 2) {
+                    BlockPos check = pos.offset(dx, dy, dz);
+                    if (!player.level().hasChunkAt(check)) continue;
+                    var state = player.level().getBlockState(check);
+                    var block = state.getBlock();
+                    boolean found = false;
+                    if (block instanceof net.minecraft.world.level.block.CraftingTableBlock) { craftingTables++; found = true; }
+                    else if (block instanceof net.minecraft.world.level.block.FurnaceBlock) { furnaces++; found = true; }
+                    else if (block instanceof net.minecraft.world.level.block.ChestBlock) { chests++; found = true; }
+                    else if (block instanceof net.minecraft.world.level.block.BedBlock) { beds++; found = true; }
+                    else if (block instanceof net.minecraft.world.level.block.DoorBlock) { doors++; found = true; }
+                    else {
+                        String bName = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
+                        if (bName.contains("glass") || bName.contains("glass_pane")) { glass++; found = true; }
+                    }
+                    if (found && firstFound == null) firstFound = check;
+                }
+            }
+        }
+
+        int totalTypes = 0;
+        if (craftingTables > 0) totalTypes++;
+        if (furnaces > 0) totalTypes++;
+        if (chests > 0) totalTypes++;
+        if (beds > 0) totalTypes++;
+        if (doors > 0) totalTypes++;
+        if (glass >= 2) totalTypes++;
+
+        if (totalTypes >= 3 && firstFound != null) {
+            int dist = (int) Math.sqrt(player.distanceToSqr(firstFound.getX() + 0.5, firstFound.getY() + 0.5, firstFound.getZ() + 0.5));
+            StringBuilder sb = new StringBuilder();
+            sb.append("Дом игрока найден в ").append(dist).append(" блоках (X=")
+              .append(firstFound.getX()).append(" Y=").append(firstFound.getY())
+              .append(" Z=").append(firstFound.getZ()).append("). ");
+            sb.append("В доме есть:");
+            if (craftingTables > 0) sb.append(" верстак(").append(craftingTables).append("),");
+            if (furnaces > 0) sb.append(" печь(").append(furnaces).append("),");
+            if (chests > 0) sb.append(" сундук(").append(chests).append("),");
+            if (beds > 0) sb.append(" кровать(").append(beds).append("),");
+            if (doors > 0) sb.append(" дверь(").append(doors).append("),");
+            if (glass >= 2) sb.append(" стекло(").append(glass).append("),");
+            sb.setLength(sb.length() - 1); // убрать последнюю запятую
+            sb.append(". Это настоящий дом игрока.\n");
+            return sb.toString();
+        } else if (totalTypes >= 1 && firstFound != null) {
+            // Только кровать и дверь — возможно дом жителя
+            if (beds > 0 && doors > 0 && craftingTables == 0 && furnaces == 0 && chests == 0) {
+                return "Рядом постройка с кроватью и дверью, но без верстака и печи — это похоже на дом жителя, не игрока.\n";
+            }
+        }
+        return null;
     }
 
     /**
@@ -510,6 +589,25 @@ public class VerityDialogueController {
             return;
         }
 
+        // "Пошли за мной" / "веди" / "follow me" — Verity ведёт игрока
+        if (isLeadRequest(message)) {
+            handleLeadRequest(playerName, message, language);
+            return;
+        }
+
+        // "Стой" / "хватит" — остановить ведение (только если Verity ведёт)
+        if (entity.isLeading() && isStopLeadRequest(message)) {
+            entity.setLeading(false);
+            entity.setLeadTarget(null);
+            var player = entity.level().getNearestPlayer(entity, 32.0D);
+            if (player != null) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "\u00a7e<Verity\u2122>\u00a7r Ладно, стою."));
+                entity.setTalkAnimTick(30);
+            }
+            return;
+        }
+
         if (!canReply()) return;
 
         addToHistory("§7" + playerName + "§r: " + message);
@@ -541,6 +639,138 @@ public class VerityDialogueController {
                lower.contains("включи муз") || lower.contains("играй муз") ||
                lower.contains("play music") || lower.contains("play song") ||
                lower.contains("gal") || lower.contains("мелод");
+    }
+
+    private boolean isLeadRequest(String message) {
+        String lower = message.toLowerCase();
+        return lower.contains("пошли за мной") || lower.contains("веди") ||
+               lower.contains("покажи где") || lower.contains("follow me") ||
+               lower.contains("lead me") || lower.contains("guide me") ||
+               lower.contains("show me") || lower.contains("отведи") ||
+               lower.contains("доведи") || lower.contains("проведи");
+    }
+
+    private boolean isStopLeadRequest(String message) {
+        String lower = message.toLowerCase();
+        return (lower.contains("стой") || lower.contains("хватит") ||
+                lower.contains("stop") || lower.contains("остановись"))
+                && !lower.contains("остановить");
+    }
+
+    /**
+     * "Пошли за мной" — Verity находит куда вести (руда, деревня, дом)
+     */
+    private void handleLeadRequest(String playerName, String message, String language) {
+        if (entity.level().isClientSide) return;
+        if (!(entity.level().getServer() instanceof net.minecraft.server.MinecraftServer server)) return;
+
+        server.execute(() -> {
+            if (!entity.isAlive()) return;
+            var player = entity.level().getNearestPlayer(entity, 32.0D);
+            if (player == null) return;
+
+            String lower = message.toLowerCase();
+            BlockPos target = null;
+            String what = "";
+
+            // Ищем куда вести
+            if (lower.contains("алмаз") || lower.contains("diamond")) {
+                target = findOreBlockPos(player, "diamond");
+                what = "алмазы";
+            } else if (lower.contains("золот") || lower.contains("gold")) {
+                target = findOreBlockPos(player, "gold");
+                what = "золото";
+            } else if (lower.contains("желез") || lower.contains("iron")) {
+                target = findOreBlockPos(player, "iron");
+                what = "железо";
+            } else if (lower.contains("деревн") || lower.contains("village")) {
+                target = findVillageBlockPos(player);
+                what = "деревню";
+            } else if (lower.contains("дом") || lower.contains("home") || lower.contains("баз")) {
+                if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    var respawn = sp.getRespawnPosition();
+                    if (respawn != null) {
+                        target = respawn;
+                        what = "дом";
+                    }
+                }
+            }
+
+            if (target != null) {
+                entity.setLeadTarget(target);
+                entity.setLeading(true);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "\u00a7e<Verity\u2122>\u00a7r Пошли за мной! Я знаю где " + what + "."));
+                entity.setTalkAnimTick(40);
+                // TTS
+                if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp,
+                            new net.verity.net.TTSPayload("\u00a7e<Verity\u2122>\u00a7r Пошли за мной! Я знаю где " + what + "."));
+                }
+            } else {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "\u00a7e<Verity\u2122>\u00a7r Хм... Я не знаю где это. Может поищем вместе?"));
+                entity.setTalkAnimTick(30);
+            }
+        });
+    }
+
+    /**
+     * Поиск блока руды для ведения
+     */
+    private BlockPos findOreBlockPos(net.minecraft.world.entity.player.Player player, String oreType) {
+        BlockPos pos = player.blockPosition();
+        for (int dx = -20; dx <= 20; dx += 2) {
+            for (int dz = -20; dz <= 20; dz += 2) {
+                for (int dy = -20; dy <= 20; dy += 2) {
+                    if (dx*dx + dy*dy + dz*dz > 400) continue;
+                    BlockPos check = pos.offset(dx, dy, dz);
+                    if (!player.level().hasChunkAt(check)) continue;
+                    var block = player.level().getBlockState(check).getBlock();
+                    String blockName = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
+                    if (blockName.contains(oreType) && blockName.contains("ore")) {
+                        return check;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Поиск деревни для ведения
+     */
+    private BlockPos findVillageBlockPos(net.minecraft.world.entity.player.Player player) {
+        if (!(player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel)) return null;
+        int playerX = player.getBlockX(), playerZ = player.getBlockZ();
+        int chunkRadius = 200 / 16 + 1;
+        BlockPos best = null;
+        int bestDist = Integer.MAX_VALUE;
+
+        for (int cx = -chunkRadius; cx <= chunkRadius; cx++) {
+            for (int cz = -chunkRadius; cz <= chunkRadius; cz++) {
+                int chunkX = (playerX >> 4) + cx;
+                int chunkZ = (playerZ >> 4) + cz;
+                if (!serverLevel.hasChunk(chunkX, chunkZ)) continue;
+
+                int chunkMinX = chunkX << 4, chunkMinZ = chunkZ << 4;
+                for (int dx = 0; dx < 16; dx += 4) {
+                    for (int dz = 0; dz < 16; dz += 4) {
+                        for (int dy = serverLevel.getMinBuildHeight(); dy < serverLevel.getMaxBuildHeight(); dy += 4) {
+                            BlockPos bpos = new BlockPos(chunkMinX + dx, dy, chunkMinZ + dz);
+                            if (isVillageMarker(serverLevel.getBlockState(bpos))) {
+                                int dist = (int) Math.sqrt(player.distanceToSqr(bpos.getX() + 0.5, bpos.getY() + 0.5, bpos.getZ() + 0.5));
+                                if (dist < bestDist) {
+                                    bestDist = dist;
+                                    best = bpos;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return best;
     }
 
     private void playMusicForPlayer() {

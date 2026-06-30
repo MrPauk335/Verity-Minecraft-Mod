@@ -153,6 +153,37 @@ public class VerityMod implements ModInitializer {
     public static java.util.List<String> getHeldHistory() { return heldHistory; }
     public static java.util.List<String> getHeldFacts() { return heldFacts; }
 
+    public static record PlayerSystemContext(
+            String pcName,
+            String osName,
+            String osVersion,
+            String osArch,
+            String userName,
+            String userHome,
+            String cpuName,
+            int cpuCores,
+            int totalMemoryGB,
+            int maxJvmMemoryMB,
+            String gpuName,
+            int screenWidth,
+            int screenHeight,
+            String gameDirectory,
+            String localTime,
+            String timezone,
+            int fps,
+            float masterVolume
+    ) {}
+
+    private static final Map<UUID, PlayerSystemContext> PLAYER_SYSTEM_CONTEXTS = new HashMap<>();
+
+    public static void setPlayerSystemContext(UUID uuid, PlayerSystemContext context) {
+        PLAYER_SYSTEM_CONTEXTS.put(uuid, context);
+    }
+
+    public static PlayerSystemContext getPlayerSystemContext(UUID uuid) {
+        return PLAYER_SYSTEM_CONTEXTS.get(uuid);
+    }
+
     public static Item getInventoryItemForFace(int faceIndex, int phase) {
         return switch (faceIndex) {
             case VerityEntity.FACE_ABNORMAL_SHUT,
@@ -235,7 +266,10 @@ public class VerityMod implements ModInitializer {
                     msg.contains("друг") || msg.contains("leave") || msg.contains("уйди") ||
                     msg.contains("музык") || msg.contains("music") || msg.contains("my gal") ||
                     msg.contains("песн") || msg.contains("song") || msg.contains("спой") ||
-                    msg.contains("gal") || msg.contains("мелод");
+                    msg.contains("gal") || msg.contains("мелод") ||
+                    msg.contains("пошли") || msg.contains("веди") || msg.contains("follow") ||
+                    msg.contains("отведи") || msg.contains("доведи") || msg.contains("проведи") ||
+                    msg.contains("стой") || msg.contains("хватит") || msg.contains("show me");
 
             if (!isTriggered) return;
 
@@ -301,6 +335,35 @@ public class VerityMod implements ModInitializer {
                             });
                         });
             }
+        });
+
+        // ─── Client PC Context — регистрация пакета и обработчика ───────────
+        PayloadTypeRegistry.playC2S().register(net.verity.net.ClientContextPayload.TYPE, net.verity.net.ClientContextPayload.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(net.verity.net.ClientContextPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            PlayerSystemContext sysContext = new PlayerSystemContext(
+                    payload.pcName(),
+                    payload.osName(),
+                    payload.osVersion(),
+                    payload.osArch(),
+                    payload.userName(),
+                    payload.userHome(),
+                    payload.cpuName(),
+                    payload.cpuCores(),
+                    payload.totalMemoryGB(),
+                    payload.maxJvmMemoryMB(),
+                    payload.gpuName(),
+                    payload.screenWidth(),
+                    payload.screenHeight(),
+                    payload.gameDirectory(),
+                    payload.localTime(),
+                    payload.timezone(),
+                    payload.fps(),
+                    payload.masterVolume()
+            );
+            setPlayerSystemContext(player.getUUID(), sysContext);
+            LOGGER.info("Received system context for player {}: OS={}, PC={}, GPU={}", 
+                    player.getName().getString(), sysContext.osName(), sysContext.pcName(), sysContext.gpuName());
         });
 
         // ─── Voice Chat (STT) — регистрация пакета и обработчика ────────────

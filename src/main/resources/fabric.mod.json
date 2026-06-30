@@ -3,7 +3,7 @@
 	"id": "verity",
 	"version": "${version}",
 	"name": "Verity Mod",
-	"description": "An AI-powered horror companion mod inspired by the Minecraft ARG genre. A yellow sphere that follows you, talks to you, and knows too much.",
+	"description": "Verity — an AI-powered horror companion mod. A yellow sphere that follows you, talks to you, knows too much, and never lets you leave. Features LLM dialogue, voice STT/TTS, 7 behavioral phases, 3D monster form, roof tearing, and more. Inspired by the Minecraft ARG genre.",
 	"authors": [
 		"Antigravity"
 	],

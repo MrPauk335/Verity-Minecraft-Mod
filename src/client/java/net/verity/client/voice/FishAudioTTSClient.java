@@ -34,16 +34,29 @@ public class FishAudioTTSClient {
             return;
         }
 
+        // Определяем фазу по цвету сообщения
+        // §e = HELPER/OMNISCIENT/POSSESSIVE (normal), §c = COUNTDOWN, §4 = MONSTER/HUNTER
+        boolean isDark = text.contains("\u00a7c") || text.contains("\u00a74");
+        boolean isMonster = text.contains("\u00a74");
+        boolean isCountdown = text.contains("\u00a7c");
+        float speed = VerityClientConfig.ttsSpeed();
+        if (isMonster) speed = 0.85f;
+        else if (isCountdown) speed = 0.9f;
+
         String cleanText = stripMinecraftFormatting(text);
         if (cleanText.isBlank() || cleanText.length() < 2) return;
         if (cleanText.length() > 500) cleanText = cleanText.substring(0, 500);
 
+        // Добавляем эмоциональные теги Fish Audio по фазе
+        cleanText = addEmotionTags(cleanText, isMonster, isCountdown);
+
         final String finalText = cleanText;
+        final float finalSpeed = speed;
 
         CompletableFuture.supplyAsync(() -> {
             for (String apiKey : keys) {
                 try {
-                    byte[] result = synthesize(finalText, apiKey);
+                    byte[] result = synthesize(finalText, apiKey, finalSpeed);
                     if (result != null) return result;
                 } catch (Exception e) {
                     VerityMod.LOGGER.warn("TTS failed with key {}...: {}",
@@ -58,14 +71,46 @@ public class FishAudioTTSClient {
         });
     }
 
-    private static byte[] synthesize(String text, String apiKey) throws Exception {
+    /**
+     * Добавляет эмоциональные теги Fish Audio в текст в зависимости от фазы.
+     */
+    private static String addEmotionTags(String text, boolean isMonster, boolean isCountdown) {
+        if (isMonster) {
+            // MONSTER/HUNTER — яростный, отчаянный
+            if (text.contains("!") || text.toUpperCase().equals(text)) {
+                return "[angry] " + text;
+            }
+            return "[groaning] " + text + " [panting]";
+        } else if (isCountdown) {
+            // COUNTDOWN — жуткий шёпот, паузы
+            if (text.contains("...") || text.length() < 20) {
+                return "[whispering] " + text + " [long pause]";
+            }
+            return "[whispering] " + text + " [pause]";
+        }
+        // HELPER/OMNISCIENT/POSSESSIVE — нормальный, иногда мягкий
+        if (text.contains("?")) {
+            return "[soft] " + text;
+        }
+        if (text.contains("!")) {
+            return "[excited] " + text;
+        }
+        return text;
+    }
+
+    private static byte[] synthesize(String text, String apiKey, float speed) throws Exception {
         JsonObject body = new JsonObject();
         body.addProperty("text", text);
         body.addProperty("reference_id", VerityClientConfig.ttsVoiceId());
         body.addProperty("format", "mp3");
         body.addProperty("mp3_bitrate", 128);
-        body.addProperty("speed", VerityClientConfig.ttsSpeed());
+        body.addProperty("speed", speed);
         body.addProperty("normalize", true);
+
+        // Для тёмных фаз — ниже температура (стабильнее, жутче)
+        if (speed < 1.0f) {
+            body.addProperty("temperature", 0.5);
+        }
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
@@ -123,6 +168,12 @@ public class FishAudioTTSClient {
                     } else {
                         proc = Runtime.getRuntime().exec(new String[]{"mpg123", mp3File.toString()});
                     }
+
+                    // Ждём пока процесс запустится (аудио открывается)
+                    Thread.sleep(300);
+
+                    // Аудио начало играть — открываем рот
+                    net.verity.client.render.VerityItemRenderer.setTalking(true);
 
                     // Ждём пока процесс жив → аудио играет
                     while (proc.isAlive()) {
