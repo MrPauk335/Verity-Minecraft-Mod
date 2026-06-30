@@ -782,7 +782,7 @@ public class VerityDialogueController {
             var player = entity.level().getNearestPlayer(entity, 32.0D);
             if (player == null) return;
 
-            entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+            entity.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     VerityMod.SOUND_MYGAL_NORMAL, net.minecraft.sounds.SoundSource.RECORDS, 1.2F, 1.0F);
 
             VerityPhase phase = entity.getVerityPhase();

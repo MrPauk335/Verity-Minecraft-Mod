@@ -33,13 +33,13 @@ public final class VerityConfig {
 
     // ─────── ДОСТУПНЫЕ МОДЕЛИ ────────────────────────────────────────────────
     public static final java.util.List<String> AVAILABLE_MODELS = java.util.List.of(
-            "openrouter/owl-alpha",
-            "google/gemma-4-26b-a4b-it:free",
             "meta-llama/llama-3.3-70b-instruct:free",
-            "meta-llama/llama-3.2-3b-instruct:free",
-            "liquid/lfm-2.5-1.2b-instruct:free",
             "nvidia/nemotron-3-super-120b-a12b:free",
-            "qwen/qwen3-next-80b-a3b-instruct:free"
+            "qwen/qwen3-next-80b-a3b-instruct:free",
+            "qwen/qwen3-coder:free",
+            "openai/gpt-oss-120b:free",
+            "nousresearch/hermes-3-llama-3-3.1-405b:free",
+            "google/gemma-4-26b-a4b-it:free"
     );
 
     // ─────── LLM (OpenRouter) ───────────────────────────────────────────────
@@ -109,7 +109,7 @@ public final class VerityConfig {
                 .toList();
     }
     public static float llmTemperature()          { return getFloat("llm_temperature", 0.8f); }
-    public static int llmMaxTokens()              { return getInt("llm_max_tokens", 150); }
+    public static int llmMaxTokens()              { return getInt("llm_max_tokens", 256); }
 
     // ─────── ПОВЕДЕНИЕ ФАЗ ──────────────────────────────────────────────────
     /** Через сколько тиков HELPER → OMNISCIENT (по умолч. 2400 = 2 мин) */
@@ -164,18 +164,45 @@ public final class VerityConfig {
             lastModifiedMs = modified;
             loaded = true;
 
-            // ── Миграция: config_version < 4 → меняем дефолтную модель на owl-alpha (лучше русский)
+            // ── Миграция: config_version < 5 → меняем owl-alpha (умер) на llama-3.3-70b
             int cv = configVersion();
-            if (cv < 4) {
+            if (cv < 5) {
                 String currentModel = props.getProperty("selected_model", "");
-                if (currentModel.equals("google/gemma-4-26b-a4b-it:free") ||
-                        currentModel.equals("qwen/qwen3-next-80b-a3b-instruct:free") ||
+                if (currentModel.equals("openrouter/owl-alpha") ||
                         currentModel.equals("google/gemini-2.0-flash-exp:free") ||
                         currentModel.isEmpty()) {
-                    props.setProperty("selected_model", "openrouter/owl-alpha");
-                    VerityMod.LOGGER.info("Verity config: migrated selected_model → openrouter/owl-alpha");
+                    props.setProperty("selected_model", "meta-llama/llama-3.3-70b-instruct:free");
+                    VerityMod.LOGGER.info("Verity config: migrated selected_model → meta-llama/llama-3.3-70b-instruct:free");
                 }
-                props.setProperty("config_version", "4");
+                // Заменяем owl-alpha в fallback-списке
+                String models = props.getProperty("openrouter_models", "");
+                if (models.contains("openrouter/owl-alpha")) {
+                    models = models.replace("openrouter/owl-alpha", "meta-llama/llama-3.3-70b-instruct:free");
+                    // Убираем дубликаты
+                    String[] parts = models.split(",");
+                    java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
+                    for (String p : parts) {
+                        String trimmed = p.trim();
+                        if (!trimmed.isEmpty()) seen.add(trimmed);
+                    }
+                    models = String.join(",", seen);
+                    props.setProperty("openrouter_models", models);
+                    VerityMod.LOGGER.info("Verity config: migrated openrouter_models (removed owl-alpha)");
+                }
+                // Обновляем fallback-список на актуальный
+                String oldModels = props.getProperty("openrouter_models", "");
+                if (oldModels.contains("openrouter/owl-alpha") || oldModels.contains("meta-llama/llama-3.2-3b-instruct:free")) {
+                    props.setProperty("openrouter_models",
+                            "meta-llama/llama-3.3-70b-instruct:free,nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-4-26b-a4b-it:free");
+                    VerityMod.LOGGER.info("Verity config: updated openrouter_models fallback list");
+                }
+                // Увеличиваем max_tokens если было 150
+                String maxTokens = props.getProperty("llm_max_tokens", "256");
+                if ("150".equals(maxTokens)) {
+                    props.setProperty("llm_max_tokens", "256");
+                    VerityMod.LOGGER.info("Verity config: increased llm_max_tokens 150 → 256");
+                }
+                props.setProperty("config_version", "5");
                 saveConfig();
             }
 
@@ -215,7 +242,7 @@ public final class VerityConfig {
                 # Verity — конфигурация сервера
                 # ═══════════════════════════════════════════════════════════════
                 # Config version (do not change)
-                config_version=4
+                config_version=5
                 
                 # ─── LLM (OpenRouter) ─────────────────────────────────────────
                 # Источник ключей: builtin (от мода) или custom (свои)
@@ -234,16 +261,16 @@ public final class VerityConfig {
                 custom_api_key=
                 
                 # Выбранная модель (из списка доступных в настройках)
-                selected_model=openrouter/owl-alpha
+                selected_model=meta-llama/llama-3.3-70b-instruct:free
                 
                 # Модели через запятую (fallback при 429)
-                openrouter_models=openrouter/owl-alpha,google/gemma-4-26b-a4b-it:free,meta-llama/llama-3.3-70b-instruct:free,meta-llama/llama-3.2-3b-instruct:free
+                openrouter_models=meta-llama/llama-3.3-70b-instruct:free,nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-4-26b-a4b-it:free
                 
                 # Температура LLM (0.0 = строгий, 1.0 = креативный)
                 llm_temperature=0.8
                 
                 # Максимум токенов в ответе (1 токен ≈ 0.75 слова)
-                llm_max_tokens=150
+                llm_max_tokens=256
                 
                 # ─── ФАЗЫ ПОВЕДЕНИЯ ──────────────────────────────────────────
                 # Время до перехода HELPER → OMNISCIENT (в тиках, 20 тиков = 1 сек)

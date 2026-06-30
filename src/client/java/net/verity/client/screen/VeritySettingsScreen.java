@@ -49,14 +49,14 @@ public class VeritySettingsScreen extends Screen {
 
     private static final List<String> MODELS = VerityConfig.AVAILABLE_MODELS;
     private static String modelDisplayName(String modelId) {
-        if (modelId.contains("owl-alpha")) return "Owl Alpha (free)";
+        if (modelId.contains("llama-3.3-70b")) return "Llama 3.3 70B (free)";
+        if (modelId.contains("qwen3-next")) return "Qwen3 Next 80B (free)";
+        if (modelId.contains("nemotron-3-super")) return "Nemotron 3 Super 120B (free)";
         if (modelId.contains("gemma-4-26b")) return "Gemma 4 26B (free)";
         if (modelId.contains("gemma-4-31b")) return "Gemma 4 31B (free)";
-        if (modelId.contains("llama-3.3-70b")) return "Llama 3.3 70B (free)";
-        if (modelId.contains("llama-3.2-3b")) return "Llama 3.2 3B (free)";
-        if (modelId.contains("lfm-2.5")) return "Liquid LFM 2.5 1.2B (free)";
-        if (modelId.contains("nemotron-3-super")) return "Nemotron 3 Super 120B (free)";
-        if (modelId.contains("qwen3-next")) return "Qwen3 Next 80B (free)";
+        if (modelId.contains("qwen3-coder")) return "Qwen3 Coder 480B (free)";
+        if (modelId.contains("hermes-3-llama")) return "Hermes 3 405B (free)";
+        if (modelId.contains("gpt-oss-120b")) return "GPT-OSS 120B (free)";
         return modelId;
     }
 

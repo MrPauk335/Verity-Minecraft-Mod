@@ -565,7 +565,15 @@ public class VerityEntity extends PathfinderMob {
             tickLeading();
         }
 
-        // в”Ђв”Ђ FSM: Р»РѕРіРёРєР° РєР°Р¶РґРѕР№ С„Р°Р·С‹ в”Ђв”Ђ
+        // ── Хоррор-эффекты Verity (шар сам по себе жуткий) ──
+        if (phase != VerityPhase.DORMANT && phase != VerityPhase.HELPER) {
+            Player horrorTarget = this.level().getNearestPlayer(this, 64.0D);
+            if (horrorTarget != null) {
+                tickHorror(horrorTarget, phase);
+            }
+        }
+
+        // ── FSM: логика каждой фазы ──
         switch (phase) {
             case HELPER -> tickHelper();
             case OMNISCIENT -> tickOmniscient();
@@ -573,6 +581,119 @@ public class VerityEntity extends PathfinderMob {
             case MONSTER -> tickMonster();
             case POSSESSIVE -> tickPossessive();
             case HUNTER -> tickHunter();
+        }
+    }
+
+    /**
+     * Хоррор-эффекты Verity — шар сам по себе жуткий, без монстра.
+     */
+    private int horrorCooldown = 0;
+    private int faceGlitchTimer = 0;
+    private int stareTimer = 0;
+    private int originalFaceBeforeGlitch = 0;
+
+    private void tickHorror(Player player, VerityPhase phase) {
+        if (this.horrorCooldown > 0) {
+            this.horrorCooldown--;
+        }
+
+        // ── 1. Глитч лица — на мгновение жуткое лицо, потом обратно ──
+        if (this.faceGlitchTimer > 0) {
+            this.faceGlitchTimer--;
+            if (this.faceGlitchTimer == 0) {
+                // Вернуть оригинальное лицо
+                setFaceIndex(this.originalFaceBeforeGlitch);
+            }
+        } else if (this.random.nextInt(600) == 0 && this.talkAnimTick <= 0) {
+            // Случайный глитч — 1 раз в ~30 сек
+            this.originalFaceBeforeGlitch = getFaceIndex();
+            int[] creepyFaces = {FACE_ABNORMAL_SHUT, FACE_ABNORMAL_OPEN, FACE_CREEPY_SMILE, FACE_SERIOUS_3};
+            setFaceIndex(creepyFaces[this.random.nextInt(creepyFaces.length)]);
+            this.faceGlitchTimer = 3 + this.random.nextInt(5); // 3-8 тиков
+        }
+
+        // ── 2. Импульсы тьмы — brief Darkness когда рядом (OMNISCIENT+) ──
+        if (this.horrorCooldown == 0 && this.distanceToSqr(player) < 100.0D) {
+            if (this.random.nextInt(400) == 0) { // ~1 раз в 20 сек
+                player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 30, 0, false, false, false));
+                this.horrorCooldown = 200; // 10 сек кулдаун
+            }
+        }
+
+        // ── 3. Слабость вблизи — когда подошёл вплотную (OMNISCIENT+) ──
+        if (this.distanceToSqr(player) < 9.0D && this.random.nextInt(200) == 0) {
+            // Очень короткая тьма — дискомфорт
+            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 20, 0, false, false, false));
+        }
+
+        // ── 4. Криповые шёпоты — случайные сообщения без LLM ──
+        if (this.horrorCooldown == 0 && this.random.nextInt(1200) == 0) {
+            String[] whispers = {
+                    "§7...ты один?",
+                    "§7...я слышу тебя.",
+                    "§7...не уходи.",
+                    "§7...я знаю.",
+                    "§7...скоро.",
+                    "§7...три.",
+                    "§7...ты ел пиццу?",
+                    "§7...я всегда здесь.",
+                    "§7...тебе не холодно?",
+                    "§7...я вижу тебя."
+            };
+            player.sendSystemMessage(Component.literal(whispers[this.random.nextInt(whispers.length)]));
+            this.horrorCooldown = 600; // 30 сек кулдаун
+        }
+
+        // ── 5. Двери открываются сами (OMNISCIENT+, не только COUNTDOWN) ──
+        if (phase != VerityPhase.COUNTDOWN && this.random.nextInt(200) == 0) {
+            BlockPos pos = this.blockPosition();
+            for (int dx = -4; dx <= 4; dx++) {
+                for (int dz = -4; dz <= 4; dz++) {
+                    for (int dy = -1; dy <= 2; dy++) {
+                        BlockPos doorPos = pos.offset(dx, dy, dz);
+                        if (!this.level().hasChunkAt(doorPos)) continue;
+                        if (this.level().getBlockState(doorPos).getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
+                            this.level().blockEvent(doorPos, this.level().getBlockState(doorPos).getBlock(), 1, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── 6. My Gal играет случайно ночью (OMNISCIENT+) ──
+        long time = this.level().getDayTime() % 24000;
+        if (time > 13000 && time < 18000 && this.horrorCooldown == 0 && this.random.nextInt(2400) == 0) {
+            this.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    VerityMod.SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 0.4F, 0.8F);
+            player.sendSystemMessage(Component.literal("§7♪ ..."));
+            this.horrorCooldown = 1200; // 60 сек кулдаун
+        }
+
+        // ── 7. Замирание и пристальный взгляд — перестаёт следовать и смотрит ──
+        if (this.stareTimer > 0) {
+            this.stareTimer--;
+            this.getNavigation().stop();
+            this.getLookControl().setLookAt(player, 180.0F, 180.0F);
+        } else if (this.random.nextInt(800) == 0 && this.distanceToSqr(player) < 400.0D) {
+            // Начать пристальный взгляд на 5-10 сек
+            this.stareTimer = 100 + this.random.nextInt(100);
+        }
+
+        // ── 8. Verity появляется в доме после сна ──
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            // Проверяем — только что проснулся? (sleepTimer сбросился)
+            if (sp.isSleepingLongEnough() == false && sp.getSleepTimer() == 0
+                    && this.level().getDayTime() % 24000 < 100 && this.level().getDayTime() % 24000 > 0
+                    && this.random.nextInt(3) == 0) {
+                // Teleport рядом с кроватью
+                var bedPos = sp.getRespawnPosition();
+                if (bedPos != null && this.distanceToSqr(bedPos.getX(), bedPos.getY(), bedPos.getZ()) > 100.0D) {
+                    this.teleportTo(bedPos.getX() + 1.5, bedPos.getY(), bedPos.getZ() + 1.5);
+                    player.sendSystemMessage(Component.literal("§7..."));
+                    player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0, false, false, true));
+                }
+            }
         }
     }
 
@@ -1376,7 +1497,8 @@ public class VerityEntity extends PathfinderMob {
             if (p == VerityPhase.MONSTER || p == VerityPhase.HUNTER || p == VerityPhase.COUNTDOWN) {
                 return false;
             }
-            if (entity.isLeading()) return false; // РЅРµ СЃР»РµРґСѓРµРј РєРѕРіРґР° РІРµРґС‘Рј
+            if (entity.isLeading()) return false;
+            if (entity.stareTimer > 0) return false; // не следуем когда пристально смотрит
             this.target = entity.level().getNearestPlayer(entity, 32.0D);
             return this.target != null && entity.distanceToSqr(this.target) > 16.0D;
         }
