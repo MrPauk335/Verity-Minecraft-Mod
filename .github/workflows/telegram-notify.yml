@@ -24,13 +24,11 @@ jobs:
             exit 0
           fi
 
-          # Get release info from GitHub event
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           RELEASE_NAME="${{ github.event.release.name }}"
           RELEASE_BODY="${{ github.event.release.body }}"
           RELEASE_URL="${{ github.event.release.html_url }}"
 
-          # If triggered by tag push (no release), use tag as name
           if [ -z "$RELEASE_NAME" ] || [ "$RELEASE_NAME" = "null" ]; then
             RELEASE_NAME="New version: $TAG_NAME"
           fi
@@ -41,10 +39,8 @@ jobs:
             RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/$TAG_NAME"
           fi
 
-          # Truncate body to 3000 chars (Telegram limit is 4096)
           RELEASE_BODY=$(echo "$RELEASE_BODY" | head -c 3000)
 
-          # Build message
           MESSAGE="🔔 *Verity Mod — New Release!*
 
           *${RELEASE_NAME}*
@@ -52,13 +48,22 @@ jobs:
           ${RELEASE_BODY}
 
           📦 [Download](${RELEASE_URL})
-          🏠 [GitHub](${{ github.server_url }}/${{ github.repository }})"
+          🏠 [GitHub](https://github.com/${{ github.repository }})"
 
-          # Send to Telegram
-          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" --argjson parse_mode '"Markdown"' \
-            '{chat_id: $chat_id, text: $text, parse_mode: $parse_mode, disable_web_page_preview: false}')" \
-            > /dev/null
-
-          echo "Telegram notification sent!"
+          # Use python to send (jq not available)
+          python3 -c "
+          import json, urllib.request, os
+          data = json.dumps({
+              'chat_id': os.environ['CHAT_ID'],
+              'text': os.environ['MESSAGE'],
+              'parse_mode': 'Markdown',
+              'disable_web_page_preview': False
+          }).encode()
+          req = urllib.request.Request(
+              'https://api.telegram.org/bot' + os.environ['BOT_TOKEN'] + '/sendMessage',
+              data=data,
+              headers={'Content-Type': 'application/json'}
+          )
+          resp = urllib.request.urlopen(req)
+          print('Telegram notification sent!' if resp.status == 200 else 'Failed: ' + resp.read().decode())
+          "
