@@ -375,10 +375,10 @@ public class VerityMod implements ModInitializer {
             if (lang == null || lang.isEmpty()) lang = "ru";
             else lang = lang.toLowerCase().startsWith("ru") ? "ru" : "en";
 
-            // Ищем entity Verity в мире
+            // Ищем entity Verity в мире (увеличенный радиус слышимости до 1024 блоков)
             var entities = player.level().getEntitiesOfClass(
                     VerityEntity.class,
-                    player.getBoundingBox().inflate(64.0D),
+                    player.getBoundingBox().inflate(1024.0D),
                     e -> e.isAlive()
             );
             if (!entities.isEmpty()) {

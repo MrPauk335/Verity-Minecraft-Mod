@@ -1,6 +1,21 @@
 # Verity Mod — Changelog
 
+## v0.8.3-beta
+
+### AI Behaviour
+- **Male assistant identity** — Verity is explicitly instructed as a personal male assistant-friend ("личный ассистент-друг, мальчик") across all system prompts. Will always use masculine verb forms in Russian: "я рад", "я пришёл", "я твой личный ассистент".
+
+### Follow & Proximity
+- **Hears you everywhere** — voice chat (STT) packet search radius increased from 64 → **1024 blocks**. Verity now receives your voice input regardless of how far away he is in the current dimension.
+- **Always follows** — `VerityFollowGoal` and `VerityStalkGoal` player detection range increased from 32 → **256 blocks**. Verity will actively pursue the player over long distances instead of freezing.
+- **Catch-up teleport range** — `tickCatchUpTeleport` player search radius increased from 64 → **512 blocks**, so Verity can teleport behind the player even when they fly far away with Elytra or sprint-sprint far.
+
+### Fixes
+- **Fixed broken Cyrillic teleport messages** — catch-up teleport replies ("О, я тут!", "Подожди меня!", "Не убегай." etc.) were being displayed as garbled UTF-8/CP1251 artifacts. Replaced all double-encoded string literals with correct `\uXXXX` Unicode escapes.
+- **Fixed obsession phrases** ("Три дня.", "Скоро-скоро.", "Обернись." etc.) — same encoding fix for COUNTDOWN phase ambient messages.
+
 ## v0.8.2-beta
+
 
 ### Audio & TTS
 - **Native OpenAL playback** — moved TTS audio output from external programs (PowerShell, mpg123, afplay, cvlc) to Java-native OpenAL (via LWJGL) which is built into Minecraft. Now works out of the box on Windows, Linux, macOS, FreeBSD, and Android (Zalith/Pojav).

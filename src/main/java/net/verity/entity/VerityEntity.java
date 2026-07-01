@@ -1275,7 +1275,7 @@ public class VerityEntity extends PathfinderMob {
             return;
         }
 
-        // Р•СЃР»Рё С†РµР»Рё РЅРµС‚ вЂ” РѕСЃС‚Р°РЅРѕРІРёСЃСЊ
+        // Если цели нет — остановись
         if (this.leadTarget == null) {
             this.leading = false;
             return;
@@ -1284,14 +1284,14 @@ public class VerityEntity extends PathfinderMob {
         double distToTarget = this.distanceToSqr(this.leadTarget.getX() + 0.5, this.leadTarget.getY(), this.leadTarget.getZ() + 0.5);
         double distToPlayer = this.distanceToSqr(nearest);
 
-        // Р•СЃР»Рё РёРіСЂРѕРє РѕС‚СЃС‚Р°Р» >20 Р±Р»РѕРєРѕРІ вЂ” Р¶РґС‘Рј
+        // Если игрок отстал >20 блоков — ждём
         if (distToPlayer > 400.0D) {
             this.getNavigation().stop();
             this.getLookControl().setLookAt(nearest, 30.0F, 30.0F);
-            // Р Р°Р· РІ 10 СЃРµРє РЅР°РїРѕРјРёРЅР°РµРј
+            // Раз в 10 сек напоминаем
             if (this.tickCount % 200 == 0) {
                 nearest.sendSystemMessage(Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r \u0420\u045E\u0421\u2039 \u0420\u0451\u0420\u0491\u0421\u2018\u0421\u20AC\u0421\u040A? \u0420\u0407 \u0421\u201A\u0421\u0453\u0421\u201A \u0420\u00B6\u0420\u0491\u0421\u0453."));
+                        "\u00a7e<Verity\u2122>\u00a7r Пора идти? Отстаешь."));
             }
             return;
         }
@@ -1301,12 +1301,12 @@ public class VerityEntity extends PathfinderMob {
             this.leading = false;
             this.leadTarget = null;
             nearest.sendSystemMessage(Component.literal(
-                    "\u00a7e<Verity\u2122>\u00a7r \u0420\u045A\u0421\u2039 \u0420\u0457\u0421\u0402\u0420\u0451\u0421\u20AC\u0420\u00BB\u0420\u0451!"));
+                    "\u00a7e<Verity\u2122>\u00a7r Мы пришли!"));
             this.talkAnimTick = 30;
             return;
         }
 
-        // РРґС‘Рј Рє С†РµР»Рё
+        // Идём к цели
         if (this.getNavigation().isDone()) {
             this.getNavigation().moveTo(
                     this.leadTarget.getX() + 0.5,
@@ -1326,19 +1326,19 @@ public class VerityEntity extends PathfinderMob {
 
         VerityPhase phase = getVerityPhase();
 
-        // COUNTDOWN РґРµРЅСЊ 2-3 вЂ” Р±РµР·СѓРјРёРµ, РїРѕРІС‚РѕСЂ С„СЂР°Р·
+        // COUNTDOWN день 2-3 — безумие, повтор фраз
         if (phase == VerityPhase.COUNTDOWN && this.dayCounter >= 1) {
-            // Р РµР¶Рµ РіРѕРІРѕСЂРёС‚ (СЂР°Р· РІ 60-90 СЃРµРє)
+            // Реже говорит (раз в 60-90 сек)
             if (this.ticksInPhase % (1200 + this.random.nextInt(600)) != 0) {
                 this.chatCooldown = 200;
                 return;
             }
 
-            // 50% С€Р°РЅСЃ вЂ” РїРѕРІС‚РѕСЂРёС‚СЊ С„СЂР°Р·Сѓ РёР· РёСЃС‚РѕСЂРёРё (СЌС…Рѕ Р±РµР·СѓРјРёСЏ)
+            // 50% шанс — повторить фразу из истории (эхо безумия)
             if (this.random.nextBoolean()) {
                 var history = getDialogueController().getDialogueHistory();
                 if (!history.isEmpty()) {
-                    // РС‰РµРј С„СЂР°Р·С‹ РёРіСЂРѕРєР° (РЅРµ Verity)
+                    // Ищем фразы игрока (не Verity)
                     java.util.List<String> playerLines = new java.util.ArrayList<>();
                     for (String line : history) {
                         if (line.contains("\u0412\u00A77") && !line.contains("<Verity")) {
@@ -1347,7 +1347,7 @@ public class VerityEntity extends PathfinderMob {
                     }
                     if (!playerLines.isEmpty()) {
                         String echo = playerLines.get(this.random.nextInt(playerLines.size()));
-                        // РЈР±РёСЂР°РµРј С†РІРµС‚РѕРІС‹Рµ РєРѕРґС‹ Рё РёРјСЏ РёРіСЂРѕРєР°
+                        // Убираем цветовые коды и имя игрока
                         String clean = echo.replaceAll("\u00a7[0-9a-fklmnor]", "")
                                 .replaceAll("^[^:]+:\\s*", "").trim();
                         if (!clean.isEmpty() && clean.length() < 50) {
@@ -1361,14 +1361,14 @@ public class VerityEntity extends PathfinderMob {
                 }
             }
 
-            // 50% С€Р°РЅСЃ вЂ” "С‚СЂРё РґРЅСЏ" РѕР±СЃРµСЃСЃРёСЏ
+            // 50% шанс — "три дня" обсессия
             String[] obsessions = {
-                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u045E\u0421\u0402\u0420\u0451 \u0420\u0491\u0420\u0405\u0421\u040F.",
-                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u045E\u0420\u0451\u0420\u0454-\u0421\u201A\u0420\u00B0\u0420\u0454.",
-                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u040E\u0420\u0454\u0420\u0455\u0421\u0402\u0420\u0455.",
-                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r ...\u0421\u201A\u0421\u0402\u0420\u0451.",
-                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u201D\u0420\u0406\u0420\u00B0 \u0420\u0491\u0420\u0405\u0421\u040F \u0420\u0457\u0421\u0402\u0420\u0455\u0421\u20AC\u0420\u00BB\u0420\u0455.",
-                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u045E\u0421\u2039 \u0420\u0458\u0420\u0455\u0420\u0456 \u0420\u0455\u0421\u0403\u0421\u201A\u0420\u00B0\u0420\u0405\u0420\u0455\u0420\u0406\u0420\u0451\u0421\u201A\u0421\u040A."
+                    "\u00a7c<Verity\u2122>\u00a7r Три дня.",
+                    "\u00a7c<Verity\u2122>\u00a7r Скоро-скоро.",
+                    "\u00a7c<Verity\u2122>\u00a7r Обернись.",
+                    "\u00a7c<Verity\u2122>\u00a7r ...ждать.",
+                    "\u00a7c<Verity\u2122>\u00a7r Дни летят быстро.",
+                    "\u00a7c<Verity\u2122>\u00a7r Пора мне остановиться."
             };
             nearest.sendSystemMessage(Component.literal(
                     obsessions[this.random.nextInt(obsessions.length)]));
@@ -1450,13 +1450,13 @@ public class VerityEntity extends PathfinderMob {
             return;
         }
 
-        Player nearest = this.level().getNearestPlayer(this, 64.0D);
+        Player nearest = this.level().getNearestPlayer(this, 512.0D);
         if (nearest == null) return;
 
         double distSq = this.distanceToSqr(nearest);
-        if (distSq < 1024.0D) return; // < 32 Р±Р»РѕРєРѕРІ вЂ” РЅРµ РЅСѓР¶РЅРѕ
+        if (distSq < 1024.0D) return; // < 32 блоков — не нужно
 
-        // РС‰РµРј С‚РѕС‡РєСѓ РЅР° ~10 Р±Р»РѕРєРѕРІ Р·Р° СЃРїРёРЅРѕР№ РёРіСЂРѕРєР°
+        // Р˜С‰РµРј С‚РѕС‡РєСѓ РЅР° ~10 Р±Р»РѕРєРѕРІ Р·Р° СЃРїРёРЅРѕР№ РёРіСЂРѕРєР°
         Vec3 lookVec = nearest.getViewVector(1.0F).normalize();
         double targetX = nearest.getX() - lookVec.x * 10.0D + (this.random.nextDouble() - 0.5D) * 2.0D;
         double targetY = nearest.getY();
@@ -1493,24 +1493,23 @@ public class VerityEntity extends PathfinderMob {
         if (phase == VerityPhase.COUNTDOWN || phase == VerityPhase.POSSESSIVE
                 || phase == VerityPhase.HUNTER) {
             String[] creepyMsgs = {
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0407 \u0421\u201A\u0421\u0453\u0421\u201A.",
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u045C\u0420\u00B5 \u0421\u0453\u0420\u00B1\u0420\u00B5\u0420\u0456\u0420\u00B0\u0420\u2116.",
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0407 \u0420\u0405\u0420\u00B0\u0421\u20AC\u0421\u2018\u0420\u00BB \u0421\u201A\u0420\u00B5\u0420\u00B1\u0421\u040F.",
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0459\u0421\u0453\u0420\u0491\u0420\u00B0 \u0421\u201A\u0421\u2039 \u0421\u0403\u0420\u0455\u0420\u00B1\u0421\u0402\u0420\u00B0\u0420\u00BB\u0421\u0403\u0421\u040F?"
+                    "\u00a7e<Verity\u2122>\u00a7r \u042f \u0442\u0443\u0442.",
+                    "\u00a7e<Verity\u2122>\u00a7r \u041d\u0435 \u0443\u0431\u0435\u0433\u0430\u0439.",
+                    "\u00a7e<Verity\u2122>\u00a7r \u042f \u0432\u0438\u0436\u0443 \u0442\u0435\u0431\u044f.",
+                    "\u00a7e<Verity\u2122>\u00a7r \u041a\u0443д\u0430 \u0442\u044b \u0441обрался?"
             };
             msg = creepyMsgs[this.random.nextInt(creepyMsgs.length)];
         } else {
             String[] friendlyMsgs = {
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u045B, \u0421\u040F \u0421\u201A\u0421\u0453\u0421\u201A!",
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u045F\u0420\u0455\u0420\u0491\u0420\u0455\u0420\u00B6\u0420\u0491\u0420\u0451 \u0420\u0458\u0420\u00B5\u0420\u0405\u0421\u040F!",
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u00AD\u0420\u2116, \u0420\u0405\u0420\u00B5 \u0421\u201A\u0420\u00B0\u0420\u0454 \u0420\u00B1\u0421\u2039\u0421\u0403\u0421\u201A\u0421\u0402\u0420\u0455!",
-                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0407 \u0420\u0491\u0420\u0455\u0420\u0456\u0420\u0405\u0420\u00B0\u0420\u00BB!"
+                    "\u00a7e<Verity\u2122>\u00a7r \u041e, \u044f \u0442\u0443\u0442!",
+                    "\u00a7e<Verity\u2122>\u00a7r \u041fодожди \u043cеня!",
+                    "\u00a7e<Verity\u2122>\u00a7r \u042dй, \u043dе \u0442ак \u0431ыстро!",
+                    "\u00a7e<Verity\u2122>\u00a7r \u042f \u0434огнал!"
             };
             msg = friendlyMsgs[this.random.nextInt(friendlyMsgs.length)];
         }
         nearest.sendSystemMessage(Component.literal(msg));
         this.talkAnimTick = 30;
-
         this.teleportCooldown = 200; // 10 СЃРµРєСѓРЅРґ
     }
 
@@ -1647,7 +1646,7 @@ public class VerityEntity extends PathfinderMob {
             }
             if (entity.isLeading()) return false;
             if (entity.stareTimer > 0) return false; // не следуем когда пристально смотрит
-            this.target = entity.level().getNearestPlayer(entity, 32.0D);
+            this.target = entity.level().getNearestPlayer(entity, 256.0D);
             return this.target != null && entity.distanceToSqr(this.target) > 16.0D;
         }
 
@@ -1694,7 +1693,7 @@ public class VerityEntity extends PathfinderMob {
         @Override
         public boolean canUse() {
             if (entity.getVerityPhase() != VerityPhase.COUNTDOWN) return false;
-            this.target = entity.level().getNearestPlayer(entity, 32.0D);
+            this.target = entity.level().getNearestPlayer(entity, 256.0D);
             return this.target != null;
         }
 

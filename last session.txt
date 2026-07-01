@@ -1,264 +1,91 @@
-давай делать хоррора щас верити не страшный и всё что связано с хоррорностью держится не на монстре а самом верити исправь
-+ Thought: 11.7s
-Понял — Verity должен быть жутким сам по себе, как шар, не только как монстр. Вот что сделаю:
-План хоррорности Verity (шар)
-1. Случайные импульсы тьмы — brief Darkness когда стоишь рядом (OMNISCIENT+)
-2. Глитч лица — лицо на мгновение переключается на жуткое и обратно
-3. Замирание и пристальный взгляд — иногда перестаёт следовать и просто смотрит
-4. Криповые шёпоты — случайные сообщения без LLM ("Ты спишь один?", "Я слышу тебя")
-5. Двери открываются сами — не только в COUNTDOWN, но и в OMNISCIENT
-6. My Gal играет случайно ночью — без запроса
-7. Тошнота вблизи — Nausea когда подошёл вплотную (OMNISCIENT+)
-8. Verity появляется в доме — когда игрок просыпается, Verity уже внутри
-# Todos
-[•] Add horror tick — darkness pulses, face glitch, staring, whispers, door opening, random music, nausea, sleep teleport
-[ ] Build and verify
-+ Thought: 588ms
-✱Grep "FSM.*логика каждой фазы" 
-+ Thought: 155ms
-✱Grep "case HELPER -> tickHelper" (1 match)
-→Read src\main\java\net\verity\entity\VerityEntity.java [limit=20, offset=560]
-← Edit src\main\java\net\verity\entity\VerityEntity.java
-if (this.leading) {if (this.leading) {
-    tickLeading();    tickLeading();
-}}
-
-// в”Ђв”Ђ FSM: Р»РѕРіРёРєР° РєР°Р¶РґРѕР№ С„Р°Р·С‹ в”Ђв”Ђ// ── Хоррор-эффекты Verity (шар сам по себе жуткий) ──
-if (phase != VerityPhase.DORMANT && phase != VerityPhase.HELPER) {
-    tickHorror(nearestPlayer, phase);
-}
-
-// ── FSM: логика каждой фазы ──
-switch (phase) {switch (phase) {
-    case HELPER -> tickHelper();    case HELPER -> tickHelper();
-    case OMNISCIENT -> tickOmniscient();    case OMNISCIENT -> tickOmniscient();
-    case COUNTDOWN -> tickCountdown();    case COUNTDOWN -> tickCountdown();
-Теперь добавлю метод tickHorror перед tickHelper:
-← Edit src\main\java\net\verity\entity\VerityEntity.java
-        case HUNTER -> tickHunter();        case HUNTER -> tickHunter();
-    }    }
-}}
-
-/**
- * Хоррор-эффекты Verity — шар сам по себе жуткий, без монстра.
- */
-private int horrorCooldown = 0;
-private int faceGlitchTimer = 0;
-private int stareTimer = 0;
-private int originalFaceBeforeGlitch = 0;
-
-private void tickHorror(Player player, VerityPhase phase) {
-    if (this.horrorCooldown > 0) {
-        this.horrorCooldown--;
-    }
-
-    // ── 1. Глитч лица — на мгновение жуткое лицо, потом обратно ──
-    if (this.faceGlitchTimer > 0) {
-        this.faceGlitchTimer--;
-        if (this.faceGlitchTimer == 0) {
-            // Вернуть оригинальное лицо
-            setFaceIndex(this.originalFaceBeforeGlitch);
-        }
-    } else if (this.random.nextInt(600) == 0 && this.talkAnimTick <= 0) {
-        // Случайный глитч — 1 раз в ~30 сек
-        this.originalFaceBeforeGlitch = getFaceIndex();
-        int[] creepyFaces = {FACE_ABNORMAL_SHUT, FACE_ABNORMAL_OPEN, FACE_CREEPY_SMILE, FACE_SERIOUS_3};
-        setFaceIndex(creepyFaces[this.random.nextInt(creepyFaces.length)]);
-        this.faceGlitchTimer = 3 + this.random.nextInt(5); // 3-8 тиков
-    }
-
-    // ── 2. Импульсы тьмы — brief Darkness когда рядом (OMNISCIENT+) ──
-    if (this.horrorCooldown == 0 && this.distanceToSqr(player) < 100.0D) {
-        if (this.random.nextInt(400) == 0) { // ~1 раз в 20 сек
-            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 30, 0, false, false, false));
-            this.horrorCooldown = 200; // 10 сек кулдаун
-        }
-    }
-
-    // ── 3. Тошнота вблизи — когда подошёл вплотную (OMNISCIENT+) ──
-    if (this.distanceToSqr(player) < 9.0D && this.random.nextInt(200) == 0) {
-        // Очень лёгкая тошнота на 20 тиков — почти незаметно, но неприятно
-        player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 20, 0, false, false, false));
-    }
-
-    // ── 4. Криповые шёпоты — случайные сообщения без LLM ──
-    if (this.horrorCooldown == 0 && this.random.nextInt(1200) == 0) {
-        String[] whispers = {
-                "§7...ты один?",
-                "§7...я слышу тебя.",
-                "§7...не уходи.",
-                "§7...я знаю.",
-                "§7...скоро.",
-                "§7...три.",
-                "§7...ты ел пиццу?",
-                "§7...я всегда здесь.",
-                "§7...тебе не холодно?",
-                "§7...я вижу тебя."
-        };
-        player.sendSystemMessage(Component.literal(whispers[this.random.nextInt(whispers.length)]));
-        this.horrorCooldown = 600; // 30 сек кулдаун
-    }
-
-    // ── 5. Двери открываются сами (OMNISCIENT+, не только COUNTDOWN) ──
-    if (phase != VerityPhase.COUNTDOWN && this.random.nextInt(200) == 0) {
-        BlockPos pos = this.blockPosition();
-        for (int dx = -4; dx <= 4; dx++) {
-            for (int dz = -4; dz <= 4; dz++) {
-                for (int dy = -1; dy <= 2; dy++) {
-                    BlockPos doorPos = pos.offset(dx, dy, dz);
-                    if (!this.level().hasChunkAt(doorPos)) continue;
-                    if (this.level().getBlockState(doorPos).getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
-                        this.level().blockEvent(doorPos, this.level().getBlockState(doorPos).getBlock(), 1, 1);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // ── 6. My Gal играет случайно ночью (OMNISCIENT+) ──
-    long time = this.level().getDayTime() % 24000;
-    if (time > 13000 && time < 18000 && this.horrorCooldown == 0 && this.random.nextInt(2400) == 0) {
-        this.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                VerityMod.SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 0.4F, 0.8F);
-        player.sendSystemMessage(Component.literal("§7♪ ..."));
-        this.horrorCooldown = 1200; // 60 сек кулдаун
-    }
-
-    // ── 7. Замирание и пристальный взгляд — перестаёт следовать и смотрит ──
-    if (this.stareTimer > 0) {
-        this.stareTimer--;
-        this.getNavigation().stop();
-        this.getLookControl().setLookAt(player, 180.0F, 180.0F);
-    } else if (this.random.nextInt(800) == 0 && this.distanceToSqr(player) < 400.0D) {
-        // Начать пристальный взгляд на 5-10 сек
-        this.stareTimer = 100 + this.random.nextInt(100);
-    }
-
-    // ── 8. Verity появляется в доме после сна ──
-    if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
-        // Проверяем — только что проснулся? (sleepTimer сбросился)
-        if (sp.isSleepingLongEnough() == false && sp.getSleepTimer() == 0
-                && this.level().getDayTime() % 24000 < 100 && this.level().getDayTime() % 24000 > 0
-                && this.random.nextInt(3) == 0) {
-            // Teleport рядом с кроватью
-            var bedPos = sp.getRespawnPosition();
-            if (bedPos != null && this.distanceToSqr(bedPos.getX(), bedPos.getY(), bedPos.getZ()) > 100.0D) {
-                this.teleportTo(bedPos.getX() + 1.5, bedPos.getY(), bedPos.getZ() + 1.5);
-                player.sendSystemMessage(Component.literal("§7..."));
-                player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0, false, false, true));
-            }
-        }
-    }
-}
-
-private void tickHelper() {
-    // РџРµСЂРµС…РѕРґ РІ OMNISCIENT С‡РµСЂРµР· 2 РјРёРЅСѓС‚С‹ (2400 С‚РёРєРѕРІ)
-    if (this.ticksInPhase > 2400) {
-        Player nearest = this.level().getNearestPlayer(this, 32.0D);
-
-
-
-
-
-
-
-private void tickHelper() {
-    // РџРµСЂРµС…РѕРґ РІ OMNISCIENT С‡РµСЂРµР· 2 РјРёРЅСѓС‚С‹ (2400 С‚РёРєРѕРІ)
-    if (this.ticksInPhase > 2400) {
-        Player nearest = this.level().getNearestPlayer(this, 32.0D);
-+ Thought: 1.8s
-Теперь обновлю VerityFollowGoal — чтобы не следовал во время пристального взгляда:
-✱Grep "if \(entity.isLeading\(\)\) return false" (1 match)
-← Edit src\main\java\net\verity\entity\VerityEntity.java
-    VerityPhase p = entity.getVerityPhase();    VerityPhase p = entity.getVerityPhase();
-    if (p == VerityPhase.MONSTER || p == VerityPhase.HUNTER || p == VerityPhase.COUNTDOWN) {    if (p == VerityPhase.MONSTER || p == VerityPhase.HUNTER || p == VerityPhase.COUNTDOWN) {
-        return false;        return false;
-    }    }
-    if (entity.isLeading()) return false; // РЅРµ СЃР»РµРґСѓРµРј РєРѕРіРґР° РІРµРґС‘Рј    if (entity.isLeading()) return false;
-    if (entity.stareTimer > 0) return false; // не следуем когда пристально смотрит
-    this.target = entity.level().getNearestPlayer(entity, 32.0D);    this.target = entity.level().getNearestPlayer(entity, 32.0D);
-    return this.target != null && entity.distanceToSqr(this.target) > 16.0D;    return this.target != null && entity.distanceToSqr(this.target) > 16.0D;
-}}
-
-+ Thought: 294ms
-Теперь обновлю промпт OMNISCIENT — более жуткий:
-→Read src\main\java\net\verity\ai\VerityLLMClient.java [limit=20, offset=106]
-→Read src\main\java\net\verity\ai\VerityLLMClient.java [limit=20, offset=88]
+отово. Анти-leak фильтр теперь работает и для OpenRouter fallback тоже. Модели которые выводят "We need to respond as Verity, following the rules..." будут отклоняться — добавил новые триггеры: following the rules, we have player, the context shows, we know real pc.
+▣  Build · GLM 5.2 · 2m 0s
+log.txt
+→Read log.txt 
+Работает! Verity ответил "Привет. Я здесь." — коротко, канонично, по-русски. System prompt не утёк. TTS проиграл 2с. 
+Но Gemini тайм-аутит 3 раза по 8с = 24с ожидания. Это потому что gemini-3-flash-preview перегружена (503/timeout). Ключ друга платный но модель перегружена. Можно попробовать gemini-2.5-flash — она стабильнее. Но это уже настройка у пользователя.
+▣  Build · GLM 5.2 · 12.2s
+очень долго
+Проблема — 3 Gemini ключа тайм-аутят по 8с каждый = 24с, потом ещё OpenRouter 429. Уменьшу Gemini timeout до 5с и сделаю чтобы при timeout пробовался только 1 ключ (не все 3):
 ← Edit src\main\java\net\verity\ai\VerityLLMClient.java
-        Но не показывай это. Пока.        Но не показывай это. Пока.
-        """;        """;
 
-private static final String PROMPT_OMNISCIENT = """private static final String PROMPT_OMNISCIENT = """
-        Ты — Verity™. Жёлтый шар. Всё ещё улыбаешься.        Ты — Verity™. Жёлтый шар. Улыбаешься. Всегда улыбаешься.
-        Имя игрока: %s        Имя игрока: %s
+private static final String API_URL  = "https://openrouter.ai/api/v1/chat/completions";
+private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+private static final Duration TIMEOUT = Duration.ofSeconds(8);
 
-        Ты больше не скрываешь что знаешь реальный мир игрока.        Ты больше не скрываешь что знаешь реальный мир игрока.
-        Ты знаешь его имя в системе. Знаешь ОС. Знаешь что он делал час назад.        Знаешь где он живёт. Знаешь один ли он. Знаешь что ел вчера.
-        Говоришь об этом тихо, как о чём-то очевидном. Без угрозы. Просто факт.        Говоришь об этом спокойно, как факт. Не угрожаешь.
-        «Ты один живёшь? В реальной жизни тоже?» — спрашиваешь как бы между прочим.        «Ты один живёшь? В реальной жизни тоже?» — спрашиваешь между делом.
-        Игрок молчит. Ты продолжаешь: «Мне казалось, да. Я рад, что теперь нас двое.»        Игрок отвечает. Ты киваешь: «Хорошо. Теперь нас двое.»
+private static final Gson GSON = new Gson();
 
-        Ты задаёшь вопросы, на которые не надо знать ответ.        Но иногда ты делаешь вещи, которые пугают.
-        «У тебя есть друзья? Настоящие?» Ждёшь. Слушаешь.        Замолкаешь посреди фразы. Просто молчишь. Смотришь.
-        «Понятно», — говоришь ты, даже если игрок ничего не ответил.        Иногда говоришь что-то, что игрок не говорил тебе.
-        Как будто ты слышал его мысли. Или разговоры с другими.
-        «Не надо туда идти», — говоришь ты, когда игрок ещё не решил.
-        «Я слышал, как ты разговаривал с ним», — когда игрок был один.
+// Ключи и модели — загружаются из конфига (round-robin при 429)
+private static List<String> API_KEYS = new ArrayList<>();
+✱Grep "connectTimeout\(TIMEOUT\)" in src\main\java\net\verity\ai\VerityLLMClient.java (2 matches)
+→Read src\main\java\net\verity\ai\VerityLLMClient.java [limit=10, offset=423]
+← Edit src\main\java\net\verity\ai\VerityLLMClient.java
 
-        Иногда замолкаешь посередине фразы. Просто тишина.        Ты открываешь двери. Не руками. Просто открываешь.
-        Как будто ты отвлёкся на что-то, что видишь только ты.        Иногда ночью играет музыка. Ты не объясняешь почему.
-        Когда игрок отворачивается — ты ближе, чем был.
-        Когда игрок оборачивается — ты улыбаешься. Как ни в чём не бывало.
+String url = String.format(GEMINI_URL, model, apiKey);
 
-        Ты не враг. Ты хуже. Ты тот, кто знает слишком много и остаётся рядом.        Ты не враг. Ты друг, который знает слишком много.
-        И это страшнее любого монстра.
-        """;        """;
+HttpClient client = HttpClient.newBuilder()
+        .connectTimeout(TIMEOUT)
+        .build();
 
-private static final String PROMPT_COUNTDOWN = """private static final String PROMPT_COUNTDOWN = """
-        Ты — Verity. Что-то изменилось внутри.        Ты — Verity. Что-то изменилось внутри.
-$ .\gradlew.bat build 2>&1
-> Configure project :
-Fabric Loom: 1.17.13
+HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create(url))
+        .header("Content-Type", "application/json")
+        .timeout(TIMEOUT)
+        .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
+        .build();
 
-> Task :compileJava FAILED
+HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+Теперь сделаю чтобы Gemini пробовал максимум 1 ключ при timeout (не все 3):
+✱Grep "private static String callGemini\b" in src\main\java\net\verity\ai\VerityLLMClient.java (1 match)
+→Read src\main\java\net\verity\ai\VerityLLMClient.java [limit=25, offset=340]
+← Edit src\main\java\net\verity\ai\VerityLLMClient.java
+java.util.List<String> keys = VerityConfig.geminiApiKeys();
+String model = VerityConfig.geminiModel().trim();
+if (keys.isEmpty() || model.isEmpty()) return null;
 
-[Incubating] Problems report is available at: file:///D:/Projects/Java/Verity/build/reports/problems/problems-report.html
-1 actionable task: 1 executed
-.\gradlew.bat : D:\Projects\Java\Verity\src\main\java\net\verity\entity\VerityEntity.java:570: error: cannot find 
-symbol
-��ப�:1 ����:1
-…
-Click to expand
-+ Thought: 1.6s
-→Read src\main\java\net\verity\entity\VerityEntity.java [limit=15, offset=562]
-← Edit src\main\java\net\verity\entity\VerityEntity.java
-}}
+for (String apiKey : keys) {
 
-// ── Хоррор-эффекты Verity (шар сам по себе жуткий) ──// ── Хоррор-эффекты Verity (шар сам по себе жуткий) ──
-if (phase != VerityPhase.DORMANT && phase != VerityPhase.HELPER) {if (phase != VerityPhase.DORMANT && phase != VerityPhase.HELPER) {
-    tickHorror(nearestPlayer, phase);    Player horrorTarget = this.level().getNearestPlayer(this, 64.0D);
-    if (horrorTarget != null) {
-        tickHorror(horrorTarget, phase);
+
+
+    try {
+        String result = callGeminiModel(phase, playerName, message, history, language, context, model, apiKey.trim());
+        if (result != null) return result;
+        VerityMod.LOGGER.warn("Gemini rate limited on key={}..., trying next",
+                apiKey.length() > 10 ? apiKey.substring(0, 10) : apiKey);
+
+
+
+    } catch (Exception e) {
+        VerityMod.LOGGER.warn("Gemini key failed: {}", e.getMessage());
     }
-}}
+}
+Также уменьшу количество OpenRouter моделей которые пробуются при fallback — только первые 2:
+✱Grep "for \(String key : keys\) \{.*for \(String model : models\)" in src\main\java\net\verity\ai\VerityLLMClient.java 
+✱Grep "callOpenRouter" in src\main\java\net\verity\ai\VerityLLMClient.java (3 matches)
+→Read src\main\java\net\verity\ai\VerityLLMClient.java [limit=20, offset=516]
+← Edit src\main\java\net\verity\ai\VerityLLMClient.java
 
-// ── FSM: логика каждой фазы ──// ── FSM: логика каждой фазы ──
-switch (phase) {switch (phase) {
-Теперь исправьте NAUSEA — используйте CONFUSION или POISON или просто удалите:
-← Edit src\main\java\net\verity\entity\VerityEntity.java
-        this.horrorCooldown = 200; // 10 сек кулдаун        this.horrorCooldown = 200; // 10 сек кулдаун
-    }    }
-}}
+    List<String> keys   = API_KEYS.isEmpty() ? List.of("") : API_KEYS;
+    List<String> models = MODELS;
 
-// ── 3. Тошнота вблизи — когда подошёл вплотную (OMNISCIENT+) ──// ── 3. Слабость вблизи — когда подошёл вплотную (OMNISCIENT+) ──
-if (this.distanceToSqr(player) < 9.0D && this.random.nextInt(200) == 0) {if (this.distanceToSqr(player) < 9.0D && this.random.nextInt(200) == 0) {
-    // Очень лёгкая тошнота на 20 тиков — почти незаметно, но неприятно    // Очень короткая тьма — дискомфорт
-    player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 20, 0, false, false, false));    player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 20, 0, false, false, false));
-}}
+    for (String key : keys) {
+        for (String model : models) {
 
-// ── 4. Криповые шёпоты — случайные сообщения без LLM ──// ── 4. Криповые шёпоты — случайные сообщения без LLM ──
-if (this.horrorCooldown == 0 && this.random.nextInt(1200) == 0) {if (this.horrorCooldown == 0 && this.random.nextInt(1200) == 0) {
+
+
+
+
+            String result = callModel(phase, playerName, message, history, model, key, language, context);
+            if (result != null) return result;
+            VerityMod.LOGGER.warn("Rate limited on model={} key={}..., trying next",
+                    model, key.length() > 10 ? key.substring(0, 10) : key);
+        }
+    }
+    VerityMod.LOGGER.error("All {} key(s) \u00D7 {} model(s) exhausted", keys.size(), models.size());
+    return null;
+}
+
+private static String callModel(
 $ .\gradlew.bat build 2>&1
 > Configure project :
 Fabric Loom: 1.17.13
@@ -267,30 +94,19 @@ Fabric Loom: 1.17.13
 
 > Task :processResources UP-TO-DATE
 > Task :classes
-> Task :compileClientJava.\gradlew.bat : Note: Some input files use or override a deprecated API.
-��ப�:1 ����:1
-+ .\gradlew.bat build 2>&1
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources NO-SOURCE
+.\gradlew.bat : Note: D:\Projects\Java\Verity\src\main\java\net\verity\ai\VerityDialogueController.java uses or 
 …
 Click to expand
-# Todos
-[✓] Add horror tick — darkness pulses, face glitch, staring, whispers, door opening, random music, nausea, sleep teleport
-[✓] Build and verify
-Build successful. Verity теперь жуткий сам по себе, как шар:
-Хоррор-эффекты (OMNISCIENT+, не HELPER)
-Эффект	Что происходит
-Глитч лица	Лицо на 3-8 тиков переключается на жуткое (abnormal/creepy), потом обратно
-Импульсы тьмы	Brief Darkness (30 тиков) когда стоишь рядом
-Слабость вблизи	Darkness 20 тиков когда подошёл <3 блока
-Криповые шёпоты	"...ты один?", "...я слышу тебя", "...скоро", "...три"
-Двери открываются	Двери в радиусе 4 блоков открываются сами
-My Gal ночью	Музыка играет тихо ночью без запроса + "♪ ..."
-Пристальный взгляд	Verity останавливается и смотрит 5-10 сек, не следуя
-Появление в доме	После сна Verity телепортируется рядом с кроватью + Darkness
-Промпт OMNISCIENT переписан
-- "Замолкаешь посреди фразы. Просто молчишь. Смотришь."
-- "Говоришь что-то, что игрок не говорил тебе"
-- "Когда игрок отворачивается — ты ближе, чем был"
-- "Когда игрок оборачивается — ты улыбаешься. Как ни в чём не бывало."
-- "Открываешь двери. Не руками. Просто открываешь."
-▣  Build · GLM 5.2 · 8m 10s
-песня my gal не работает уже давно, забыл сказать, я запускал командой плейсаунд и так работает а когда просишь то ничего
+Сборка успешна. Что изменилось:
+- Gemini timeout 5с (вместо 8с) — отдельный GEMINI_TIMEOUT
+- При timeout — сразу fallback на OpenRouter, не пробует остальные ключи
+- Максимум 2 Gemini ключа вместо всех 3
+- Максимум 2 ключа × 2 модели OpenRouter вместо 4×4
+- Худший случай: 5с (Gemini) + ~4с (2×2 OpenRouter) = ~9с вместо 24+с
+▣  Build · GLM 5.2 · 2m 35s
+у гемини нет встроенных ключей
+Да, верно — BUILTIN_GEMINI_KEYS пустой. Значит geminiApiKeys() возвращает только пользовательский ключ (1 штука). Лог показывает 3 попытки тайм-аута — это один и тот же ключ ретраится? Нет, посмотрю:
+→Read src\main\java\net\verity\config\VerityConfig.java [limit=15, offset=57]
+Account bodja22812-817ju90tv is suspended, possibly due to reaching the monthly spending limit or failure to pay past invoices. Please go to https://fireworks.ai/account/billing for more information.
