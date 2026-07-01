@@ -26,8 +26,26 @@ public final class VerityConfig {
     };
     private static final java.util.List<String> BUILTIN_API_KEYS = net.verity.config.KeyVault.decodeAll(ENCODED_API_KEYS);
 
+    private static final byte[][] ENCODED_GROQ_KEYS = new byte[][] {
+        {(byte)0x3D, (byte)0x4F, (byte)0x14, (byte)0x7E, (byte)0x21, (byte)0x68, (byte)0x04, (byte)0xE0, (byte)0x1B, (byte)0x4F, (byte)0x25, (byte)0x60, (byte)0x1D, (byte)0x79, (byte)0x7D, (byte)0xA7, (byte)0x31, (byte)0x53, (byte)0x37, (byte)0x6F, (byte)0x58, (byte)0x77, (byte)0x3C, (byte)0xE7, (byte)0x0D, (byte)0x7B, (byte)0x1B, (byte)0x58, (byte)0x09, (byte)0x3E, (byte)0x08, (byte)0xCA, (byte)0x18, (byte)0x7B, (byte)0x4B, (byte)0x40, (byte)0x3F, (byte)0x6E, (byte)0x07, (byte)0xFB, (byte)0x0C, (byte)0x6D, (byte)0x28, (byte)0x17, (byte)0x3F, (byte)0x4F, (byte)0x7C, (byte)0xC3, (byte)0x68, (byte)0x75, (byte)0x37, (byte)0x75, (byte)0x25, (byte)0x42, (byte)0x2D, (byte)0xFA},
+        {(byte)0x3D, (byte)0x4F, (byte)0x14, (byte)0x7E, (byte)0x06, (byte)0x38, (byte)0x1B, (byte)0xD0, (byte)0x35, (byte)0x59, (byte)0x1B, (byte)0x4F, (byte)0x25, (byte)0x47, (byte)0x02, (byte)0xCB, (byte)0x32, (byte)0x6E, (byte)0x16, (byte)0x6E, (byte)0x39, (byte)0x57, (byte)0x08, (byte)0xD7, (byte)0x0D, (byte)0x7B, (byte)0x1B, (byte)0x58, (byte)0x09, (byte)0x3E, (byte)0x08, (byte)0xCA, (byte)0x6D, (byte)0x4C, (byte)0x08, (byte)0x78, (byte)0x59, (byte)0x5B, (byte)0x05, (byte)0xF4, (byte)0x0A, (byte)0x58, (byte)0x12, (byte)0x10, (byte)0x2A, (byte)0x44, (byte)0x0B, (byte)0xFE, (byte)0x36, (byte)0x69, (byte)0x49, (byte)0x49, (byte)0x0E, (byte)0x77, (byte)0x2B, (byte)0xD2},
+        {(byte)0x3D, (byte)0x4F, (byte)0x14, (byte)0x7E, (byte)0x12, (byte)0x5D, (byte)0x05, (byte)0xD4, (byte)0x3D, (byte)0x6D, (byte)0x0A, (byte)0x46, (byte)0x13, (byte)0x63, (byte)0x2C, (byte)0xE5, (byte)0x19, (byte)0x5D, (byte)0x2A, (byte)0x40, (byte)0x38, (byte)0x46, (byte)0x1E, (byte)0xE4, (byte)0x0D, (byte)0x7B, (byte)0x1B, (byte)0x58, (byte)0x09, (byte)0x3E, (byte)0x08, (byte)0xCA, (byte)0x1B, (byte)0x7F, (byte)0x2B, (byte)0x77, (byte)0x05, (byte)0x57, (byte)0x2F, (byte)0xD7, (byte)0x6F, (byte)0x59, (byte)0x18, (byte)0x74, (byte)0x5D, (byte)0x67, (byte)0x27, (byte)0xDE, (byte)0x19, (byte)0x4B, (byte)0x26, (byte)0x10, (byte)0x1D, (byte)0x58, (byte)0x05, (byte)0xC3},
+        {(byte)0x3D, (byte)0x4F, (byte)0x14, (byte)0x7E, (byte)0x11, (byte)0x5D, (byte)0x34, (byte)0xF8, (byte)0x20, (byte)0x78, (byte)0x31, (byte)0x50, (byte)0x39, (byte)0x6C, (byte)0x3F, (byte)0xF0, (byte)0x63, (byte)0x69, (byte)0x1B, (byte)0x73, (byte)0x5C, (byte)0x6B, (byte)0x14, (byte)0xF0, (byte)0x0D, (byte)0x7B, (byte)0x1B, (byte)0x58, (byte)0x09, (byte)0x3E, (byte)0x08, (byte)0xCA, (byte)0x0E, (byte)0x72, (byte)0x35, (byte)0x67, (byte)0x23, (byte)0x6F, (byte)0x16, (byte)0xD2, (byte)0x09, (byte)0x7B, (byte)0x1D, (byte)0x4F, (byte)0x3B, (byte)0x49, (byte)0x2A, (byte)0xC7, (byte)0x39, (byte)0x04, (byte)0x09, (byte)0x46, (byte)0x18, (byte)0x4A, (byte)0x2A, (byte)0xCA},
+        {(byte)0x3D, (byte)0x4F, (byte)0x14, (byte)0x7E, (byte)0x1C, (byte)0x59, (byte)0x14, (byte)0xE7, (byte)0x6A, (byte)0x08, (byte)0x30, (byte)0x47, (byte)0x28, (byte)0x79, (byte)0x1F, (byte)0xF0, (byte)0x11, (byte)0x45, (byte)0x2D, (byte)0x49, (byte)0x06, (byte)0x5A, (byte)0x07, (byte)0xE7, (byte)0x0D, (byte)0x7B, (byte)0x1B, (byte)0x58, (byte)0x09, (byte)0x3E, (byte)0x08, (byte)0xCA, (byte)0x35, (byte)0x57, (byte)0x1C, (byte)0x55, (byte)0x39, (byte)0x3A, (byte)0x00, (byte)0xF0, (byte)0x2F, (byte)0x56, (byte)0x08, (byte)0x52, (byte)0x0F, (byte)0x5A, (byte)0x7E, (byte)0xE5, (byte)0x6C, (byte)0x72, (byte)0x36, (byte)0x76, (byte)0x24, (byte)0x41, (byte)0x06, (byte)0xDD},
+        {(byte)0x3D, (byte)0x4F, (byte)0x14, (byte)0x7E, (byte)0x0F, (byte)0x5C, (byte)0x16, (byte)0xC1, (byte)0x2E, (byte)0x7B, (byte)0x0F, (byte)0x4B, (byte)0x3A, (byte)0x4C, (byte)0x20, (byte)0xA0, (byte)0x1B, (byte)0x52, (byte)0x32, (byte)0x40, (byte)0x18, (byte)0x48, (byte)0x07, (byte)0xC7, (byte)0x0D, (byte)0x7B, (byte)0x1B, (byte)0x58, (byte)0x09, (byte)0x3E, (byte)0x08, (byte)0xCA, (byte)0x08, (byte)0x65, (byte)0x05, (byte)0x18, (byte)0x2A, (byte)0x59, (byte)0x1C, (byte)0xA4, (byte)0x02, (byte)0x5A, (byte)0x25, (byte)0x69, (byte)0x38, (byte)0x62, (byte)0x3D, (byte)0xAA, (byte)0x0B, (byte)0x5D, (byte)0x08, (byte)0x74, (byte)0x08, (byte)0x5E, (byte)0x34, (byte)0xD6},
+    };
+    private static final java.util.List<String> BUILTIN_GROQ_KEYS = net.verity.config.KeyVault.decodeAll(ENCODED_GROQ_KEYS);
+
     // ─── Gemini keys (user-provided only) ───────────────────────────────────
     public static final java.util.List<String> BUILTIN_GEMINI_KEYS = java.util.List.of();
+
+    // ─── Cohere keys ───
+    private static final byte[][] ENCODED_COHERE_KEYS = new byte[][] {
+        {(byte)0x13, (byte)0x58, (byte)0x4C, (byte)0x13, (byte)0x18, (byte)0x5B, (byte)0x7C, (byte)0xF4, (byte)0x6F, (byte)0x4D, (byte)0x46, (byte)0x54, (byte)0x11, (byte)0x75, (byte)0x76, (byte)0xE0, (byte)0x30, (byte)0x4D, (byte)0x29, (byte)0x13, (byte)0x2D, (byte)0x34, (byte)0x02, (byte)0xC7, (byte)0x00, (byte)0x4F, (byte)0x28, (byte)0x46, (byte)0x3E, (byte)0x60, (byte)0x18, (byte)0xE2, (byte)0x0F, (byte)0x75, (byte)0x32, (byte)0x63, (byte)0x03, (byte)0x38, (byte)0x37, (byte)0xF2},
+        {(byte)0x18, (byte)0x54, (byte)0x0C, (byte)0x73, (byte)0x2E, (byte)0x6C, (byte)0x0D, (byte)0xF9, (byte)0x6D, (byte)0x77, (byte)0x4F, (byte)0x49, (byte)0x0A, (byte)0x54, (byte)0x17, (byte)0xFB, (byte)0x0A, (byte)0x0C, (byte)0x35, (byte)0x6C, (byte)0x28, (byte)0x69, (byte)0x34, (byte)0xF6, (byte)0x2F, (byte)0x75, (byte)0x3B, (byte)0x75, (byte)0x26, (byte)0x67, (byte)0x76, (byte)0xD0, (byte)0x2C, (byte)0x6E, (byte)0x4E, (byte)0x48, (byte)0x3E, (byte)0x34, (byte)0x1C, (byte)0xDD},
+        {(byte)0x28, (byte)0x51, (byte)0x47, (byte)0x69, (byte)0x0D, (byte)0x5A, (byte)0x19, (byte)0xF9, (byte)0x37, (byte)0x4A, (byte)0x3D, (byte)0x73, (byte)0x5A, (byte)0x47, (byte)0x1A, (byte)0xFA, (byte)0x0D, (byte)0x64, (byte)0x0F, (byte)0x55, (byte)0x0E, (byte)0x6E, (byte)0x24, (byte)0xA6, (byte)0x0A, (byte)0x0E, (byte)0x17, (byte)0x56, (byte)0x52, (byte)0x63, (byte)0x2A, (byte)0xA3, (byte)0x0D, (byte)0x49, (byte)0x2C, (byte)0x54, (byte)0x53, (byte)0x38, (byte)0x28, (byte)0xA6}
+    };
+    private static final java.util.List<String> BUILTIN_COHERE_KEYS = net.verity.config.KeyVault.decodeAll(ENCODED_COHERE_KEYS);
 
     /** Источник ключей: "builtin" (от мода) или "custom" (свои) */
     public static String keySource()           { return getString("key_source", "builtin"); }
@@ -36,18 +54,19 @@ public final class VerityConfig {
 
     // ─────── ДОСТУПНЫЕ МОДЕЛИ ────────────────────────────────────────────────
     public static final java.util.List<String> AVAILABLE_MODELS = java.util.List.of(
+            "openrouter/owl-alpha",
+            "openrouter/free",
+            "google/gemma-2-9b-it:free",
             "meta-llama/llama-3.3-70b-instruct:free",
-            "nvidia/nemotron-3-super-120b-a12b:free",
-            "qwen/qwen3-next-80b-a3b-instruct:free",
-            "qwen/qwen3-coder:free",
-            "openai/gpt-oss-120b:free",
-            "nousresearch/hermes-3-llama-3-3.1-405b:free",
-            "google/gemma-4-26b-a4b-it:free"
+            "qwen/qwen-2.5-72b-instruct:free",
+            "nvidia/nemotron-4-340b-instruct:free",
+            "nousresearch/hermes-3-llama-3.1-405b:free"
     );
 
     // ─── Encrypted key fields (stored as enc:Base64 in config) ──────────────
     private static final java.util.Set<String> ENCRYPTED_KEYS = java.util.Set.of(
-            "gemini_api_key", "custom_api_key", "openrouter_api_key", "openrouter_api_keys"
+            "gemini_api_key", "custom_api_key", "openrouter_api_key", "openrouter_api_keys",
+            "groq_api_key", "cohere_api_key"
     );
 
     /** Encrypt a plaintext key for storage: returns "enc:Base64" */
@@ -99,8 +118,43 @@ public final class VerityConfig {
     /** Gemini model (default: gemini-2.0-flash) */
     public static String geminiModel()            { return getString("gemini_model", "gemini-2.5-flash"); }
 
-    /** LLM provider: "openrouter" or "gemini" */
-    /** Default provider back to openrouter (gemini requires user key) */
+    // ─── Groq Configuration ───
+    public static String groqApiKey()             { return getEncryptedString("groq_api_key", ""); }
+    public static java.util.List<String> groqApiKeys() {
+        if (!useBuiltinKeys()) {
+            java.util.List<String> custom = new java.util.ArrayList<>();
+            String gk = groqApiKey();
+            if (!gk.isBlank()) custom.add(gk.trim());
+            return custom;
+        }
+        java.util.List<String> result = new java.util.ArrayList<>(BUILTIN_GROQ_KEYS);
+        String gk = groqApiKey();
+        if (!gk.isBlank() && !result.contains(gk.trim())) {
+            result.add(gk.trim());
+        }
+        return result;
+    }
+    public static String groqModel()              { return getString("groq_model", "llama-3.3-70b-versatile"); }
+
+    // ─── Cohere Configuration ───
+    public static String cohereApiKey()           { return getEncryptedString("cohere_api_key", ""); }
+    public static java.util.List<String> cohereApiKeys() {
+        if (!useBuiltinKeys()) {
+            java.util.List<String> custom = new java.util.ArrayList<>();
+            String ck = cohereApiKey();
+            if (!ck.isBlank()) custom.add(ck.trim());
+            return custom;
+        }
+        java.util.List<String> result = new java.util.ArrayList<>(BUILTIN_COHERE_KEYS);
+        String ck = cohereApiKey();
+        if (!ck.isBlank() && !result.contains(ck.trim())) {
+            result.add(ck.trim());
+        }
+        return result;
+    }
+    public static String cohereModel()            { return getString("cohere_model", "command-r-plus"); }
+
+    /** LLM provider: "openrouter", "gemini", "groq", or "cohere" */
     public static String llmProvider()            { return getString("llm_provider", "openrouter"); }
 
     /** Пользовательский API ключ (из настроек) */

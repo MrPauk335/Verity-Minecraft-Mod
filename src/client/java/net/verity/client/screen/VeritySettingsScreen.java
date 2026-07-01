@@ -59,14 +59,14 @@ public class VeritySettingsScreen extends Screen {
             "gemma-4-31b-it"
     );
     private static String modelDisplayName(String modelId) {
+        if (modelId.contains("owl-alpha")) return "Owl Alpha (free)";
+        if (modelId.contains("openrouter/free")) return "Auto-Free-Router (free)";
+        if (modelId.contains("gemma-2-9b")) return "Gemma 2 9B (free)";
         if (modelId.contains("llama-3.3-70b")) return "Llama 3.3 70B (free)";
-        if (modelId.contains("qwen3-next")) return "Qwen3 Next 80B (free)";
-        if (modelId.contains("nemotron-3-super")) return "Nemotron 3 Super 120B (free)";
-        if (modelId.contains("gemma-4-26b")) return "Gemma 4 26B (free)";
-        if (modelId.contains("gemma-4-31b")) return "Gemma 4 31B (free)";
-        if (modelId.contains("qwen3-coder")) return "Qwen3 Coder 480B (free)";
+        if (modelId.contains("qwen-2.5-72b")) return "Qwen 2.5 72B (free)";
+        if (modelId.contains("nemotron-4-340b")) return "Nemotron 4 340B (free)";
         if (modelId.contains("hermes-3-llama")) return "Hermes 3 405B (free)";
-        if (modelId.contains("gpt-oss-120b")) return "GPT-OSS 120B (free)";
+        
         // Gemini models
         if (modelId.contains("gemini-3.1-flash-live")) return "Gemini 3.1 Flash Live";
         if (modelId.contains("gemini-3-flash")) return "Gemini 3 Flash";
@@ -168,15 +168,24 @@ public class VeritySettingsScreen extends Screen {
         if (scrollY > maxScroll) scrollY = maxScroll;
         if (scrollY < 0) scrollY = 0;
 
-        // ── Provider selector (Gemini / OpenRouter) ─────────────────────────
-        this.addRenderableWidget(CycleButton.<String>builder(m -> Component.literal(
-                        "gemini".equals(m) ? "\u00a7bGemini (Google)" : "\u00a7eOpenRouter"))
-                .withValues("openrouter", "gemini")
+        // ── Provider selector (OpenRouter / Gemini / Groq / Cohere) ──────────
+        this.addRenderableWidget(CycleButton.<String>builder(m -> {
+            switch (m) {
+                case "gemini": return Component.literal("\u00a7bGemini (Google)");
+                case "groq": return Component.literal("\u00a7aGroq (Ultra-Fast)");
+                case "cohere": return Component.literal("\u00a7dCohere (Smart/Russian)");
+                default: return Component.literal("\u00a7eOpenRouter");
+            }
+        })
+                .withValues("openrouter", "gemini", "groq", "cohere")
                 .withInitialValue(llmProvider)
                 .displayOnlyValue()
                 .create(cx - 115, yProvider, 230, BTN_H,
                         Component.literal("Provider"),
-                        (btn, val) -> llmProvider = val));
+                        (btn, val) -> {
+                            llmProvider = val;
+                            updateKeyBoxHints();
+                        }));
 
         // ── Key Source toggle ──────────────────────────────────────────────
         this.addRenderableWidget(CycleButton.<String>builder(m -> Component.literal(
@@ -301,8 +310,21 @@ public class VeritySettingsScreen extends Screen {
             apiKeyBox.setHint(Component.literal("\u00a78Built-in keys \u2014 optional"));
             sttKeyBox.setHint(Component.literal("\u00a78Built-in Groq keys \u2014 optional"));
         } else {
-            apiKeyBox.setHint(Component.literal("\u00a78sk-or-v1-...  (openrouter.ai/keys)"));
             sttKeyBox.setHint(Component.literal("\u00a78gsk_...  (console.groq.com/keys \u2014 free)"));
+            switch (String.valueOf(llmProvider).toLowerCase()) {
+                case "groq":
+                    apiKeyBox.setHint(Component.literal("\u00a78gsk_...  (console.groq.com/keys \u2014 free)"));
+                    break;
+                case "cohere":
+                    apiKeyBox.setHint(Component.literal("\u00a78trial_...  (dashboard.cohere.com/api-keys)"));
+                    break;
+                case "gemini":
+                    apiKeyBox.setHint(Component.literal("\u00a78AI...  (aistudio.google.com/apikey)"));
+                    break;
+                default:
+                    apiKeyBox.setHint(Component.literal("\u00a78sk-or-v1-...  (openrouter.ai/keys)"));
+                    break;
+            }
         }
     }
 

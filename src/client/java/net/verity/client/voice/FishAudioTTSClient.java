@@ -162,21 +162,35 @@ public class FishAudioTTSClient {
                 // Ищем chunk "data" (может быть не на 36, если есть LIST/fact chunks)
                 int dataOffset = 12;
                 int dataSize   = 0;
-                while (dataOffset + 8 < wavData.length) {
+                while (dataOffset + 8 <= wavData.length) {
                     String chunkId = new String(wavData, dataOffset, 4, java.nio.charset.StandardCharsets.US_ASCII);
                     int    chunkSz = readInt32LE(wavData, dataOffset + 4);
-                    dataOffset += 8;
-                    if ("data".equals(chunkId)) {
-                        dataSize = chunkSz;
+                    
+                    // Safety check to prevent negative chunk size or array index out of bounds
+                    if (chunkSz < 0 || dataOffset + 8 + chunkSz > wavData.length) {
                         break;
                     }
-                    dataOffset += chunkSz;
+                    
+                    if ("data".equals(chunkId)) {
+                        dataSize = chunkSz;
+                        dataOffset += 8;
+                        break;
+                    }
+                    
+                    // Align chunk size to 2-byte boundary
+                    int paddedSize = (chunkSz + 1) & ~1;
+                    dataOffset += 8 + paddedSize;
                 }
 
-                if (dataSize == 0 || dataOffset + dataSize > wavData.length) {
+                if (dataSize <= 0 || dataOffset + dataSize > wavData.length) {
                     // Fallback: предположим стандартный 44-байтный header
                     dataOffset = 44;
-                    dataSize   = wavData.length - 44;
+                    dataSize   = Math.max(0, wavData.length - 44);
+                }
+
+                if (dataSize == 0) {
+                    VerityMod.LOGGER.error("TTS: WAV data size is 0, cannot play");
+                    return;
                 }
 
                 // Определяем формат OpenAL

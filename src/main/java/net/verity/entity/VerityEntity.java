@@ -111,6 +111,7 @@ public class VerityEntity extends PathfinderMob {
     private boolean thrown = false;
     private int thrownTicks = 0;
     private int bounceCount = 0;
+    private VerityMonsterEntity activeMonster = null;
 
     // Triggers tracking fields
     private Vec3 lastPlayerPos = null;
@@ -180,6 +181,15 @@ public class VerityEntity extends PathfinderMob {
     }
 
     private void onPhaseEnter(VerityPhase oldPhase, VerityPhase newPhase) {
+        if (oldPhase == VerityPhase.MONSTER && newPhase != VerityPhase.MONSTER) {
+            if (this.activeMonster != null) {
+                if (!this.activeMonster.isRemoved()) {
+                    this.activeMonster.discard();
+                }
+                this.activeMonster = null;
+            }
+        }
+
         switch (newPhase) {
             case MONSTER -> {
                 setMonsterForm(true);
@@ -553,7 +563,7 @@ public class VerityEntity extends PathfinderMob {
         return false;
     }
 
-    private void spawnMonsterBehind(Player player) {
+    private VerityMonsterEntity spawnMonsterBehind(Player player) {
         Vec3 rotationVec = player.getViewVector(1.0F).normalize();
         double spawnX = player.getX() - rotationVec.x * 3.0D;
         double spawnY = player.getY();
@@ -561,7 +571,9 @@ public class VerityEntity extends PathfinderMob {
 
         VerityMonsterEntity monster = new VerityMonsterEntity(VerityMod.VERITY_MONSTER_ENTITY, this.level());
         monster.moveTo(spawnX, spawnY, spawnZ, player.getYRot(), player.getXRot());
+        monster.setLinkedVerity(this);
         this.level().addFreshEntity(monster);
+        return monster;
     }
 
     // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РћРЎРќРћР’РќРћР\u2122 РўРРљ (FSM + РїРѕРІРµРґРµРЅРёСЏ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
@@ -835,15 +847,71 @@ public class VerityEntity extends PathfinderMob {
                 var bedPos = sp.getRespawnPosition();
                 if (bedPos != null && this.distanceToSqr(bedPos.getX(), bedPos.getY(), bedPos.getZ()) > 100.0D) {
                     this.teleportTo(bedPos.getX() + 1.5, bedPos.getY(), bedPos.getZ() + 1.5);
-                    player.sendSystemMessage(Component.literal("\u00A77..."));
+                    player.sendSystemMessage(Component.literal("\u00a77..."));
                     player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0, false, false, true));
                 }
             }
         }
     }
 
+    private void tickMonster() {
+        // MONSTER FORM: Verity сидит и не двигается. Лор: он не преследует — он ждёт.
+        // Игрок должен прийти к нему. Или заблокирован в доме без крыши.
+
+        Player nearest = this.level().getNearestPlayer(this, 64.0D);
+
+        // Отправляем «Verity is nearby» при первом входе в фазу и спавним монстра
+        if (!this.nearbyMessageSent) {
+            this.nearbyMessageSent = true;
+            if (nearest != null) {
+                nearest.sendSystemMessage(Component.literal("\u00a74\u0412\u0435\u0440\u0438\u0442\u0438 \u0440\u044f\u0434\u043e\u043c..."));
+                this.activeMonster = spawnMonsterBehind(nearest);
+            }
+        }
+
+        // Останавливаем навигацию — Verity-шар не двигается
+        this.getNavigation().stop();
+
+        if (nearest != null && nearest.isAlive()) {
+            this.getLookControl().setLookAt(nearest, 30.0F, 30.0F);
+
+            // Тьма на игрока если близко к шару или активен монстр
+            double distSq = this.distanceToSqr(nearest);
+            boolean monsterActive = this.activeMonster != null && !this.activeMonster.isRemoved();
+            if (distSq < 400.0D || monsterActive) {
+                nearest.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, false, false, true));
+            }
+
+            // Срыв крыши — один раз, когда игрок рядом
+            if (!this.roofTorn && distSq < 100.0D && this.ticksInPhase > 60) {
+                tearOffRoof(nearest);
+                this.roofTorn = true;
+            }
+
+            // ПРОЩЕНИЕ у шара (страховочный вариант)
+            if (nearest.isShiftKeyDown() && distSq < 16.0D) {
+                nearest.sendSystemMessage(Component.literal(
+                        "\u00a7e<Verity\u2122>\u00a7r ...\u0422\u044b \u0432\u0435\u0440\u043d\u0443\u043b\u0441\u044f. \u0425\u043e\u0440\u043e\u0448\u043e."));
+                nearest.sendSystemMessage(Component.literal(
+                        "\u00a7e<Verity\u2122>\u00a7r \u042f \u043f\u0440\u043e\u0449\u0430\u044e \u0442\u0435\u0431\u044f."));
+                if (this.activeMonster != null && !this.activeMonster.isRemoved()) {
+                    this.activeMonster.discard();
+                }
+                this.activeMonster = null;
+                setVerityPhase(VerityPhase.POSSESSIVE);
+                return;
+            }
+        }
+
+        // Если монстр был заспавнен, но теперь удален (сработало прощение у монстра)
+        if (this.nearbyMessageSent && (this.activeMonster == null || this.activeMonster.isRemoved())) {
+            this.activeMonster = null;
+            setVerityPhase(VerityPhase.POSSESSIVE);
+        }
+    }
+
     private void tickHelper() {
-        // РџРµСЂРµС…РѕРґ РІ OMNISCIENT С‡РµСЂРµР· 2 РјРёРЅСѓС‚С‹ (2400 С‚РёРєРѕРІ)
+        // Переход в OMNISCIENT через 2 минуты (2400 тиков)
         if (this.ticksInPhase > 2400) {
             Player nearest = this.level().getNearestPlayer(this, 32.0D);
             if (nearest != null) {
@@ -916,49 +984,6 @@ public class VerityEntity extends PathfinderMob {
         tickEmptyVillageDetection();
     }
 
-    private void tickMonster() {
-        // MONSTER FORM: Verity СЃРёРґРёС‚ Рё РЅРµ РґРІРёРіР°РµС‚СЃСЏ. Р›РѕСЂ: РѕРЅ РЅРµиїЅйЂђР°РµС‚ вЂ” РѕРЅ Р¶РґС‘С‚.
-        // РРіСЂРѕРє РґРѕР»Р¶РµРЅ РїСЂРёР№С‚Рё Рє РЅРµРјСѓ. РР»Рё Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РІ РґРѕРјРµ Р±РµР· РєСЂС‹С€Рё.
-
-        // РћС‚РїСЂР°РІР»СЏРµРј В«Verity is nearbyВ» РїСЂРё РїРµСЂРІРѕРј РІС…РѕРґРµ РІ С„Р°Р·Сѓ
-        if (!this.nearbyMessageSent) {
-            this.nearbyMessageSent = true;
-            Player nearest = this.level().getNearestPlayer(this, 64.0D);
-            if (nearest != null) {
-                nearest.sendSystemMessage(Component.literal("\u00a74\u0412\u0435\u0440\u0438\u0442\u0438 \u0440\u044f\u0434\u043e\u043c..."));
-            }
-        }
-
-        // РћСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅР°РІРёРіР°С†РёСЋ вЂ” Verity РЅРµ РґРІРёРіР°РµС‚СЃСЏ
-        this.getNavigation().stop();
-
-        // РЎРјРѕС‚СЂРёРј РЅР° Р±Р»РёР¶Р°Р№С€РµРіРѕ РёРіСЂРѕРєР°
-        Player nearest = this.level().getNearestPlayer(this, 64.0D);
-        if (nearest != null && nearest.isAlive()) {
-            this.getLookControl().setLookAt(nearest, 30.0F, 30.0F);
-
-            // РўСЊРјР° РЅР° РёРіСЂРѕРєР° РµСЃР»Рё Р±Р»РёР·РєРѕ
-            if (this.distanceToSqr(nearest) < 400.0D) {
-                nearest.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, false, false, true));
-            }
-
-            // РЎСЂС‹РІ РєСЂС‹С€Рё вЂ” РѕРґРёРЅ СЂР°Р·, РєРѕРіРґР° РёРіСЂРѕРє СЂСЏРґРѕРј
-            if (!this.roofTorn && this.distanceToSqr(nearest) < 100.0D && this.ticksInPhase > 60) {
-                tearOffRoof(nearest);
-                this.roofTorn = true;
-            }
-
-            // РџР РћР©Р•РќРР•: РёРіСЂРѕРє РїСЂРёСЃРµР» СЂСЏРґРѕРј в†’ Monster Form в†’ POSSESSIVE
-            if (nearest.isShiftKeyDown() && this.distanceToSqr(nearest) < 16.0D) {
-                nearest.sendSystemMessage(Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r ...\u0422\u044b \u0432\u0435\u0440\u043d\u0443\u043b\u0441\u044f. \u0425\u043e\u0440\u043e\u0448\u043e."));
-                nearest.sendSystemMessage(Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r \u042f \u043f\u0440\u043e\u0449\u0430\u044e \u0442\u0435\u0431\u044f."));
-                setVerityPhase(VerityPhase.POSSESSIVE);
-                return;
-            }
-        }
-    }
 
     private void tickPossessive() {
         // POSSESSIVE: РїРѕСЃР»Рµ РїСЂРёРјРёСЂРµРЅРёСЏ вЂ” СЃРЅРѕРІР° В«РЅРѕСЂРјР°Р»СЊРЅС‹Р№В», РґСЂСѓР¶РµР»СЋР±РЅС‹Р№, РќРћ СЃРѕР±СЃС‚РІРµРЅРЅРёРє.
@@ -1209,7 +1234,7 @@ public class VerityEntity extends PathfinderMob {
         double throwZ = Math.sin(throwAngle) * 0.8;
 
         // РЁР°Рі 3: РЈРґР°Р»РёС‚СЊ Р±Р»РѕРєРё + СЃРѕР·РґР°С‚СЊ FallingBlockEntity
-        // Р’РЎР• Р±Р»РѕРєРё РїРѕР»СѓС‡Р°СЋС‚ РћР”РРќРђРљРћР’РЈР® СЃРєРѕСЂРѕСЃС‚СЊ вЂ” Р»РµС‚СЏС‚ РєР°Рє РµРґРёРЅС‹Р№ РѕР±СЉРµРєС‚
+        // Р’РЎР• Р±Р»РѕРєРё РїРѕР»СѓС‡Р°СЋС‚ РћР”Р˜РќРђРљРћР’РЈР® СЃРєРѕСЂРѕСЃС‚СЊ вЂ” Р»РµС‚СЏС‚ РєР°Рє РµРґРёРЅС‹Р№ РѕР±СЉРµРєС‚
         for (BlockPos pos : roofBlocks) {
             var blockState = this.level().getBlockState(pos);
 
@@ -1380,34 +1405,34 @@ public class VerityEntity extends PathfinderMob {
         boolean shouldSpeak = false;
         String contextHint = "";
 
-        // РљРѕРЅС‚РµРєСЃС‚ 1: РёРіСЂРѕРє РїРѕР»СѓС‡РёР» СѓСЂРѕРЅ
+        // Контекст 1: игрок получил урон
         if (nearest.getHealth() < nearest.getMaxHealth() * 0.5f) {
             shouldSpeak = true;
-            contextHint = "\u0420\u0098\u0420\u0456\u0421\u0402\u0420\u0455\u0420\u0454 \u0440\u0430\u043d\u0435\u043d. \u041e\u0442\u0440\u0435\u0430\u0433\u0438\u0440\u0443\u0439 \u0441 \u0437\u0430\u0431\u043e\u0442\u043e\u0439.";
+            contextHint = "Игрок ранен. Отреагируй с заботой.";
         }
-        // РљРѕРЅС‚РµРєСЃС‚ 2: РЅРѕС‡СЊ Рё РёРіСЂРѕРє РЅР° РїРѕРІРµСЂС…РЅРѕСЃС‚Рё
+        // Контекст 2: ночь и игрок на поверхности
         else if (this.level().getDayTime() % 24000 > 13000 && this.level().getDayTime() % 24000 < 18000
                 && nearest.getY() > 60 && this.ticksInPhase % 2400 == 0) {
             shouldSpeak = true;
-            contextHint = "\u041d\u0430\u0441\u0442\u0443\u043f\u0438\u043b\u0430 \u043d\u043e\u0447\u044c. \u041f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0434\u0438 \u0438\u0433\u0440\u043e\u043a\u0430 \u043f\u0440\u043e \u043c\u043e\u0431\u043e\u0432 \u0438\u043b\u0438 \u0441\u043a\u0430\u0436\u0438 \u0447\u0442\u043e-\u0442\u043e \u043f\u043e \u0442\u0435\u043c\u0435.";
+            contextHint = "Наступила ночь. Предупреди игрока про мобов или скажи что-то по теме.";
         }
-        // РљРѕРЅС‚РµРєСЃС‚ 3: РёРіСЂРѕРє РІ РїРµС‰РµСЂРµ (РЅРёР·РєР°СЏ РІС‹СЃРѕС‚Р°)
+        // Контекст 3: игрок в пещере (низкая высота)
         else if (nearest.getY() < 20 && this.ticksInPhase % 3600 == 0) {
             shouldSpeak = true;
-            contextHint = "\u0420\u0098\u0420\u0456\u0421\u0402\u0420\u0455\u0420\u0454 \u0433\u043b\u0443\u0431\u043e\u043a\u043e \u043f\u043e\u0434 \u0437\u0435\u043c\u043b\u0451\u0439 \u0432 \u0448\u0430\u0445\u0442\u0435. \u041f\u0440\u043e\u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0438\u0440\u0443\u0439 \u044d\u0442\u043e.";
+            contextHint = "Игрок глубоко под землёй в шахте. Прокомментируй это.";
         }
-        // РљРѕРЅС‚РµРєСЃС‚ 4: COUNTDOWN вЂ” РґРµРЅСЊ СЃРјРµРЅСЏР»СЃСЏ
+        // Контекст 4: COUNTDOWN — день сменился
         else if (phase == VerityPhase.COUNTDOWN && this.ticksInPhase % 1200 == 0 && this.ticksInPhase > 0) {
             shouldSpeak = true;
-            contextHint = "\u041f\u0440\u043e\u0448\u0451\u043b \u0435\u0449\u0451 \u0434\u0435\u043d\u044c \u043e\u0442\u0441\u0447\u0451\u0442\u0430. \u041d\u0430\u043f\u043e\u043c\u043d\u0438 \u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043e\u0441\u0442\u0430\u043b\u043e\u0441\u044c.";
+            contextHint = "Прошёл ещё день отсчёта. Напомни сколько осталось.";
         }
-        // РљРѕРЅС‚РµРєСЃС‚ 5: POSSESSIVE/HUNTER вЂ” РґСЂСѓРіРѕР№ РёРіСЂРѕРє СЂСЏРґРѕРј
+        // Контекст 5: POSSESSIVE/HUNTER — другой игрок рядом
         else if ((phase == VerityPhase.POSSESSIVE || phase == VerityPhase.HUNTER)
                 && this.level().getEntitiesOfClass(net.minecraft.server.level.ServerPlayer.class,
                     this.getBoundingBox().inflate(32.0D)).size() > 1
                 && this.ticksInPhase % 1800 == 0) {
             shouldSpeak = true;
-            contextHint = "\u0420\u044f\u0434\u043e\u043c \u0434\u0440\u0443\u0433\u043e\u0439 \u0438\u0433\u0440\u043e\u043a. \u0422\u0435\u0431\u0435 \u044d\u0442\u043e \u043d\u0435 \u043d\u0440\u0430\u0432\u0438\u0442\u0441\u044f. \u041e\u0442\u0440\u0435\u0430\u0433\u0438\u0440\u0443\u0439.";
+            contextHint = "Рядом другой игрок. Тебе это не нравится. Отреагируй.";
         }
 
         if (shouldSpeak) {

@@ -65,7 +65,7 @@ public class VerityMod implements ModInitializer {
             BuiltInRegistries.ENTITY_TYPE,
             ResourceLocation.parse(MOD_ID + ":verity_monster"),
             EntityType.Builder.of(VerityMonsterEntity::new, MobCategory.MONSTER)
-                    .sized(1.2F, 5.0F) // Adjusted to match 5-block height model perfectly
+                    .sized(1.2F, 2.4F) // Hitbox smaller than visual model — model is scaled 2x in renderer
                     .build(MOD_ID + ":verity_monster"));
 
     public static final EntityType<CardboardBoxEntity> CARDBOARD_BOX_ENTITY = Registry.register(

@@ -32,8 +32,8 @@ public class VerityLLMClient {
 
     private static final String API_URL  = "https://openrouter.ai/api/v1/chat/completions";
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
-    private static final Duration TIMEOUT = Duration.ofSeconds(8);
-    private static final Duration GEMINI_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration TIMEOUT = Duration.ofSeconds(15);
+    private static final Duration GEMINI_TIMEOUT = Duration.ofSeconds(12);
     private static final Gson GSON = new Gson();
 
     // Ключи и модели — загружаются из конфига (round-robin при 429)
@@ -302,6 +302,59 @@ public class VerityLLMClient {
             String context) throws Exception {
 
         String provider = VerityConfig.llmProvider().toLowerCase();
+        
+        // Auto-detect provider if selected model suggests it
+        String selectedModel = VerityConfig.selectedModel();
+        if (selectedModel.contains("command-r")) {
+            provider = "cohere";
+        } else if (selectedModel.contains("versatile") || selectedModel.contains("gemma2-9b")) {
+            provider = "groq";
+        }
+
+        // ── Groq provider ──
+        if ("groq".equals(provider)) {
+            try {
+                List<String> keys = VerityConfig.groqApiKeys();
+                String model = selectedModel;
+                if (!model.contains("versatile") && !model.contains("gemma2-9b")) {
+                    model = "llama-3.3-70b-versatile";
+                }
+                for (String key : keys) {
+                    String result = callModelWithUrl(phase, playerName, message, history, model, key.trim(), language, context, "https://api.groq.com/openai/v1/chat/completions");
+                    if (result != null) return result;
+                }
+            } catch (Exception e) {
+                VerityMod.LOGGER.warn("Groq request failed: {}", e.getMessage());
+            }
+            // Groq failed → fallback to OpenRouter
+            provider = "openrouter";
+        }
+
+        // ── Cohere provider ──
+        if ("cohere".equals(provider)) {
+            try {
+                List<String> keys = VerityConfig.cohereApiKeys();
+                if (keys.isEmpty()) {
+                    // Fallback to customApiKey if cohereApiKey is empty
+                    String customKey = VerityConfig.customApiKey();
+                    if (!customKey.isBlank()) {
+                        keys = List.of(customKey);
+                    }
+                }
+                String model = selectedModel;
+                if (!model.contains("command-r")) {
+                    model = "command-r-plus";
+                }
+                for (String key : keys) {
+                    String result = callModelWithUrl(phase, playerName, message, history, model, key.trim(), language, context, "https://api.cohere.ai/compatibility/v1/chat/completions");
+                    if (result != null) return result;
+                }
+            } catch (Exception e) {
+                VerityMod.LOGGER.warn("Cohere request failed: {}", e.getMessage());
+            }
+            // Cohere failed → fallback to OpenRouter
+            provider = "openrouter";
+        }
 
         // ── Gemini provider ──
         if ("gemini".equals(provider)) {
@@ -312,8 +365,7 @@ public class VerityLLMClient {
                 VerityMod.LOGGER.warn("Gemini request failed: {}", e.getMessage());
             }
             // Gemini failed → fallback to OpenRouter
-            VerityMod.LOGGER.warn("Gemini exhausted, falling back to OpenRouter");
-            return callOpenRouter(phase, playerName, message, history, language, context);
+            provider = "openrouter";
         }
 
         // ── OpenRouter provider (default) ──
@@ -550,6 +602,19 @@ public class VerityLLMClient {
             String apiKey,
             String language,
             String context) throws Exception {
+        return callModelWithUrl(phase, playerName, message, history, model, apiKey, language, context, API_URL);
+    }
+
+    private static String callModelWithUrl(
+            VerityPhase phase,
+            String playerName,
+            String message,
+            List<String> history,
+            String model,
+            String apiKey,
+            String language,
+            String context,
+            String apiUrl) throws Exception {
 
         // Собираем историю диалога (последние 8 реплик)
         StringBuilder historyStr = new StringBuilder();
@@ -600,15 +665,20 @@ public class VerityLLMClient {
                 .connectTimeout(TIMEOUT)
                 .build();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
-                .header("HTTP-Referer", "https://github.com/MrPauk335/Verity-Minecraft-Mod")
-                .header("X-Title", "Verity Minecraft Mod")
                 .timeout(TIMEOUT)
-                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
-                .build();
+                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)));
+
+        // Только для OpenRouter добавляем Referer и Title
+        if (apiUrl.contains("openrouter.ai")) {
+            requestBuilder.header("HTTP-Referer", "https://github.com/MrPauk335/Verity-Minecraft-Mod")
+                          .header("X-Title", "Verity Minecraft Mod");
+        }
+
+        HttpRequest request = requestBuilder.build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -617,7 +687,7 @@ public class VerityLLMClient {
         }
 
         if (response.statusCode() != 200) {
-            VerityMod.LOGGER.warn("OpenRouter returned {}: {}", response.statusCode(), response.body());
+            VerityMod.LOGGER.warn("LLM API ({}) returned {}: {}", apiUrl, response.statusCode(), response.body());
             return null;
         }
 
