@@ -1,5 +1,11 @@
 # Verity Mod — Changelog
 
+## v0.8.4-beta
+
+### Fixes & Optimizations
+- **Fixed double-spawn on box open** — added a spawned flag to `CardboardBoxEntity` to prevent spawning multiple `VerityEntity` instances simultaneously (which caused duplicate chat messages on spawn).
+- **Cleaned all garbled Cyrillic strings in VerityEntity** — recursively decoded and restored all double-encoded Russian texts in `VerityEntity` (e.g. spawn greetings, countdown secrets, and player observation comments). No more corrupted characters in chat!
+
 ## v0.8.3-beta
 
 ### AI Behaviour

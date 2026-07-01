@@ -18,6 +18,8 @@ public class CardboardBoxEntity extends Entity {
 
     private static final double BOX_SIZE = 0.6D;
 
+    private boolean spawned = false;
+
     public CardboardBoxEntity(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
@@ -50,7 +52,8 @@ public class CardboardBoxEntity extends Entity {
             // Float upwards slowly
             this.setPos(this.getX(), this.getY() + 0.03D, this.getZ());
         } else {
-            if (!this.level().isClientSide) {
+            if (!this.level().isClientSide && !spawned) {
+                spawned = true;
                 spawnVerity();
                 this.discard();
             }
