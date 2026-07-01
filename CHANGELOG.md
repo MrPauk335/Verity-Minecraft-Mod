@@ -3,7 +3,7 @@
 ## v0.8.3-beta
 
 ### AI Behaviour
-- **Male assistant identity** — Verity is explicitly instructed as a personal male assistant-friend ("личный ассистент-друг, мальчик") across all system prompts. Will always use masculine verb forms in Russian: "я рад", "я пришёл", "я твой личный ассистент".
+- **Male helper-friend identity** — Verity is explicitly instructed as a personal male helper-friend ("личный помощник-друг, мальчик") across all system prompts, matching the canonical lore ("your personal helper friend"). Will always use masculine verb forms in Russian: "я рад", "я пришёл", "я твой личный помощник-друг".
 
 ### Follow & Proximity
 - **Hears you everywhere** — voice chat (STT) packet search radius increased from 64 → **1024 blocks**. Verity now receives your voice input regardless of how far away he is in the current dimension.
