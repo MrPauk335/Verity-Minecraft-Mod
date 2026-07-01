@@ -35,55 +35,65 @@ jobs:
           files: build/libs/*.jar
 
       - name: Send to Telegram
+        if: github.event_name == 'release'
         env:
           BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          REPO: ${{ github.repository }}
         run: |
-          if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
-            echo "TG_BOT_TOKEN or TG_CHAT_ID not set, skipping"
-            exit 0
-          fi
-
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          RELEASE_NAME="${{ github.event.release.name }}"
-          RELEASE_BODY="${{ github.event.release.body }}"
-          RELEASE_URL="${{ github.event.release.html_url }}"
-
-          if [ -z "$RELEASE_NAME" ] || [ "$RELEASE_NAME" = "null" ]; then
-            RELEASE_NAME="New version: $TAG_NAME"
-          fi
-          if [ -z "$RELEASE_BODY" ] || [ "$RELEASE_BODY" = "null" ]; then
-            RELEASE_BODY="New version released. See on GitHub."
-          fi
-          if [ -z "$RELEASE_URL" ] || [ "$RELEASE_URL" = "null" ]; then
-            RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/$TAG_NAME"
-          fi
-
-          RELEASE_BODY=$(echo "$RELEASE_BODY" | head -c 3000)
-
-          MESSAGE="🔔 *Verity Mod — New Release!*
-
-          *${RELEASE_NAME}*
-
-          ${RELEASE_BODY}
-
-          📦 [Download](${RELEASE_URL})
-          🏠 [GitHub](https://github.com/${{ github.repository }})"
-
-          export MESSAGE
-          python3 -c "
+          python3 << 'PYEOF'
           import json, urllib.request, os
+
+          bot_token = os.environ.get('BOT_TOKEN', '')
+          chat_id = os.environ.get('CHAT_ID', '')
+          if not bot_token or not chat_id:
+              print('TG_BOT_TOKEN or TG_CHAT_ID not set, skipping')
+              exit(0)
+
+          release_name = os.environ.get('RELEASE_NAME', '')
+          release_body = os.environ.get('RELEASE_BODY', '')
+          release_url = os.environ.get('RELEASE_URL', '')
+          repo = os.environ.get('REPO', '')
+
+          if not release_name or release_name == 'null':
+              release_name = 'New version released'
+          if not release_body or release_body == 'null':
+              release_body = 'See on GitHub for details.'
+          if not release_url or release_url == 'null':
+              release_url = f'https://github.com/{repo}/releases'
+
+          # Truncate body
+          if len(release_body) > 3000:
+              release_body = release_body[:3000]
+
+          message = (
+              f"\U0001F514 *Verity Mod \u2014 New Release!*\n\n"
+              f"*{release_name}*\n\n"
+              f"{release_body}\n\n"
+              f"\U0001F4E6 [Download]({release_url})\n"
+              f"\U0001F3E0 [GitHub](https://github.com/{repo})"
+          )
+
           data = json.dumps({
-              'chat_id': os.environ['CHAT_ID'],
-              'text': os.environ['MESSAGE'],
+              'chat_id': chat_id,
+              'text': message,
               'parse_mode': 'Markdown',
               'disable_web_page_preview': False
           }).encode()
+
           req = urllib.request.Request(
-              'https://api.telegram.org/bot' + os.environ['BOT_TOKEN'] + '/sendMessage',
+              f'https://api.telegram.org/bot{bot_token}/sendMessage',
               data=data,
               headers={'Content-Type': 'application/json'}
           )
-          resp = urllib.request.urlopen(req)
-          print('Telegram notification sent!' if resp.status == 200 else 'Failed: ' + resp.read().decode())
-          "
+
+          try:
+              resp = urllib.request.urlopen(req)
+              print('Telegram notification sent!')
+          except Exception as e:
+              print(f'Failed: {e}')
+              exit(1)
+          PYEOF
