@@ -69,19 +69,18 @@ jobs:
           if len(release_body) > 3000:
               release_body = release_body[:3000]
 
+          # Escape HTML in release name and body
+          import html
+          release_name = html.escape(release_name)
+          release_body = html.escape(release_body)
+
           message = (
               f"\U0001F514 <b>Verity Mod \u2014 New Release!</b>\n\n"
               f"<b>{release_name}</b>\n\n"
-              f"{release_body}\n\n"
+              f"<pre>{release_body}</pre>\n\n"
               f"\U0001F4E6 <a href=\"{release_url}\">Download</a>\n"
               f"\U0001F3E0 <a href=\"https://github.com/{repo}\">GitHub</a>"
           )
-
-          # Escape HTML special chars in body
-          message = message.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-          # But keep our intended HTML tags - re-escape them
-          message = message.replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
-          message = message.replace('&lt;a href=', '<a href=').replace('&lt;/a&gt;', '</a>')
 
           data = json.dumps({
               'chat_id': chat_id,
