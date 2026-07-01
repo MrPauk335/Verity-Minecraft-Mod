@@ -1,0 +1,64 @@
+name: Telegram Release Notify
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Send release to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
+            echo "TG_BOT_TOKEN or TG_CHAT_ID not set, skipping"
+            exit 0
+          fi
+
+          # Get release info from GitHub event
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          RELEASE_NAME="${{ github.event.release.name }}"
+          RELEASE_BODY="${{ github.event.release.body }}"
+          RELEASE_URL="${{ github.event.release.html_url }}"
+
+          # If triggered by tag push (no release), use tag as name
+          if [ -z "$RELEASE_NAME" ] || [ "$RELEASE_NAME" = "null" ]; then
+            RELEASE_NAME="New version: $TAG_NAME"
+          fi
+          if [ -z "$RELEASE_BODY" ] || [ "$RELEASE_BODY" = "null" ]; then
+            RELEASE_BODY="New version released. See on GitHub."
+          fi
+          if [ -z "$RELEASE_URL" ] || [ "$RELEASE_URL" = "null" ]; then
+            RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/$TAG_NAME"
+          fi
+
+          # Truncate body to 3000 chars (Telegram limit is 4096)
+          RELEASE_BODY=$(echo "$RELEASE_BODY" | head -c 3000)
+
+          # Build message
+          MESSAGE="🔔 *Verity Mod — New Release!*
+
+          *${RELEASE_NAME}*
+
+          ${RELEASE_BODY}
+
+          📦 [Download](${RELEASE_URL})
+          🏠 [GitHub](${{ github.server_url }}/${{ github.repository }})"
+
+          # Send to Telegram
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" --argjson parse_mode '"Markdown"' \
+            '{chat_id: $chat_id, text: $text, parse_mode: $parse_mode, disable_web_page_preview: false}')" \
+            > /dev/null
+
+          echo "Telegram notification sent!"
