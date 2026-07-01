@@ -1,4 +1,4 @@
-name: Telegram Release Notify
+name: Release Build & Notify
 
 on:
   release:
@@ -8,13 +8,31 @@ on:
       - 'v*'
 
 jobs:
-  notify:
-    runs-on: ubuntu-latest
+  build-and-notify:
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Send release to Telegram
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+
+      - name: Make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build
+        run: ./gradlew clean build
+
+      - name: Upload JAR to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/libs/*.jar
+
+      - name: Send to Telegram
         env:
           BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TG_CHAT_ID }}
@@ -50,7 +68,7 @@ jobs:
           📦 [Download](${RELEASE_URL})
           🏠 [GitHub](https://github.com/${{ github.repository }})"
 
-          # Use python to send (jq not available)
+          export MESSAGE
           python3 -c "
           import json, urllib.request, os
           data = json.dumps({
