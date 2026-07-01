@@ -107,6 +107,11 @@ public class VerityEntity extends PathfinderMob {
     private double roofThrowX = 0;        // РЅР°РїСЂР°РІР»РµРЅРёРµ Р±СЂРѕСЃРєР° РєСЂС‹С€Рё
     private double roofThrowZ = 0;
 
+    // ── Ball physics (throwable/kickable) ──
+    private boolean thrown = false;
+    private int thrownTicks = 0;
+    private int bounceCount = 0;
+
     // Triggers tracking fields
     private Vec3 lastPlayerPos = null;
     private int playerAfkTicks = 0;
@@ -379,7 +384,134 @@ public class VerityEntity extends PathfinderMob {
         return InteractionResult.CONSUME;
     }
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РЈР РћРќ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // ── Ball physics methods ──
+
+    /**
+     * Throw Verity in the direction the player is looking.
+     */
+    public void throwVerity(Player player) {
+        Vec3 lookDir = player.getLookAngle();
+        double power = 0.8D;
+        double upBoost = 0.35D;
+        this.setDeltaMovement(lookDir.x * power, lookDir.y * power + upBoost, lookDir.z * power);
+        this.hurtMarked = true;
+        this.thrown = true;
+        this.thrownTicks = 0;
+        this.bounceCount = 0;
+        this.setNoGravity(false);
+        this.getNavigation().stop();
+        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                SoundEvents.SLIME_ATTACK, SoundSource.NEUTRAL, 0.8F, 1.2F);
+        if (getVerityPhase() == VerityPhase.HELPER || getVerityPhase() == VerityPhase.OMNISCIENT) {
+            setFaceIndex(FACE_HURT);
+            this.talkAnimTick = 15;
+        }
+    }
+
+    /**
+     * Kick Verity — launch in the direction the player is facing.
+     */
+    public void kickVerity(Player player) {
+        Vec3 lookDir = player.getLookAngle();
+        double power = 0.6D;
+        double upBoost = 0.3D;
+        this.setDeltaMovement(lookDir.x * power, lookDir.y * power + upBoost, lookDir.z * power);
+        this.hurtMarked = true;
+        this.thrown = true;
+        this.thrownTicks = 0;
+        this.bounceCount = 0;
+        this.setNoGravity(false);
+        this.getNavigation().stop();
+        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                SoundEvents.SLIME_ATTACK, SoundSource.NEUTRAL, 0.6F, 1.5F);
+        setFaceIndex(FACE_HURT);
+        this.talkAnimTick = 15;
+    }
+
+    public boolean isThrown() {
+        return this.thrown;
+    }
+
+    @Override
+    public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
+        if (this.thrown) return false;
+        return super.causeFallDamage(fallDistance, multiplier, source);
+    }
+
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+
+    /**
+     * Ball physics — bouncing, rolling, settling.
+     */
+    private void tickBallPhysics() {
+        this.thrownTicks++;
+        Vec3 vel = this.getDeltaMovement();
+
+        if (this.onGround() && this.thrownTicks > 2) {
+            if (vel.y < -0.08) {
+                double bounceY = -vel.y * 0.55D;
+                double friction = 0.7D;
+                this.setDeltaMovement(vel.x * friction, bounceY, vel.z * friction);
+                this.hurtMarked = true;
+                this.bounceCount++;
+                float pitch = 1.0F + this.bounceCount * 0.1F;
+                this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                        SoundEvents.SLIME_JUMP, SoundSource.NEUTRAL,
+                        0.5F, Math.min(pitch, 1.8F));
+                if (this.bounceCount == 1) {
+                    setFaceIndex(FACE_HURT);
+                    this.talkAnimTick = 10;
+                }
+            } else {
+                double rollFriction = 0.92D;
+                this.setDeltaMovement(vel.x * rollFriction, 0.0D, vel.z * rollFriction);
+                this.hurtMarked = true;
+            }
+        }
+
+        if (this.horizontalCollision) {
+            Vec3 adjusted = this.getDeltaMovement();
+            double absX = Math.abs(adjusted.x);
+            double absZ = Math.abs(adjusted.z);
+            if (absX > absZ) {
+                this.setDeltaMovement(-adjusted.x * 0.5D, adjusted.y, adjusted.z * 0.8D);
+            } else {
+                this.setDeltaMovement(adjusted.x * 0.8D, adjusted.y, -adjusted.z * 0.5D);
+            }
+            this.hurtMarked = true;
+            this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                    SoundEvents.WOOD_HIT, SoundSource.NEUTRAL, 0.4F, 1.5F);
+        }
+
+        if (this.thrownTicks < 40 && vel.lengthSqr() > 0.3) {
+            List<Entity> hitEntities = this.level().getEntities(this, this.getBoundingBox().inflate(0.3));
+            for (Entity entity : hitEntities) {
+                if (entity instanceof Player && entity != this.level().getNearestPlayer(this, 64)) {
+                    Vec3 push = this.getDeltaMovement().normalize().scale(0.4);
+                    entity.push(push.x, 0.3, push.z);
+                    this.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+                            SoundEvents.SLIME_ATTACK, SoundSource.NEUTRAL, 0.6F, 1.0F);
+                }
+            }
+        }
+
+        double speed = vel.x * vel.x + vel.z * vel.z;
+        if ((this.onGround() && speed < 0.005 && Math.abs(vel.y) < 0.05) || this.thrownTicks > 200) {
+            this.thrown = false;
+            this.thrownTicks = 0;
+            this.bounceCount = 0;
+            this.setDeltaMovement(Vec3.ZERO);
+            this.hurtMarked = true;
+            setFaceIndex(getDefaultFaceForPhase(getVerityPhase()));
+            this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                    SoundEvents.WOOD_PLACE, SoundSource.NEUTRAL, 0.3F, 1.2F);
+        }
+    }
+
+    // ── УРОН ──
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (!this.level().isClientSide) {
@@ -390,34 +522,35 @@ public class VerityEntity extends PathfinderMob {
                 return false;
             }
 
-            // Р›Р°РІРѕРІС‹Р№ РёРЅС†РёРґРµРЅС‚ РёР»Рё СѓРґР°СЂ РёРіСЂРѕРєР° в†’ СЏСЂРѕСЃС‚СЊ в†’ РјРіРЅРѕРІРµРЅРЅРѕРµ РїСЂРѕС‰РµРЅРёРµ
-            // В«DON'T DO THAT! I THOUGHT WE WERE HAVING A NICE WALK!В»
-            if (source.getEntity() instanceof Player player
-                    || source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+            // Left-click by player = kick Verity like a ball
+            if (source.getEntity() instanceof Player player && !source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+                kickVerity(player);
+                return false;
+            }
 
-                Player nearest = (source.getEntity() instanceof Player p) ? p
-                        : this.level().getNearestPlayer(this, 32.0D);
-
+            // Fire/lava = rage incident (canonical "DON'T DO THAT!")
+            if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+                Player nearest = this.level().getNearestPlayer(this, 32.0D);
                 if (nearest != null) {
-                    // РЇСЂРѕСЃС‚СЊ вЂ” С‚РµР»РµРїРѕСЂС‚РёСЂСѓРµРјСЃСЏ Р·Р° СЃРїРёРЅСѓ
                     Vec3 rotVec = nearest.getViewVector(1.0F).normalize();
                     double tx = nearest.getX() - rotVec.x * 2.0;
                     double ty = nearest.getY();
                     double tz = nearest.getZ() - rotVec.z * 2.0;
                     this.teleportTo(tx, ty, tz);
-
                     nearest.sendSystemMessage(Component.literal(
-                            "В§4<Verityв„ў>В§r РќР• Р”Р•Р›РђР™ Р­РўРћР“Рћ!"));
+                            "\u00A74<Verity\u2122>\u00A7r \u041D\u0415 \u0414\u0415\u041B\u0410\u0419 \u042D\u0422\u041E\u0413\u041E!"));
                     nearest.sendSystemMessage(Component.literal(
-                            "В§4<Verityв„ў>В§r РЇ Р”РЈРњРђР›, РњР« РҐРћР РћРЁРћ Р“РЈР›РЇР›Р! Р РђР—Р’Р• РњР« РќР• РҐРћР РћРЁРћ Р“РЈР›РЇР›Р?"));
-
-                    // РњРіРЅРѕРІРµРЅРЅРѕРµ РїСЂРѕС‰РµРЅРёРµ С‡РµСЂРµР· 3 СЃРµРєСѓРЅРґС‹ (60 С‚РёРєРѕРІ) вЂ” Р·Р°РїРѕРјРёРЅР°РµРј
+                            "\u00A74<Verity\u2122>\u00A7r \u042F \u0414\u0423\u041C\u0410\u041B, \u041C\u042B \u0425\u041E\u0420\u041E\u0428\u041E \u0413\u0423\u041B\u042F\u041B\u0418! \u0420\u0410\u0417\u0412\u0415 \u041C\u042B \u041D\u0415 \u0425\u041E\u0420\u041E\u0428\u041E \u0413\u0423\u041B\u042F\u041B\u0418?"));
                     this.rageForgiveTicks = 3600;
                 }
-                return false; // Verity РЅРµСѓСЏР·РІРёРј
+                return false;
             }
+
+            // Immune to ALL other damage (cactus, fall, drown, suffocation, explosions, etc.)
+            // Verity is indestructible — only fire/lava triggers rage, everything else is ignored
+            return false;
         }
-        return super.hurt(source, amount);
+        return false;
     }
 
     private void spawnMonsterBehind(Player player) {
@@ -497,6 +630,18 @@ public class VerityEntity extends PathfinderMob {
 
         if (this.level().isClientSide) return;
 
+        // ── Ball physics: when thrown, skip AI and handle bouncing/rolling ──
+        if (this.thrown) {
+            if (this.talkAnimTick > 0) {
+                this.talkAnimTick--;
+                if (this.talkAnimTick <= 0) {
+                    setFaceIndex(getDefaultFaceForPhase(getVerityPhase()));
+                }
+            }
+            tickBallPhysics();
+            return;
+        }
+
         // Р РµРіРёСЃС‚СЂРёСЂСѓРµРј СЃРµР±СЏ РІ РіР»РѕР±Р°Р»СЊРЅРѕРј С‚СЂРµРєРµСЂРµ (O(1) РѕРїРµСЂР°С†РёСЏ)
         ACTIVE_VERITIES.add(this);
 
@@ -551,7 +696,7 @@ public class VerityEntity extends PathfinderMob {
         }
 
         // в”Ђв”Ђ РўРµР»РµРїРѕСЂС‚ "Рћ, СЏ С‚СѓС‚" вЂ” РґРѕРіРѕРЅСЏРµС‚ РёРіСЂРѕРєР° РµСЃР»Рё СѓР±РµР¶Р°Р» в”Ђв”Ђ
-        if (phase != VerityPhase.DORMANT && phase != VerityPhase.MONSTER) {
+        if (phase != VerityPhase.DORMANT && phase != VerityPhase.MONSTER && !this.thrown) {
             tickCatchUpTeleport();
         }
 
@@ -1408,6 +1553,7 @@ public class VerityEntity extends PathfinderMob {
         tag.putInt("ChatCooldown", this.chatCooldown);
         tag.putInt("IntroTicks", this.introTicks);
         tag.putBoolean("Leading", this.leading);
+        tag.putBoolean("Thrown", this.thrown);
         if (this.leadTarget != null) {
             tag.putInt("LeadTargetX", this.leadTarget.getX());
             tag.putInt("LeadTargetY", this.leadTarget.getY());
@@ -1447,6 +1593,7 @@ public class VerityEntity extends PathfinderMob {
         this.chatCooldown = tag.getInt("ChatCooldown");
         this.introTicks = tag.getInt("IntroTicks");
         this.leading = tag.getBoolean("Leading");
+        this.thrown = tag.getBoolean("Thrown");
         if (tag.contains("LeadTargetX")) {
             this.leadTarget = new BlockPos(
                     tag.getInt("LeadTargetX"),
@@ -1493,6 +1640,7 @@ public class VerityEntity extends PathfinderMob {
 
         @Override
         public boolean canUse() {
+            if (entity.isThrown()) return false;
             VerityPhase p = entity.getVerityPhase();
             if (p == VerityPhase.MONSTER || p == VerityPhase.HUNTER || p == VerityPhase.COUNTDOWN) {
                 return false;

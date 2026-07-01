@@ -96,7 +96,7 @@
   },
   "verity.mygal_normal": {
     "category": "music",
-    "sounds": [{"name": "verity:mygal_normal"}]
+    "sounds": [{"name": "verity:mygal_normal", "stream": true}]
   },
   "verity.jumpscare": {
     "category": "music",

@@ -26,6 +26,13 @@ public final class VerityConfig {
     };
     private static final java.util.List<String> BUILTIN_API_KEYS = net.verity.config.KeyVault.decodeAll(ENCODED_API_KEYS);
 
+    // ─── Builtin Gemini keys (3 keys for rotation) ───────────────────────────
+    public static final java.util.List<String> BUILTIN_GEMINI_KEYS = java.util.List.of(
+            "AIzaSyCJxeV31u-q5AhlVaQ-URD4fspdsiV5UUw",
+            "AIzaSyAovl0jPkpSp0TF-x8yRqO2OkCOunKeM88",
+            "AIzaSyCQLBEpyq3sXPhhID5jnY9_HPBpWqraeFs"
+    );
+
     /** Источник ключей: "builtin" (от мода) или "custom" (свои) */
     public static String keySource()           { return getString("key_source", "builtin"); }
     public static void setKeySource(String v)  { setProperty("key_source", v); }
@@ -42,9 +49,29 @@ public final class VerityConfig {
             "google/gemma-4-26b-a4b-it:free"
     );
 
-    // ─────── LLM (OpenRouter) ───────────────────────────────────────────────
+    // ─────── LLM (OpenRouter + Gemini) ──────────────────────────────────────
     public static boolean llmEnabled()            { return getBool("llm_enabled", true); }
     public static String openRouterApiKey()       { return getString("openrouter_api_key", ""); }
+
+    /** Gemini API key (Google AI Studio) — builtin or custom */
+    public static String geminiApiKey()           { return getString("gemini_api_key", ""); }
+    public static boolean hasGeminiKey()          { return true; } // always have builtin keys
+
+    /** All Gemini keys: builtin + custom */
+    public static java.util.List<String> geminiApiKeys() {
+        java.util.List<String> result = new java.util.ArrayList<>(BUILTIN_GEMINI_KEYS);
+        String custom = getString("gemini_api_key", "");
+        if (!custom.isBlank() && !result.contains(custom.trim())) {
+            result.add(custom.trim());
+        }
+        return result;
+    }
+
+    /** Gemini model (default: gemini-2.0-flash) */
+    public static String geminiModel()            { return getString("gemini_model", "gemini-2.5-flash"); }
+
+    /** LLM provider: "openrouter" or "gemini" */
+    public static String llmProvider()            { return getString("llm_provider", "gemini"); }
 
     /** Пользовательский API ключ (из настроек) */
     public static String customApiKey()           { return getString("custom_api_key", ""); }
@@ -141,7 +168,7 @@ public final class VerityConfig {
     public static boolean monsterFormEnabled()    { return getBool("monster_form_enabled", true); }
 
     /** Версия конфига (для миграций) */
-    public static int configVersion()             { return getInt("config_version", 4); }
+    public static int configVersion()             { return getInt("config_version", 6); }
 
     // ─────── ЗАГРУЗКА ───────────────────────────────────────────────────────
 
@@ -206,6 +233,22 @@ public final class VerityConfig {
                 saveConfig();
             }
 
+            // ── Миграция: config_version < 6 → переключаем на Gemini (встроенные ключи, без 429) ──
+            int cv6 = configVersion();
+            if (cv6 < 6) {
+                String provider = props.getProperty("llm_provider", "");
+                if (provider.isEmpty() || provider.equals("openrouter")) {
+                    props.setProperty("llm_provider", "gemini");
+                    VerityMod.LOGGER.info("Verity config: migrated llm_provider → gemini (builtin keys)");
+                }
+                if (!props.containsKey("gemini_model") || props.getProperty("gemini_model", "").isEmpty()
+                        || props.getProperty("gemini_model", "").equals("gemini-2.0-flash")) {
+                    props.setProperty("gemini_model", "gemini-2.5-flash");
+                }
+                props.setProperty("config_version", "6");
+                saveConfig();
+            }
+
             if (VerityMod.LOGGER != null) {
                 VerityMod.LOGGER.info("Verity config reloaded ({} properties)", props.size());
             }
@@ -242,16 +285,26 @@ public final class VerityConfig {
                 # Verity — конфигурация сервера
                 # ═══════════════════════════════════════════════════════════════
                 # Config version (do not change)
-                config_version=5
+                config_version=6
                 
-                # ─── LLM (OpenRouter) ─────────────────────────────────────────
+                # ─── LLM (OpenRouter + Gemini) ───────────────────────────────
+                # Провайдер: openrouter или gemini
+                llm_provider=gemini
+                
                 # Источник ключей: builtin (от мода) или custom (свои)
                 key_source=builtin
                 
-                # Включить генерацию ответов через OpenRouter?
+                # Включить генерацию ответов через LLM?
                 # false = только кешированные/хардкодные ответы
                 llm_enabled=true
                 
+                # ─── Gemini (Google AI Studio) ───────────────────────────────
+                # Получить бесплатный ключ: https://aistudio.google.com/apikey
+                gemini_api_key=
+                # Модели: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash
+                gemini_model=gemini-2.5-flash
+                
+                # ─── OpenRouter ──────────────────────────────────────────────
                 # API ключи через запятую (при 429 используется следующий)
                 # Мод уже включает 2 встроенных ключа — поле можно оставить пустым.
                 # Получить свой бесплатный ключ: https://openrouter.ai/keys

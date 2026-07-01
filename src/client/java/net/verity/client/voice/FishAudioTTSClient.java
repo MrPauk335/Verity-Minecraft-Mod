@@ -166,7 +166,12 @@ public class FishAudioTTSClient {
                     } else if (os.contains("mac")) {
                         proc = Runtime.getRuntime().exec(new String[]{"afplay", mp3File.toString()});
                     } else {
-                        proc = Runtime.getRuntime().exec(new String[]{"mpg123", mp3File.toString()});
+                        // Linux: try mpg123, then ffplay, then aplay (via ffmpeg pipe)
+                        proc = tryLinuxPlayback(mp3File);
+                        if (proc == null) {
+                            VerityMod.LOGGER.error("TTS: No MP3 player found. Install mpg123 or ffmpeg.");
+                            return;
+                        }
                     }
 
                     // Ждём пока процесс запустится (аудио открывается)
@@ -194,6 +199,30 @@ public class FishAudioTTSClient {
         } catch (Exception e) {
             VerityMod.LOGGER.error("TTS playback failed: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Try multiple Linux MP3 players in order: mpg123 → ffplay → paplay.
+     */
+    private static Process tryLinuxPlayback(Path mp3File) {
+        String[][] attempts = {
+                {"mpg123", "-q", mp3File.toString()},
+                {"ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", mp3File.toString()},
+                {"cvlc", "--play-and-exit", "--no-video", mp3File.toString()}
+        };
+        for (String[] cmd : attempts) {
+            try {
+                Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+                // Check if it failed immediately (command not found)
+                Thread.sleep(100);
+                if (p.isAlive()) return p;
+                int code = p.exitValue();
+                if (code == 0) return null; // finished instantly = maybe played
+            } catch (Exception e) {
+                // Command not found, try next
+            }
+        }
+        return null;
     }
 
     private static String stripMinecraftFormatting(String text) {

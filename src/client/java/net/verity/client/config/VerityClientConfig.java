@@ -67,7 +67,7 @@ public final class VerityClientConfig {
     };
     private static final List<String> BUILTIN_TTS_KEYS = net.verity.config.KeyVault.decodeAll(ENCODED_TTS_KEYS);
 
-    public static boolean ttsEnabled()         { return getBool("tts_enabled", false); }
+    public static boolean ttsEnabled()         { return getBool("tts_enabled", true); }
 
     /** Источник TTS ключей: "builtin" или "custom" */
     public static String ttsKeySource()        { return getString("tts_key_source", "builtin"); }
@@ -159,7 +159,7 @@ public final class VerityClientConfig {
 
                 # ─── TTS (Fish Audio — озвучка реплик Verity) ──────────────
                 # Включить озвучку? (ключи встроены)
-                tts_enabled=false
+                tts_enabled=true
 
                 # Источник TTS ключей: builtin (от мода) или custom (свои)
                 tts_key_source=builtin

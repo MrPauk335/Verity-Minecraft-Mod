@@ -1,5 +1,42 @@
 # Verity Mod — Changelog
 
+## v0.8.0-beta
+
+### Ball Physics
+- **Kick Verity** — left-click to kick Verity like a ball (bouncing, rolling, wall bounce)
+- **Throw from inventory** — right-click in air with Verity item throws it as a ball
+- **Q-drop throw** — press Q with Verity item to throw it as a ball entity
+- **Pick up** — right-click on Verity entity to pick up to inventory
+- **Bounce physics** — gravity, ground bounce (0.55x damping), wall bounce, rolling friction
+- **Knockback** — flying Verity pushes entities it hits
+- **Settle** — Verity stops and returns to AI when speed is low
+- **No fall damage** — Verity is immune to fall damage while thrown
+- **AI disabled** while thrown — no following, no teleport, no stalking
+
+### Gemini API Support
+- **3 built-in Gemini keys** — works out of the box, no 429 like OpenRouter
+- **Provider selector** in settings — switch between Gemini and OpenRouter
+- **5 Gemini models** — gemini-3.1-flash-live-preview, gemini-3-flash-preview, gemini-2.5-flash, gemini-2.5-flash-lite, gemma-4-31b-it
+- **Key rotation** — cycles through 3 builtin + custom Gemini keys on rate limit
+- **Anti-leak filter** — rejects responses where model outputs system prompt reasoning
+- **Default provider** — Gemini (no more OpenRouter 429 spam)
+- **Config migration v5→v6** — auto-switches to Gemini provider
+
+### Monster Form
+- **No longer kills player** — Monster now scares (follows, heartbeat sound) but deals 0 damage
+- **VerityScareGoal** replaces MeleeAttackGoal — canonical "scares, doesn't kill"
+
+### TTS
+- **Enabled by default** — TTS is now on out of the box
+- **Linux MP3 playback** — tries mpg123 → ffplay → cvlc fallback chain
+
+### Fixes
+- **Verity indestructible** — immune to cactus, fall, drown, suffocation, explosions (only fire/lava triggers rage)
+- **Rotation fixed** — ball no longer looks at floor/sky when walking (removed headPitch from xRot)
+- **"Выключи песню"** — now stops music instead of playing it
+- **UTF-8 encoding** — all § replaced with \u00A7, ™ with \u2122 in source files
+- **My Gal sound** — stream:true in sounds.json for large OGG file
+
 ## v0.7.0-beta
 
 ### Horror (Verity itself is scary now)

@@ -34,6 +34,7 @@ public class VeritySettingsScreen extends Screen {
     private static final int BOX_H = 18;
 
     private EditBox apiKeyBox;
+    private EditBox geminiKeyBox;
     private EditBox sttKeyBox;
     private EditBox ttsKeyBox;
     private boolean llmEnabled;
@@ -48,6 +49,13 @@ public class VeritySettingsScreen extends Screen {
     private final Screen parent;
 
     private static final List<String> MODELS = VerityConfig.AVAILABLE_MODELS;
+    private static final List<String> GEMINI_MODELS = java.util.List.of(
+            "gemini-3.1-flash-live-preview",
+            "gemini-3-flash-preview",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
+            "gemma-4-31b-it"
+    );
     private static String modelDisplayName(String modelId) {
         if (modelId.contains("llama-3.3-70b")) return "Llama 3.3 70B (free)";
         if (modelId.contains("qwen3-next")) return "Qwen3 Next 80B (free)";
@@ -57,10 +65,17 @@ public class VeritySettingsScreen extends Screen {
         if (modelId.contains("qwen3-coder")) return "Qwen3 Coder 480B (free)";
         if (modelId.contains("hermes-3-llama")) return "Hermes 3 405B (free)";
         if (modelId.contains("gpt-oss-120b")) return "GPT-OSS 120B (free)";
+        // Gemini models
+        if (modelId.contains("gemini-3.1-flash-live")) return "Gemini 3.1 Flash Live";
+        if (modelId.contains("gemini-3-flash")) return "Gemini 3 Flash";
+        if (modelId.contains("gemini-2.5-flash-lite")) return "Gemini 2.5 Flash Lite";
+        if (modelId.contains("gemini-2.5-flash")) return "Gemini 2.5 Flash";
         return modelId;
     }
 
     private boolean useBuiltinKeys;
+    private String llmProvider;
+    private int selectedGeminiModelIndex;
     private int voiceKeyCode;
     private String voiceMode;
     private boolean listeningForKey = false;
@@ -75,6 +90,7 @@ public class VeritySettingsScreen extends Screen {
     private int yModelLabel, yModelBtn, yToggleStart;
     private int ySection2, yPttRow, yGroqLabel, yGroqBox, yVoiceToggle, yVoiceStatus;
     private int yTtsToggle, yTtsKeyLabel, yTtsKeyBox;
+    private int yProvider, yGeminiKeyLabel, yGeminiKeyBox, yGeminiModelBtn;
 
     public VeritySettingsScreen(Screen parent) {
         super(Component.literal("Verity\u2122 \u2014 Settings"));
@@ -87,6 +103,7 @@ public class VeritySettingsScreen extends Screen {
         this.sttEnabled         = VerityClientConfig.sttEnabled();
         this.ttsEnabled         = VerityClientConfig.ttsEnabled();
         this.useBuiltinKeys     = VerityConfig.useBuiltinKeys();
+        this.llmProvider        = VerityConfig.llmProvider();
         this.voiceKeyCode       = VerityClientConfig.voiceKey();
         this.voiceMode          = VerityClientConfig.voiceMode();
 
@@ -95,6 +112,15 @@ public class VeritySettingsScreen extends Screen {
         for (int i = 0; i < MODELS.size(); i++) {
             if (MODELS.get(i).equals(currentModel)) {
                 this.selectedModelIndex = i;
+                break;
+            }
+        }
+
+        String currentGeminiModel = VerityConfig.geminiModel();
+        this.selectedGeminiModelIndex = 0;
+        for (int i = 0; i < GEMINI_MODELS.size(); i++) {
+            if (GEMINI_MODELS.get(i).equals(currentGeminiModel)) {
+                this.selectedGeminiModelIndex = i;
                 break;
             }
         }
@@ -113,12 +139,16 @@ public class VeritySettingsScreen extends Screen {
         // ── Compute all Y positions (single source of truth) ──────────────
         int y = contentTop() + s;
         ySection1     = y;  y += 14;
+        yProvider     = y;  y += BTN_H + 6;
         yKeySrc       = y;  y += BTN_H + 6;
         yKeyStatus    = y;  y += 12;
         yApiKeyLabel  = y;  y += 12;
         yApiKeyBox    = y;  y += BOX_H + 10;
         yModelLabel   = y;  y += 12;
         yModelBtn     = y;  y += BTN_H + 10;
+        yGeminiKeyLabel = y;  y += 12;
+        yGeminiKeyBox   = y;  y += BOX_H + 8;
+        yGeminiModelBtn = y;  y += BTN_H + 10;
         yToggleStart  = y;  y += ROW_STEP * 5 + 6;
         ySection2     = y;  y += 14;
         yPttRow       = y;  y += BTN_H + 10;
@@ -135,6 +165,16 @@ public class VeritySettingsScreen extends Screen {
         int maxScroll = Math.max(0, contentHeight - contentSpace());
         if (scrollY > maxScroll) scrollY = maxScroll;
         if (scrollY < 0) scrollY = 0;
+
+        // ── Provider selector (Gemini / OpenRouter) ─────────────────────────
+        this.addRenderableWidget(CycleButton.<String>builder(m -> Component.literal(
+                        "gemini".equals(m) ? "\u00a7bGemini (Google)" : "\u00a7eOpenRouter"))
+                .withValues("openrouter", "gemini")
+                .withInitialValue(llmProvider)
+                .displayOnlyValue()
+                .create(cx - 115, yProvider, 230, BTN_H,
+                        Component.literal("Provider"),
+                        (btn, val) -> llmProvider = val));
 
         // ── Key Source toggle ──────────────────────────────────────────────
         this.addRenderableWidget(CycleButton.<String>builder(m -> Component.literal(
@@ -167,6 +207,24 @@ public class VeritySettingsScreen extends Screen {
                 .create(cx - MODEL_BTN_W / 2, yModelBtn, MODEL_BTN_W, BTN_H,
                         Component.literal("Model"),
                         (btn, val) -> selectedModelIndex = MODELS.indexOf(val)));
+
+        // ── Gemini API Key input ────────────────────────────────────────────
+        this.geminiKeyBox = new EditBox(this.font,
+                cx - boxW / 2, yGeminiKeyBox, boxW, BOX_H,
+                Component.literal("Gemini API Key"));
+        this.geminiKeyBox.setMaxLength(512);
+        this.geminiKeyBox.setValue(VerityConfig.geminiApiKey());
+        this.geminiKeyBox.setHint(Component.literal("\u00a78Built-in keys included. Add your own (optional)"));
+        this.addRenderableWidget(this.geminiKeyBox);
+
+        // ── Gemini model selector ──────────────────────────────────────────
+        this.addRenderableWidget(CycleButton.<String>builder(m -> Component.literal(modelDisplayName(m)))
+                .withValues(GEMINI_MODELS)
+                .withInitialValue(GEMINI_MODELS.get(selectedGeminiModelIndex))
+                .displayOnlyValue()
+                .create(cx - MODEL_BTN_W / 2, yGeminiModelBtn, MODEL_BTN_W, BTN_H,
+                        Component.literal("Gemini Model"),
+                        (btn, val) -> selectedGeminiModelIndex = GEMINI_MODELS.indexOf(val)));
 
         // ── Toggle rows ────────────────────────────────────────────────────
         int btnX = cx + 25;
@@ -296,8 +354,11 @@ public class VeritySettingsScreen extends Screen {
                 try (var r = Files.newBufferedReader(CONFIG_PATH)) { p.load(r); }
             }
             p.setProperty("key_source",          useBuiltinKeys ? "builtin" : "custom");
+            p.setProperty("llm_provider",        llmProvider);
             p.setProperty("custom_api_key",      this.apiKeyBox.getValue().trim());
             p.setProperty("selected_model",      MODELS.get(selectedModelIndex));
+            p.setProperty("gemini_api_key",      this.geminiKeyBox != null ? this.geminiKeyBox.getValue().trim() : "");
+            p.setProperty("gemini_model",        GEMINI_MODELS.get(selectedGeminiModelIndex));
             p.setProperty("llm_enabled",         String.valueOf(this.llmEnabled));
             p.setProperty("sounds_enabled",      String.valueOf(this.soundsEnabled));
             p.setProperty("chat_enabled",        String.valueOf(this.chatEnabled));
@@ -401,7 +462,12 @@ public class VeritySettingsScreen extends Screen {
         gfx.drawCenteredString(this.font, Component.literal(apiKeyLabel), cx, yApiKeyLabel, 0xBBBBBB);
 
         // Model label
-        gfx.drawCenteredString(this.font, Component.literal("\u00a77Model"), cx, yModelLabel, 0xBBBBBB);
+        gfx.drawCenteredString(this.font, Component.literal("\u00a77OpenRouter Model"), cx, yModelLabel, 0xBBBBBB);
+
+        // Gemini key label
+        gfx.drawCenteredString(this.font, Component.literal("\u00a77Gemini API Key (built-in included)"), cx, yGeminiKeyLabel, 0xBBBBBB);
+
+        // Gemini model label is on the button itself
 
         // Toggle labels
         String[] labelNames = { "LLM Responses", "Sounds", "Chat Responses", "Always Respond", "Monster Form" };

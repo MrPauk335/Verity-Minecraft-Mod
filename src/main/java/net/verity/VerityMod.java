@@ -431,6 +431,47 @@ public class VerityMod implements ModInitializer {
 
         ServerTickEvents.END_SERVER_TICK.register(VerityMod::tickHeldVerityItems);
 
+        // Q-drop detection: convert dropped Verity items into thrown Verity entities
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (ServerLevel level : server.getAllLevels()) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    if (player.level() != level) continue;
+                    // Scan around each player for freshly dropped Verity items
+                    var itemEntities = level.getEntitiesOfClass(
+                            net.minecraft.world.entity.item.ItemEntity.class,
+                            player.getBoundingBox().inflate(16.0D));
+                    for (var itemEntity : itemEntities) {
+                        ItemStack stack = itemEntity.getItem();
+                        if (!isVerityInventoryItem(stack)) continue;
+                        if (itemEntity.tickCount > 5) continue; // only freshly dropped
+                        // Don't convert if thrower is too far
+                        if (itemEntity.distanceToSqr(player) > 256.0D) continue;
+
+                        // Spawn Verity entity at item position
+                        VerityEntity entity = new VerityEntity(VERITY_ENTITY, level);
+                        entity.setFaceIndex(((VerityInventoryItem) stack.getItem()).getPlacedFace());
+                        entity.setVerityPhase(getHeldPhase());
+                        entity.moveTo(itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                                player.getYRot(), 0.0F);
+                        if (!level.noCollision(entity)) continue;
+
+                        level.addFreshEntity(entity);
+                        entity.getDialogueController().setDialogueHistory(getHeldHistory());
+                        entity.getDialogueController().setKnownFacts(getHeldFacts());
+
+                        // Throw in player's look direction
+                        entity.throwVerity(player);
+
+                        // Remove the dropped item
+                        itemEntity.discard();
+
+                        // Consume one item from stack
+                        stack.shrink(1);
+                    }
+                }
+            }
+        });
+
         // Синглтон: только один Verity в мире. Следим каждый тик.
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             // Удаляем мёртвых/выгруженных из трекера

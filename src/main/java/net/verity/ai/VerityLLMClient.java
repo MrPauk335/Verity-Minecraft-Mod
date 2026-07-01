@@ -31,7 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VerityLLMClient {
 
     private static final String API_URL  = "https://openrouter.ai/api/v1/chat/completions";
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+    private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static final Gson GSON = new Gson();
 
     // Ключи и модели — загружаются из конфига (round-robin при 429)
@@ -207,11 +208,13 @@ public class VerityLLMClient {
             if (!MODELS.contains(m)) MODELS.add(m);
         }
 
-        VerityMod.LOGGER.info("Verity LLM: {} key(s) (source: {}), model: {} ({} total fallback)",
+        VerityMod.LOGGER.info("Verity LLM: {} key(s) (source: {}), model: {} ({} total fallback), provider: {}, gemini: {}",
                 API_KEYS.size(),
                 VerityConfig.useBuiltinKeys() ? "builtin" : "custom",
                 selected,
-                MODELS.size());
+                MODELS.size(),
+                VerityConfig.llmProvider(),
+                VerityConfig.hasGeminiKey() ? VerityConfig.geminiModel() : "off");
     }
 
     @Deprecated
@@ -266,9 +269,9 @@ public class VerityLLMClient {
 
         CompletableFuture.supplyAsync(() -> {
             try {
-                return callOpenRouter(phase, playerName, finalMessage, history, finalLanguage, finalContext);
+                return callLLM(phase, playerName, finalMessage, history, finalLanguage, finalContext);
             } catch (Exception e) {
-                VerityMod.LOGGER.error("OpenRouter request failed: {}", e.getMessage());
+                VerityMod.LOGGER.error("LLM request failed: {}", e.getMessage());
                 return null;
             }
         }).thenAccept(response -> {
@@ -285,6 +288,208 @@ public class VerityLLMClient {
             VerityMod.LOGGER.error("LLM async error: {}", ex.getMessage());
             return null;
         });
+    }
+
+    // ─── OpenRouter + Gemini ────────────────────────────────────────────────
+
+    private static String callLLM(
+            VerityPhase phase,
+            String playerName,
+            String message,
+            List<String> history,
+            String language,
+            String context) throws Exception {
+
+        // Try Gemini first if configured
+        if (VerityConfig.hasGeminiKey() &&
+            ("gemini".equalsIgnoreCase(VerityConfig.llmProvider()) ||
+             "both".equalsIgnoreCase(VerityConfig.llmProvider()))) {
+            try {
+                String result = callGemini(phase, playerName, message, history, language, context);
+                if (result != null) return result;
+            } catch (Exception e) {
+                VerityMod.LOGGER.warn("Gemini request failed: {}", e.getMessage());
+            }
+        }
+
+        // Fallback to OpenRouter
+        if (!"gemini".equalsIgnoreCase(VerityConfig.llmProvider())) {
+            return callOpenRouter(phase, playerName, message, history, language, context);
+        }
+
+        return null;
+    }
+
+    /**
+     * Google Gemini API (Generative Language).
+     * Supports: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash
+     */
+    private static String callGemini(
+            VerityPhase phase,
+            String playerName,
+            String message,
+            List<String> history,
+            String language,
+            String context) throws Exception {
+
+        java.util.List<String> keys = VerityConfig.geminiApiKeys();
+        String model = VerityConfig.geminiModel().trim();
+        if (keys.isEmpty() || model.isEmpty()) return null;
+
+        for (String apiKey : keys) {
+            try {
+                String result = callGeminiModel(phase, playerName, message, history, language, context, model, apiKey.trim());
+                if (result != null) return result;
+                VerityMod.LOGGER.warn("Gemini rate limited on key={}..., trying next",
+                        apiKey.length() > 10 ? apiKey.substring(0, 10) : apiKey);
+            } catch (Exception e) {
+                VerityMod.LOGGER.warn("Gemini key failed: {}", e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    private static String callGeminiModel(
+            VerityPhase phase,
+            String playerName,
+            String message,
+            List<String> history,
+            String language,
+            String context,
+            String model,
+            String apiKey) throws Exception {
+
+        if (apiKey.isEmpty()) return null;
+
+        // Build system prompt
+        StringBuilder historyStr = new StringBuilder();
+        if (history != null && !history.isEmpty()) {
+            int start = Math.max(0, history.size() - 8);
+            for (int i = start; i < history.size(); i++) {
+                historyStr.append(history.get(i)).append("\n");
+            }
+        }
+        String langName = "ru".equalsIgnoreCase(language) ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439" : "English";
+        String fullHistory = historyStr.toString().trim();
+        if (context != null && !context.isEmpty()) {
+            fullHistory = fullHistory + "\n\n\u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422:\n" + context;
+        }
+        String systemPrompt = getPromptForPhase(phase, playerName, langName, fullHistory);
+
+        // Gemini request body
+        JsonObject requestBody = new JsonObject();
+        JsonObject generationConfig = new JsonObject();
+        generationConfig.addProperty("temperature", VerityConfig.llmTemperature());
+        generationConfig.addProperty("maxOutputTokens", VerityConfig.llmMaxTokens());
+        requestBody.add("generationConfig", generationConfig);
+
+        // System instruction
+        JsonObject systemInstruction = new JsonObject();
+        JsonArray systemParts = new JsonArray();
+        JsonObject systemPart = new JsonObject();
+        systemPart.addProperty("text", systemPrompt);
+        systemParts.add(systemPart);
+        systemInstruction.add("parts", systemParts);
+        requestBody.add("systemInstruction", systemInstruction);
+
+        // Contents (user message)
+        JsonArray contents = new JsonArray();
+        JsonObject contentItem = new JsonObject();
+        contentItem.addProperty("role", "user");
+        JsonArray parts = new JsonArray();
+        JsonObject part = new JsonObject();
+        String userContent = message.isEmpty() ?
+            "[Verity \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0447\u0442\u043E-\u0442\u043E \u0438\u0433\u0440\u043E\u043A\u0443 " + playerName + " \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C.]" :
+            playerName + ": " + message;
+        part.addProperty("text", userContent);
+        parts.add(part);
+        contentItem.add("parts", parts);
+        contents.add(contentItem);
+        requestBody.add("contents", contents);
+
+        String url = String.format(GEMINI_URL, model, apiKey);
+
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(TIMEOUT)
+                .build();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .timeout(TIMEOUT)
+                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 429) {
+            VerityMod.LOGGER.warn("Gemini rate limited (429)");
+            return null;
+        }
+        if (response.statusCode() != 200) {
+            VerityMod.LOGGER.warn("Gemini returned {}: {}", response.statusCode(), response.body());
+            return null;
+        }
+
+        JsonObject jsonResponse = GSON.fromJson(response.body(), JsonObject.class);
+        JsonArray candidates = jsonResponse.getAsJsonArray("candidates");
+        if (candidates != null && !candidates.isEmpty()) {
+            JsonObject candidate = candidates.get(0).getAsJsonObject();
+            JsonObject content = candidate.getAsJsonObject("content");
+            if (content != null) {
+                JsonArray responseParts = content.getAsJsonArray("parts");
+                if (responseParts != null && !responseParts.isEmpty()) {
+                    String textContent = responseParts.get(0).getAsJsonObject().get("text").getAsString().trim();
+                    // Clean up response
+                    textContent = textContent.replaceAll("(?i)^verity[\\u2122]?:\\s*", "");
+                    textContent = textContent.replaceAll("\\*[^*]+\\*", "");
+                    textContent = textContent.replaceAll("\\[[^\\]]*\\]", "");
+                    textContent = textContent.replaceAll("[\\p{So}\\p{Sk}\\p{Sc}\\p{Sm}\\x{1F000}-\\x{1FFFF}\\x{2600}-\\x{27BF}]", "");
+                    textContent = textContent.replaceAll("\\n{2,}", "\n").trim();
+                    textContent = textContent.replaceAll("\\s{2,}", " ").trim();
+                    if (textContent.isEmpty()) return null;
+                    if (textContent.length() < 5) return null;
+
+                    // ── Anti-leak: reject if model outputs system prompt reasoning ──
+                    String lower = textContent.toLowerCase();
+                    if (lower.contains("following constraints") || lower.contains("system prompt")
+                            || lower.contains("we need to respond") || lower.contains("must respond")
+                            || lower.contains("as verity") || lower.contains("rules say")
+                            || lower.contains("i must") || lower.contains("the prompt says")
+                            || lower.contains("my instructions") || lower.contains("i should respond")
+                            || lower.contains("male voice") || lower.contains("max 15 words")
+                            || lower.contains("no emojis") || lower.contains("iron rules")) {
+                        VerityMod.LOGGER.warn("Gemini leaked system prompt, rejecting: {}",
+                                textContent.substring(0, Math.min(80, textContent.length())));
+                        return null;
+                    }
+
+                    // Quality check
+                    char lastChar = textContent.charAt(textContent.length() - 1);
+                    if (lastChar != '.' && lastChar != '!' && lastChar != '?' && lastChar != '\u2026' && lastChar != ',') {
+                        long sentences = textContent.chars().filter(c -> c == '.' || c == '!' || c == '?').count();
+                        if (sentences == 0 && textContent.length() < 80) return null;
+                    }
+
+                    // Village context check
+                    if (context != null) {
+                        String lowerContent = textContent.toLowerCase();
+                        String lowerContext = context.toLowerCase();
+                        boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442") || lowerContent.contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
+                                || lowerContent.contains("\u0443\u0448\u043B\u0438") || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442");
+                        boolean contextHasVillagers = lowerContext.contains("\u0434\u0435\u0440\u0435\u0432\u043D\u044F (") && lowerContext.contains("\u0436\u0438\u0442\u0435\u043B")
+                                && !lowerContext.contains("\u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442") && !lowerContext.contains("\u043F\u0443\u0441\u0442\u0430\u044F");
+                        if (saysNoVillagers && contextHasVillagers) {
+                            textContent = "\u0422\u0443\u0442 \u0435\u0441\u0442\u044C \u0436\u0438\u0442\u0435\u043B\u0438. \u042F \u0432\u0438\u0436\u0443 \u0438\u0445.";
+                        }
+                    }
+
+                    return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">\u00A7r " + textContent;
+                }
+            }
+        }
+
+        return null;
     }
 
     // ─── OpenRouter ──────────────────────────────────────────────────────────

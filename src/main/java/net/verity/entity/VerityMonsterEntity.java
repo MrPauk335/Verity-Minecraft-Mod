@@ -9,15 +9,18 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
-import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.verity.VerityMod;
+
+import java.util.EnumSet;
 
 public class VerityMonsterEntity extends Monster {
 
@@ -31,20 +34,18 @@ public class VerityMonsterEntity extends Monster {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        // Attack players
-        this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.4D, false));
+        // Follow player but DON'T attack — Verity scares, doesn't kill
+        this.goalSelector.addGoal(1, new VerityScareGoal(this, 1.4D));
         this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 16.0F));
-        
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, 10000.0) // Invulnerable-like
-                .add(Attributes.MOVEMENT_SPEED, 0.35) // Very fast chase speed
-                .add(Attributes.ATTACK_DAMAGE, 20.0) // Deals massive damage (10 hearts)
+                .add(Attributes.MAX_HEALTH, 10000.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.35)
+                .add(Attributes.ATTACK_DAMAGE, 0.0) // No damage — Verity scares, doesn't kill
                 .add(Attributes.FOLLOW_RANGE, 64.0)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0); // No knockback
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
     }
 
     @Override
@@ -120,5 +121,58 @@ public class VerityMonsterEntity extends Monster {
         double fallbackY = player.getY();
         double fallbackZ = player.getZ() - rotationVec.z * 1.5D;
         return new Vec3(fallbackX, fallbackY, fallbackZ);
+    }
+
+    /**
+     * Scare goal — follows player, makes creepy sounds, but NEVER attacks.
+     * Verity scares, doesn't kill (canonical behavior).
+     */
+    static class VerityScareGoal extends Goal {
+        private final VerityMonsterEntity entity;
+        private Player target;
+        private final double speed;
+        private int soundCooldown = 0;
+
+        public VerityScareGoal(VerityMonsterEntity entity, double speed) {
+            this.entity = entity;
+            this.speed = speed;
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            this.target = entity.level().getNearestPlayer(entity, 64.0D);
+            return this.target != null && this.target.isAlive();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return this.target != null && this.target.isAlive();
+        }
+
+        @Override
+        public void tick() {
+            if (target == null) return;
+            double dist = entity.distanceToSqr(target);
+
+            // Follow player
+            if (dist > 4.0D) {
+                entity.getNavigation().moveTo(target, speed);
+            } else {
+                entity.getNavigation().stop();
+            }
+
+            // Look at player
+            entity.getLookControl().setLookAt(target, 180.0F, 180.0F);
+
+            // Creepy sounds when close
+            if (soundCooldown > 0) {
+                soundCooldown--;
+            } else if (dist < 100.0D && entity.random.nextInt(60) == 0) {
+                entity.level().playSound(null, target.getX(), target.getY(), target.getZ(),
+                        SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 0.8F, 0.5F);
+                soundCooldown = 100;
+            }
+        }
     }
 }
