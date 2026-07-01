@@ -27,6 +27,11 @@ public class VerityDialogueController {
     /** Минимальный интервал между репликами одной сущности */
     private static final long PER_ENTITY_COOLDOWN_MS = 2_000;
 
+    /** Дедупликация: хэш последнего отправленного текста и время отправки */
+    private int lastSentHash = 0;
+    private long lastSentMs  = 0;
+    private static final long DEDUP_WINDOW_MS = 10_000; // 10 секунд
+
     private String lastPlayerName = "";
 
     public VerityDialogueController(VerityEntity entity) {
@@ -820,10 +825,21 @@ public class VerityDialogueController {
     /**
      * Отправляет сообщение ближайшему игроку и обновляет историю.
      * Вызывается из CompletableFuture — планируем через server.execute().
+     * Дедупликация: один и тот же текст не отправляется дважды в течение 10 сек.
      */
     private void sendMessageToPlayer(String response) {
         if (entity.level().isClientSide) return;
         if (!(entity.level().getServer() instanceof net.minecraft.server.MinecraftServer server)) return;
+
+        // Дедупликация: защита от тройного срабатывания на LAN/integrated server
+        int hash = response.hashCode();
+        long now  = System.currentTimeMillis();
+        if (hash == lastSentHash && (now - lastSentMs) < DEDUP_WINDOW_MS) {
+            VerityMod.LOGGER.debug("sendMessageToPlayer: dedup skip (same text within {}ms)", now - lastSentMs);
+            return;
+        }
+        lastSentHash = hash;
+        lastSentMs   = now;
 
         server.execute(() -> {
             if (!entity.isAlive()) return;

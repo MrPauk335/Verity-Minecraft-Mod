@@ -33,6 +33,7 @@ public class VerityLLMClient {
     private static final String API_URL  = "https://openrouter.ai/api/v1/chat/completions";
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
     private static final Duration TIMEOUT = Duration.ofSeconds(8);
+    private static final Duration GEMINI_TIMEOUT = Duration.ofSeconds(5);
     private static final Gson GSON = new Gson();
 
     // Ключи и модели — загружаются из конфига (round-robin при 429)
@@ -348,12 +349,18 @@ public class VerityLLMClient {
         String model = VerityConfig.geminiModel().trim();
         if (keys.isEmpty() || model.isEmpty()) return null;
 
-        for (String apiKey : keys) {
+        // Only try first 2 keys to avoid long waits on timeout
+        int maxKeys = Math.min(keys.size(), 2);
+        for (int i = 0; i < maxKeys; i++) {
+            String apiKey = keys.get(i);
             try {
                 String result = callGeminiModel(phase, playerName, message, history, language, context, model, apiKey.trim());
                 if (result != null) return result;
                 VerityMod.LOGGER.warn("Gemini rate limited on key={}..., trying next",
                         apiKey.length() > 10 ? apiKey.substring(0, 10) : apiKey);
+            } catch (java.net.http.HttpTimeoutException e) {
+                VerityMod.LOGGER.warn("Gemini timeout, skipping remaining keys");
+                return null; // timeout = model overloaded, don't try more keys
             } catch (Exception e) {
                 VerityMod.LOGGER.warn("Gemini key failed: {}", e.getMessage());
             }
@@ -422,17 +429,17 @@ public class VerityLLMClient {
         String url = String.format(GEMINI_URL, model, apiKey);
 
         HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(TIMEOUT)
+                .connectTimeout(GEMINI_TIMEOUT)
                 .build();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
-                .timeout(TIMEOUT)
+                .timeout(GEMINI_TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
 
         if (response.statusCode() == 429 || response.statusCode() == 503) {
             VerityMod.LOGGER.warn("Gemini rate limited/unavailable ({})", response.statusCode());
@@ -517,15 +524,20 @@ public class VerityLLMClient {
         List<String> keys   = API_KEYS.isEmpty() ? List.of("") : API_KEYS;
         List<String> models = MODELS;
 
-        for (String key : keys) {
-            for (String model : models) {
+        // Limit attempts to avoid long waits: max 2 keys × 2 models
+        int maxKeys = Math.min(keys.size(), 2);
+        int maxModels = Math.min(models.size(), 2);
+        for (int ki = 0; ki < maxKeys; ki++) {
+            String key = keys.get(ki);
+            for (int mi = 0; mi < maxModels; mi++) {
+                String model = models.get(mi);
                 String result = callModel(phase, playerName, message, history, model, key, language, context);
                 if (result != null) return result;
                 VerityMod.LOGGER.warn("Rate limited on model={} key={}..., trying next",
                         model, key.length() > 10 ? key.substring(0, 10) : key);
             }
         }
-        VerityMod.LOGGER.error("All {} key(s) \u00D7 {} model(s) exhausted", keys.size(), models.size());
+        VerityMod.LOGGER.error("OpenRouter exhausted (tried {} keys × {} models)", maxKeys, maxModels);
         return null;
     }
 
@@ -598,7 +610,7 @@ public class VerityLLMClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
 
         if (response.statusCode() == 429 || response.statusCode() == 503) {
             return null; // rate limit/unavailable → try next key/model
@@ -629,7 +641,23 @@ public class VerityLLMClient {
                 content = content.replaceAll("\\s{2,}", " ").trim();
                 if (content.isEmpty()) return null;
 
-                // ── Фильтр качества: отклоняем мусорные ответы от слабых моделей ──
+                // ── Anti-leak: reject if model outputs system prompt reasoning ──
+                String lowerContent = content.toLowerCase();
+                if (lowerContent.contains("following constraints") || lowerContent.contains("system prompt")
+                        || lowerContent.contains("we need to respond") || lowerContent.contains("must respond")
+                        || lowerContent.contains("as verity") || lowerContent.contains("rules say")
+                        || lowerContent.contains("i must") || lowerContent.contains("the prompt says")
+                        || lowerContent.contains("my instructions") || lowerContent.contains("i should respond")
+                        || lowerContent.contains("male voice") || lowerContent.contains("max 15 words")
+                        || lowerContent.contains("no emojis") || lowerContent.contains("iron rules")
+                        || lowerContent.contains("following the rules") || lowerContent.contains("we have player")
+                        || lowerContent.contains("the context shows") || lowerContent.contains("we know real pc")) {
+                    VerityMod.LOGGER.warn("LLM leaked system prompt, rejecting: {}",
+                            content.substring(0, Math.min(80, content.length())));
+                    return null;
+                }
+
+                // ── Фильтр качества ──
                 if (content.length() < 3) {
                     VerityMod.LOGGER.warn("LLM response too short ({} chars), rejecting: {}", content.length(), content);
                     return null;
@@ -646,7 +674,7 @@ public class VerityLLMClient {
                 // Программная проверка: если контекст говорит что жители есть,
                 // а LLM говорит "пусто/нет/ушли" — заменяем ответ
                 if (context != null) {
-                    String lowerContent = content.toLowerCase();
+                    String lowerCtxContent = content.toLowerCase();
                     String lowerContext = context.toLowerCase();
                     boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442") || lowerContent.contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
                             || lowerContent.contains("\u0443\u0448\u043B\u0438") || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442")

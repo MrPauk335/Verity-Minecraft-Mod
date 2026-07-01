@@ -44,7 +44,7 @@ public class WhisperSTTClient {
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
 
         if (response.statusCode() != 200) {
             VerityMod.LOGGER.warn("STT API returned {}: {}", response.statusCode(), response.body());

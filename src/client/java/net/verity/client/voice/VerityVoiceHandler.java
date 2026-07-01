@@ -158,8 +158,8 @@ public class VerityVoiceHandler {
                 if (mc.player == null) return;
 
                 if (text != null && !text.isEmpty()) {
-                    mc.player.sendSystemMessage(Component.literal(
-                            "\u00a77[\u0413\u043e\u043b\u043e\u0441] \u00a7r" + text));
+                    mc.player.displayClientMessage(Component.literal(
+                            "\u00a77[\u0413\u043e\u043b\u043e\u0441] \u00a7r" + text), false);
                     ClientPlayNetworking.send(new VoiceChatPayload(text));
                 } else {
                     mc.player.sendSystemMessage(Component.literal(

@@ -64,9 +64,9 @@ public class FishAudioTTSClient {
                 }
             }
             return null;
-        }).thenAccept(mp3Data -> {
-            if (mp3Data != null && mp3Data.length > 0) {
-                Minecraft.getInstance().execute(() -> playMp3(mp3Data, finalText));
+        }).thenAccept(wavData -> {
+            if (wavData != null && wavData.length > 0) {
+                Minecraft.getInstance().execute(() -> playWav(wavData, finalText));
             }
         });
     }
@@ -102,8 +102,7 @@ public class FishAudioTTSClient {
         JsonObject body = new JsonObject();
         body.addProperty("text", text);
         body.addProperty("reference_id", VerityClientConfig.ttsVoiceId());
-        body.addProperty("format", "mp3");
-        body.addProperty("mp3_bitrate", 128);
+        body.addProperty("format", "wav");   // WAV → не нужен MP3-декодер, читаем PCM напрямую
         body.addProperty("speed", speed);
         body.addProperty("normalize", true);
 
@@ -128,7 +127,7 @@ public class FishAudioTTSClient {
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
         if (response.statusCode() != 200) {
-            String errBody = new String(response.body(), StandardCharsets.UTF_8);
+            String errBody = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
             VerityMod.LOGGER.warn("TTS API returned {}: {}", response.statusCode(),
                     errBody.substring(0, Math.min(200, errBody.length())));
             return null;
@@ -137,92 +136,112 @@ public class FishAudioTTSClient {
         return response.body();
     }
 
-    private static void playMp3(byte[] mp3Data, String text) {
-        try {
-            Files.createDirectories(TTS_CACHE_DIR);
-            String fileName = "tts_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8) + ".mp3";
-            Path mp3File = TTS_CACHE_DIR.resolve(fileName).toAbsolutePath();
-            Files.write(mp3File, mp3Data);
-
-            // Оцениваем длительность: 128kbps = ~16KB/сек
-            int estimatedDurationSec = Math.max(2, mp3Data.length / 16000);
-
-            VerityMod.LOGGER.info("TTS: Playing {} ({} bytes, ~{}s) for: {}",
-                    fileName, mp3Data.length, estimatedDurationSec,
-                    text.substring(0, Math.min(50, text.length())));
-
-            // Запускаем воспроизведение в отдельном потоке
-            Thread playbackThread = new Thread(() -> {
-                Process proc = null;
-                try {
-                    String os = System.getProperty("os.name").toLowerCase();
-                    if (os.contains("win")) {
-                        proc = Runtime.getRuntime().exec(new String[]{"powershell", "-nop", "-c",
-                                "Add-Type -AssemblyName presentationCore; " +
-                                "$p = New-Object System.Windows.Media.MediaPlayer; " +
-                                "$p.Open([uri]'" + mp3File.toString().replace("'", "''") + "'); " +
-                                "Start-Sleep -m 200; $p.Play(); " +
-                                "Start-Sleep -s " + (estimatedDurationSec + 2) + "; $p.Close()"});
-                    } else if (os.contains("mac")) {
-                        proc = Runtime.getRuntime().exec(new String[]{"afplay", mp3File.toString()});
-                    } else {
-                        // Linux: try mpg123, then ffplay, then aplay (via ffmpeg pipe)
-                        proc = tryLinuxPlayback(mp3File);
-                        if (proc == null) {
-                            VerityMod.LOGGER.error("TTS: No MP3 player found. Install mpg123 or ffmpeg.");
-                            return;
-                        }
-                    }
-
-                    // Ждём пока процесс запустится (аудио открывается)
-                    Thread.sleep(300);
-
-                    // Аудио начало играть — открываем рот
-                    net.verity.client.render.VerityItemRenderer.setTalking(true);
-
-                    // Ждём пока процесс жив → аудио играет
-                    while (proc.isAlive()) {
-                        Thread.sleep(50);
-                    }
-                } catch (Exception e) {
-                    VerityMod.LOGGER.error("TTS playback thread error: {}", e.getMessage());
-                } finally {
-                    // Аудио закончилось — закрываем рот
-                    net.verity.client.render.VerityItemRenderer.setTalking(false);
-                    // Удаляем временный файл
-                    try { Files.deleteIfExists(mp3File); } catch (Exception ignored) {}
+    /**
+     * Воспроизводит WAV через OpenAL (LWJGL — уже встроен в Minecraft).
+     * Работает на Windows / Linux / macOS / FreeBSD / Android (Zalith).
+     * Никаких внешних процессов, никаких зависимостей.
+     */
+    private static void playWav(byte[] wavData, String text) {
+        Thread playbackThread = new Thread(() -> {
+            int alBuffer = 0;
+            int alSource = 0;
+            try {
+                // ── 1. Разбираем WAV-заголовок ───────────────────────────────
+                // Минимальная длина: 44 байта (стандартный PCM WAV header)
+                if (wavData == null || wavData.length < 44) {
+                    VerityMod.LOGGER.error("TTS: WAV data too short ({} bytes)", wavData == null ? 0 : wavData.length);
+                    return;
                 }
-            }, "Verity-TTS-Playback");
-            playbackThread.setDaemon(true);
-            playbackThread.start();
 
-        } catch (Exception e) {
-            VerityMod.LOGGER.error("TTS playback failed: {}", e.getMessage());
-        }
+                // Читаем поля из little-endian заголовка
+                int audioFormat  = readInt16LE(wavData, 20); // 1 = PCM
+                int channels     = readInt16LE(wavData, 22); // 1=mono, 2=stereo
+                int sampleRate   = readInt32LE(wavData, 24);
+                int bitsPerSample= readInt16LE(wavData, 34); // 8 или 16
+
+                // Ищем chunk "data" (может быть не на 36, если есть LIST/fact chunks)
+                int dataOffset = 12;
+                int dataSize   = 0;
+                while (dataOffset + 8 < wavData.length) {
+                    String chunkId = new String(wavData, dataOffset, 4, java.nio.charset.StandardCharsets.US_ASCII);
+                    int    chunkSz = readInt32LE(wavData, dataOffset + 4);
+                    dataOffset += 8;
+                    if ("data".equals(chunkId)) {
+                        dataSize = chunkSz;
+                        break;
+                    }
+                    dataOffset += chunkSz;
+                }
+
+                if (dataSize == 0 || dataOffset + dataSize > wavData.length) {
+                    // Fallback: предположим стандартный 44-байтный header
+                    dataOffset = 44;
+                    dataSize   = wavData.length - 44;
+                }
+
+                // Определяем формат OpenAL
+                int alFormat;
+                if (channels == 1 && bitsPerSample == 8)  alFormat = org.lwjgl.openal.AL10.AL_FORMAT_MONO8;
+                else if (channels == 1 && bitsPerSample == 16) alFormat = org.lwjgl.openal.AL10.AL_FORMAT_MONO16;
+                else if (channels == 2 && bitsPerSample == 8)  alFormat = org.lwjgl.openal.AL10.AL_FORMAT_STEREO8;
+                else                                            alFormat = org.lwjgl.openal.AL10.AL_FORMAT_STEREO16;
+
+                int estimatedDurationSec = Math.max(1, dataSize / (sampleRate * channels * bitsPerSample / 8));
+                VerityMod.LOGGER.info("TTS: Playing WAV ({} bytes, {}Hz {}ch {}bit, ~{}s) for: {}",
+                        wavData.length, sampleRate, channels, bitsPerSample, estimatedDurationSec,
+                        text.substring(0, Math.min(50, text.length())));
+
+                // ── 2. Загружаем PCM в OpenAL буфер ─────────────────────────
+                java.nio.ByteBuffer pcmBuffer = java.nio.ByteBuffer
+                        .allocateDirect(dataSize)
+                        .order(java.nio.ByteOrder.nativeOrder());
+                pcmBuffer.put(wavData, dataOffset, dataSize);
+                pcmBuffer.flip();
+
+                alBuffer = org.lwjgl.openal.AL10.alGenBuffers();
+                org.lwjgl.openal.AL10.alBufferData(alBuffer, alFormat, pcmBuffer, sampleRate);
+
+                alSource = org.lwjgl.openal.AL10.alGenSources();
+                org.lwjgl.openal.AL10.alSourcei(alSource, org.lwjgl.openal.AL10.AL_BUFFER, alBuffer);
+                org.lwjgl.openal.AL10.alSourcef(alSource, org.lwjgl.openal.AL10.AL_GAIN, 1.0f);
+
+                // ── 3. Играем ────────────────────────────────────────────────
+                org.lwjgl.openal.AL10.alSourcePlay(alSource);
+
+                // Аудио начало играть — открываем рот
+                net.verity.client.render.VerityItemRenderer.setTalking(true);
+
+                // Ждём окончания (polling каждые 50мс)
+                int state;
+                do {
+                    Thread.sleep(50);
+                    state = org.lwjgl.openal.AL10.alGetSourcei(alSource, org.lwjgl.openal.AL10.AL_SOURCE_STATE);
+                } while (state == org.lwjgl.openal.AL10.AL_PLAYING);
+
+            } catch (Exception e) {
+                VerityMod.LOGGER.error("TTS: OpenAL playback error: {}", e.getMessage());
+            } finally {
+                // Закрываем рот и освобождаем ресурсы OpenAL
+                net.verity.client.render.VerityItemRenderer.setTalking(false);
+                try {
+                    if (alSource  != 0) org.lwjgl.openal.AL10.alDeleteSources(alSource);
+                    if (alBuffer  != 0) org.lwjgl.openal.AL10.alDeleteBuffers(alBuffer);
+                } catch (Exception ignored) {}
+            }
+        }, "Verity-TTS-Playback");
+        playbackThread.setDaemon(true);
+        playbackThread.start();
     }
 
-    /**
-     * Try multiple Linux MP3 players in order: mpg123 → ffplay → paplay.
-     */
-    private static Process tryLinuxPlayback(Path mp3File) {
-        String[][] attempts = {
-                {"mpg123", "-q", mp3File.toString()},
-                {"ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", mp3File.toString()},
-                {"cvlc", "--play-and-exit", "--no-video", mp3File.toString()}
-        };
-        for (String[] cmd : attempts) {
-            try {
-                Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
-                // Check if it failed immediately (command not found)
-                Thread.sleep(100);
-                if (p.isAlive()) return p;
-                int code = p.exitValue();
-                if (code == 0) return null; // finished instantly = maybe played
-            } catch (Exception e) {
-                // Command not found, try next
-            }
-        }
-        return null;
+    // ── WAV-хелперы ──────────────────────────────────────────────────────────
+
+    private static int readInt16LE(byte[] b, int off) {
+        return (b[off] & 0xFF) | ((b[off + 1] & 0xFF) << 8);
+    }
+
+    private static int readInt32LE(byte[] b, int off) {
+        return (b[off] & 0xFF) | ((b[off+1] & 0xFF) << 8)
+             | ((b[off+2] & 0xFF) << 16) | ((b[off+3] & 0xFF) << 24);
     }
 
     private static String stripMinecraftFormatting(String text) {

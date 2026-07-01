@@ -1,5 +1,15 @@
 # Verity Mod — Changelog
 
+## v0.8.2-beta
+
+### Audio & TTS
+- **Native OpenAL playback** — moved TTS audio output from external programs (PowerShell, mpg123, afplay, cvlc) to Java-native OpenAL (via LWJGL) which is built into Minecraft. Now works out of the box on Windows, Linux, macOS, FreeBSD, and Android (Zalith/Pojav).
+- **Lossless WAV integration** — requests WAV format from Fish Audio, parsing standard PCM data dynamically in-memory for instant playback without local file caching/decoding.
+
+### Fixes
+- **No duplicate messages** — added message deduplication to prevent double/triple chat messages and TTS triggers on integrated/LAN servers.
+- **UTF-8 character encoding** — forced UTF-8 response parsing for LLM and STT HTTP clients, resolving issues with broken Cyrillic letters (`Р§С‚Рѕ-С‚Рѕ...`) on Windows.
+
 ## v0.8.1-beta
 
 ### Fixes
