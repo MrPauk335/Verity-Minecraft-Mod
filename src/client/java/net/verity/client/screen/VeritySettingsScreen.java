@@ -6,6 +6,8 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
 import net.verity.config.VerityConfig;
 import net.verity.client.config.VerityClientConfig;
 import net.verity.client.voice.VerityVoiceHandler;
@@ -197,6 +199,7 @@ public class VeritySettingsScreen extends Screen {
                 Component.literal("API Key"));
         this.apiKeyBox.setMaxLength(512);
         this.apiKeyBox.setValue(VerityConfig.customApiKey());
+        maskEditBox(this.apiKeyBox);
         this.addRenderableWidget(this.apiKeyBox);
 
         // ── Model selector ─────────────────────────────────────────────────
@@ -214,6 +217,7 @@ public class VeritySettingsScreen extends Screen {
                 Component.literal("Gemini API Key"));
         this.geminiKeyBox.setMaxLength(512);
         this.geminiKeyBox.setValue(VerityConfig.geminiApiKey());
+        maskEditBox(this.geminiKeyBox);
         this.geminiKeyBox.setHint(Component.literal("\u00a78Built-in keys included. Add your own (optional)"));
         this.addRenderableWidget(this.geminiKeyBox);
 
@@ -261,6 +265,7 @@ public class VeritySettingsScreen extends Screen {
                 Component.literal("Groq API Key"));
         this.sttKeyBox.setMaxLength(512);
         this.sttKeyBox.setValue(VerityClientConfig.sttApiKey());
+        maskEditBox(this.sttKeyBox);
         this.addRenderableWidget(this.sttKeyBox);
 
         updateKeyBoxHints();
@@ -276,6 +281,7 @@ public class VeritySettingsScreen extends Screen {
                 Component.literal("Fish Audio API Key"));
         this.ttsKeyBox.setMaxLength(512);
         this.ttsKeyBox.setValue(VerityClientConfig.ttsApiKey());
+        maskEditBox(this.ttsKeyBox);
         this.ttsKeyBox.setHint(Component.literal("\u00a78fish.audio \u2192 API Keys"));
         this.addRenderableWidget(this.ttsKeyBox);
 
@@ -347,6 +353,28 @@ public class VeritySettingsScreen extends Screen {
         if (this.minecraft != null) this.minecraft.setScreen(this.parent);
     }
 
+    private static String encryptForKeyConfig(String plain) {
+        if (plain == null || plain.isEmpty()) return plain;
+        if (plain.startsWith("enc:")) return plain;
+        byte[] encoded = net.verity.config.KeyVault.encode(plain);
+        return "enc:" + java.util.Base64.getEncoder().encodeToString(encoded);
+    }
+
+    private static String decryptForKeyConfig(String stored) {
+        if (stored == null || stored.isEmpty()) return stored;
+        if (!stored.startsWith("enc:")) return stored;
+        try {
+            byte[] encoded = java.util.Base64.getDecoder().decode(stored.substring(4));
+            return net.verity.config.KeyVault.decode(encoded);
+        } catch (Exception e) {
+            return stored;
+        }
+    }
+
+    private static void maskEditBox(EditBox box) {
+        box.setFormatter((text, pos) -> FormattedCharSequence.forward("*".repeat(text.length()), Style.EMPTY));
+    }
+
     private void saveServerConfig() {
         try {
             Properties p = new Properties();
@@ -355,16 +383,16 @@ public class VeritySettingsScreen extends Screen {
             }
             p.setProperty("key_source",          useBuiltinKeys ? "builtin" : "custom");
             p.setProperty("llm_provider",        llmProvider);
-            p.setProperty("custom_api_key",      this.apiKeyBox.getValue().trim());
+            p.setProperty("custom_api_key",      encryptForKeyConfig(this.apiKeyBox.getValue().trim()));
             p.setProperty("selected_model",      MODELS.get(selectedModelIndex));
-            p.setProperty("gemini_api_key",      this.geminiKeyBox != null ? this.geminiKeyBox.getValue().trim() : "");
+            p.setProperty("gemini_api_key",      encryptForKeyConfig(this.geminiKeyBox != null ? this.geminiKeyBox.getValue().trim() : ""));
             p.setProperty("gemini_model",        GEMINI_MODELS.get(selectedGeminiModelIndex));
             p.setProperty("llm_enabled",         String.valueOf(this.llmEnabled));
             p.setProperty("sounds_enabled",      String.valueOf(this.soundsEnabled));
             p.setProperty("chat_enabled",        String.valueOf(this.chatEnabled));
             p.setProperty("always_respond",      String.valueOf(this.alwaysRespond));
             p.setProperty("monster_form_enabled",String.valueOf(this.monsterFormEnabled));
-            p.setProperty("config_version",      "4");
+            p.setProperty("config_version",      "6");
             Files.createDirectories(CONFIG_PATH.getParent());
             try (PrintWriter pw = new PrintWriter(
                     Files.newBufferedWriter(CONFIG_PATH, StandardCharsets.UTF_8))) {

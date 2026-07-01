@@ -1,5 +1,29 @@
 # Verity Mod — Changelog
 
+## v0.8.1-beta
+
+### Fixes
+- **Config saving fixed** — config_version was stuck at 4, causing migration loops that overwrote user's provider choice
+- **Provider respects user choice** — OpenRouter/Gemini selection now persists correctly
+- **Removed broken builtin Gemini keys** — were causing 15s timeouts
+- **503 retryable** — Gemini and OpenRouter now try next key/model on 503 (high demand)
+- **Timeout reduced** 15s → 8s for faster fallback
+- **Removed aggressive gibberish filter** — was rejecting valid short responses like "Ты не один. Я рядом."
+- **Anti-leak filter** — rejects Gemini responses that output system prompt reasoning
+- **UTF-8 encoding** — all non-ASCII in Java string literals and text blocks converted to \uXXXX escapes
+
+### Security
+- **Encrypted API keys** — keys stored as `enc:Base64` (XOR cipher) in config file
+- **Masked key fields** — all API key inputs show `********` in settings screen
+
+### UI/UX
+- **Bilingual welcome message** — auto-detects Russian/English from Minecraft client language
+- **Bilingual /verity help** — full RU/EN support with commands, interaction, AI/LLM info, key setup guides
+- **Provider selector** in settings — switch between Gemini and OpenRouter
+- **5 Gemini models** — gemini-3.1-flash-live-preview, gemini-3-flash-preview, gemini-2.5-flash, gemini-2.5-flash-lite, gemma-4-31b-it
+- **TTS enabled by default**
+- **Telegram bot** — auto-posts releases to Telegram channel via GitHub Actions
+
 ## v0.8.0-beta
 
 ### Ball Physics

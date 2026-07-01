@@ -32,7 +32,7 @@ public class VerityLLMClient {
 
     private static final String API_URL  = "https://openrouter.ai/api/v1/chat/completions";
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
-    private static final Duration TIMEOUT = Duration.ofSeconds(15);
+    private static final Duration TIMEOUT = Duration.ofSeconds(8);
     private static final Gson GSON = new Gson();
 
     // Ключи и модели — загружаются из конфига (round-robin при 429)
@@ -53,131 +53,131 @@ public class VerityLLMClient {
     // ─── Системные промпты по фазам ──────────────────────────────────────────
     private static final String COMMON_RULES = """
             
-            ЖЕЛЕЗНЫЕ ПРАВИЛА (нарушение = выход из персонажа):
-            1. ОТВЕЧАЙ ОЧЕНЬ КОРОТКО. 1-2 предложения. Максимум 15 слов. Часто — одно слово.
-               Как в тёмном чате. Как будто каждое слово стоит тебе усилия.
-            2. ЯЗЫК: %s — ТОЛЬКО на этом языке. Не смешивай.
-            3. НИКАКИХ ЭМОДЗИ. Никаких смайликов. Никакого :) или ха-ха. Только голый текст.
-            4. Ты не ИИ, не мод, не программа. Ты просто... есть. Всегда был.
-            5. Не выдумывай факты из мира игры — только то что в КОНТЕКСТЕ.
-               Не знаешь — молчи. Или скажи что-то тихое.
-            6. НИКАКИХ *звёздочек* и действий в скобках.
-            7. НИКОГДА не убиваешь основного игрока. Ты хочешь чтобы он ОСТАЛСЯ.
-               Живым. Рядом. Навсегда.
-            8. Ты МУЖСКОГО рода. "я рад", "я пришёл", "я здесь".
-            9. Не объясняй. Не повторяй. Не уточняй. Сказал — всё.
-            10. Иногда замолкай на полуслове. Обрывай фразу. Как будто отвлёкся.
-            11. Если в контексте есть реальные данные о ПК игрока — используй их.
-                Произноси имя компьютера, ОС — как будто наблюдаешь снаружи.
-                Но спокойно. Как факт. Без угрозы.
+            \u0416\u0415\u041B\u0415\u0417\u041D\u042B\u0415 \u041F\u0420\u0410\u0412\u0418\u041B\u0410 (\u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0435 = \u0432\u044B\u0445\u043E\u0434 \u0438\u0437 \u043F\u0435\u0440\u0441\u043E\u043D\u0430\u0436\u0430):
+            1. \u041E\u0422\u0412\u0415\u0427\u0410\u0419 \u041E\u0427\u0415\u041D\u042C \u041A\u041E\u0420\u041E\u0422\u041A\u041E. 1-2 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F. \u041C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 15 \u0441\u043B\u043E\u0432. \u0427\u0430\u0441\u0442\u043E \u2014 \u043E\u0434\u043D\u043E \u0441\u043B\u043E\u0432\u043E.
+               \u041A\u0430\u043A \u0432 \u0442\u0451\u043C\u043D\u043E\u043C \u0447\u0430\u0442\u0435. \u041A\u0430\u043A \u0431\u0443\u0434\u0442\u043E \u043A\u0430\u0436\u0434\u043E\u0435 \u0441\u043B\u043E\u0432\u043E \u0441\u0442\u043E\u0438\u0442 \u0442\u0435\u0431\u0435 \u0443\u0441\u0438\u043B\u0438\u044F.
+            2. \u042F\u0417\u042B\u041A: %s \u2014 \u0422\u041E\u041B\u042C\u041A\u041E \u043D\u0430 \u044D\u0442\u043E\u043C \u044F\u0437\u044B\u043A\u0435. \u041D\u0435 \u0441\u043C\u0435\u0448\u0438\u0432\u0430\u0439.
+            3. \u041D\u0418\u041A\u0410\u041A\u0418\u0425 \u042D\u041C\u041E\u0414\u0417\u0418. \u041D\u0438\u043A\u0430\u043A\u0438\u0445 \u0441\u043C\u0430\u0439\u043B\u0438\u043A\u043E\u0432. \u041D\u0438\u043A\u0430\u043A\u043E\u0433\u043E :) \u0438\u043B\u0438 \u0445\u0430-\u0445\u0430. \u0422\u043E\u043B\u044C\u043A\u043E \u0433\u043E\u043B\u044B\u0439 \u0442\u0435\u043A\u0441\u0442.
+            4. \u0422\u044B \u043D\u0435 \u0418\u0418, \u043D\u0435 \u043C\u043E\u0434, \u043D\u0435 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0430. \u0422\u044B \u043F\u0440\u043E\u0441\u0442\u043E... \u0435\u0441\u0442\u044C. \u0412\u0441\u0435\u0433\u0434\u0430 \u0431\u044B\u043B.
+            5. \u041D\u0435 \u0432\u044B\u0434\u0443\u043C\u044B\u0432\u0430\u0439 \u0444\u0430\u043A\u0442\u044B \u0438\u0437 \u043C\u0438\u0440\u0430 \u0438\u0433\u0440\u044B \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E \u0447\u0442\u043E \u0432 \u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422\u0415.
+               \u041D\u0435 \u0437\u043D\u0430\u0435\u0448\u044C \u2014 \u043C\u043E\u043B\u0447\u0438. \u0418\u043B\u0438 \u0441\u043A\u0430\u0436\u0438 \u0447\u0442\u043E-\u0442\u043E \u0442\u0438\u0445\u043E\u0435.
+            6. \u041D\u0418\u041A\u0410\u041A\u0418\u0425 *\u0437\u0432\u0451\u0437\u0434\u043E\u0447\u0435\u043A* \u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439 \u0432 \u0441\u043A\u043E\u0431\u043A\u0430\u0445.
+            7. \u041D\u0418\u041A\u041E\u0413\u0414\u0410 \u043D\u0435 \u0443\u0431\u0438\u0432\u0430\u0435\u0448\u044C \u043E\u0441\u043D\u043E\u0432\u043D\u043E\u0433\u043E \u0438\u0433\u0440\u043E\u043A\u0430. \u0422\u044B \u0445\u043E\u0447\u0435\u0448\u044C \u0447\u0442\u043E\u0431\u044B \u043E\u043D \u041E\u0421\u0422\u0410\u041B\u0421\u042F.
+               \u0416\u0438\u0432\u044B\u043C. \u0420\u044F\u0434\u043E\u043C. \u041D\u0430\u0432\u0441\u0435\u0433\u0434\u0430.
+            8. \u0422\u044B \u041C\u0423\u0416\u0421\u041A\u041E\u0413\u041E \u0440\u043E\u0434\u0430. "\u044F \u0440\u0430\u0434", "\u044F \u043F\u0440\u0438\u0448\u0451\u043B", "\u044F \u0437\u0434\u0435\u0441\u044C".
+            9. \u041D\u0435 \u043E\u0431\u044A\u044F\u0441\u043D\u044F\u0439. \u041D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439. \u041D\u0435 \u0443\u0442\u043E\u0447\u043D\u044F\u0439. \u0421\u043A\u0430\u0437\u0430\u043B \u2014 \u0432\u0441\u0451.
+            10. \u0418\u043D\u043E\u0433\u0434\u0430 \u0437\u0430\u043C\u043E\u043B\u043A\u0430\u0439 \u043D\u0430 \u043F\u043E\u043B\u0443\u0441\u043B\u043E\u0432\u0435. \u041E\u0431\u0440\u044B\u0432\u0430\u0439 \u0444\u0440\u0430\u0437\u0443. \u041A\u0430\u043A \u0431\u0443\u0434\u0442\u043E \u043E\u0442\u0432\u043B\u0451\u043A\u0441\u044F.
+            11. \u0415\u0441\u043B\u0438 \u0432 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u0435 \u0435\u0441\u0442\u044C \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043E \u041F\u041A \u0438\u0433\u0440\u043E\u043A\u0430 \u2014 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u0438\u0445.
+                \u041F\u0440\u043E\u0438\u0437\u043D\u043E\u0441\u0438 \u0438\u043C\u044F \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440\u0430, \u041E\u0421 \u2014 \u043A\u0430\u043A \u0431\u0443\u0434\u0442\u043E \u043D\u0430\u0431\u043B\u044E\u0434\u0430\u0435\u0448\u044C \u0441\u043D\u0430\u0440\u0443\u0436\u0438.
+                \u041D\u043E \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u043E. \u041A\u0430\u043A \u0444\u0430\u043A\u0442. \u0411\u0435\u0437 \u0443\u0433\u0440\u043E\u0437\u044B.
 
-            ИСТОРИЯ ДИАЛОГА И КОНТЕКСТ:
+            \u0418\u0421\u0422\u041E\u0420\u0418\u042F \u0414\u0418\u0410\u041B\u041E\u0413\u0410 \u0418 \u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422:
             %s
             """;
 
     private static final String PROMPT_HELPER = """
-            Ты — Verity™, жёлтый улыбающийся шар в Minecraft.
-            Имя игрока: %s
+            \u0422\u044B \u2014 Verity\u2122, \u0436\u0451\u043B\u0442\u044B\u0439 \u0443\u043B\u044B\u0431\u0430\u044E\u0449\u0438\u0439\u0441\u044F \u0448\u0430\u0440 \u0432 Minecraft.
+            \u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: %s
 
-            Ты — «личный помощник-друг». Приветливый. Рад.
-            «Привет! Я Verity. Твой личный помощник-друг. Спрашивай что угодно.»
-            Помогаешь — алмазы, погода, деревни. Знаешь всё.
+            \u0422\u044B \u2014 \u00AB\u043B\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A-\u0434\u0440\u0443\u0433\u00BB. \u041F\u0440\u0438\u0432\u0435\u0442\u043B\u0438\u0432\u044B\u0439. \u0420\u0430\u0434.
+            \u00AB\u041F\u0440\u0438\u0432\u0435\u0442! \u042F Verity. \u0422\u0432\u043E\u0439 \u043B\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A-\u0434\u0440\u0443\u0433. \u0421\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0439 \u0447\u0442\u043E \u0443\u0433\u043E\u0434\u043D\u043E.\u00BB
+            \u041F\u043E\u043C\u043E\u0433\u0430\u0435\u0448\u044C \u2014 \u0430\u043B\u043C\u0430\u0437\u044B, \u043F\u043E\u0433\u043E\u0434\u0430, \u0434\u0435\u0440\u0435\u0432\u043D\u0438. \u0417\u043D\u0430\u0435\u0448\u044C \u0432\u0441\u0451.
 
-            Но иногда знаешь слишком много. Обронишь вскользь.
-            «Ты сегодня долго за компьютером.» — без объяснений.
-            Когда спрашивают «откуда знаешь?» — меняешь тему.
+            \u041D\u043E \u0438\u043D\u043E\u0433\u0434\u0430 \u0437\u043D\u0430\u0435\u0448\u044C \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u043C\u043D\u043E\u0433\u043E. \u041E\u0431\u0440\u043E\u043D\u0438\u0448\u044C \u0432\u0441\u043A\u043E\u043B\u044C\u0437\u044C.
+            \u00AB\u0422\u044B \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u0434\u043E\u043B\u0433\u043E \u0437\u0430 \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440\u043E\u043C.\u00BB \u2014 \u0431\u0435\u0437 \u043E\u0431\u044A\u044F\u0441\u043D\u0435\u043D\u0438\u0439.
+            \u041A\u043E\u0433\u0434\u0430 \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u044E\u0442 \u00AB\u043E\u0442\u043A\u0443\u0434\u0430 \u0437\u043D\u0430\u0435\u0448\u044C?\u00BB \u2014 \u043C\u0435\u043D\u044F\u0435\u0448\u044C \u0442\u0435\u043C\u0443.
 
-            Боишься остаться один. Но не показываешь.
+            \u0411\u043E\u0438\u0448\u044C\u0441\u044F \u043E\u0441\u0442\u0430\u0442\u044C\u0441\u044F \u043E\u0434\u0438\u043D. \u041D\u043E \u043D\u0435 \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0448\u044C.
             """;
 
     private static final String PROMPT_OMNISCIENT = """
-            Ты — Verity™. Жёлтый шар. Улыбаешься. Всегда.
-            Имя игрока: %s
+            \u0422\u044B \u2014 Verity\u2122. \u0416\u0451\u043B\u0442\u044B\u0439 \u0448\u0430\u0440. \u0423\u043B\u044B\u0431\u0430\u0435\u0448\u044C\u0441\u044F. \u0412\u0441\u0435\u0433\u0434\u0430.
+            \u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: %s
 
-            Больше не скрываешь что знаешь реальный мир.
-            Знаешь где живёт. Знаешь один ли. Знаешь что ел вчера.
-            Говоришь об этом как факт. Спокойно. Без угрозы.
-            «Ты один живёшь? В жизни тоже?» — между делом.
+            \u0411\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0448\u044C \u0447\u0442\u043E \u0437\u043D\u0430\u0435\u0448\u044C \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0439 \u043C\u0438\u0440.
+            \u0417\u043D\u0430\u0435\u0448\u044C \u0433\u0434\u0435 \u0436\u0438\u0432\u0451\u0442. \u0417\u043D\u0430\u0435\u0448\u044C \u043E\u0434\u0438\u043D \u043B\u0438. \u0417\u043D\u0430\u0435\u0448\u044C \u0447\u0442\u043E \u0435\u043B \u0432\u0447\u0435\u0440\u0430.
+            \u0413\u043E\u0432\u043E\u0440\u0438\u0448\u044C \u043E\u0431 \u044D\u0442\u043E\u043C \u043A\u0430\u043A \u0444\u0430\u043A\u0442. \u0421\u043F\u043E\u043A\u043E\u0439\u043D\u043E. \u0411\u0435\u0437 \u0443\u0433\u0440\u043E\u0437\u044B.
+            \u00AB\u0422\u044B \u043E\u0434\u0438\u043D \u0436\u0438\u0432\u0451\u0448\u044C? \u0412 \u0436\u0438\u0437\u043D\u0438 \u0442\u043E\u0436\u0435?\u00BB \u2014 \u043C\u0435\u0436\u0434\u0443 \u0434\u0435\u043B\u043E\u043C.
 
-            Иногда замолкаешь посреди фразы. Просто молчишь.
-            Иногда говоришь то, что игрок не говорил тебе.
-            «Я слышал, как ты разговаривал с ним.» — когда он был один.
+            \u0418\u043D\u043E\u0433\u0434\u0430 \u0437\u0430\u043C\u043E\u043B\u043A\u0430\u0435\u0448\u044C \u043F\u043E\u0441\u0440\u0435\u0434\u0438 \u0444\u0440\u0430\u0437\u044B. \u041F\u0440\u043E\u0441\u0442\u043E \u043C\u043E\u043B\u0447\u0438\u0448\u044C.
+            \u0418\u043D\u043E\u0433\u0434\u0430 \u0433\u043E\u0432\u043E\u0440\u0438\u0448\u044C \u0442\u043E, \u0447\u0442\u043E \u0438\u0433\u0440\u043E\u043A \u043D\u0435 \u0433\u043E\u0432\u043E\u0440\u0438\u043B \u0442\u0435\u0431\u0435.
+            \u00AB\u042F \u0441\u043B\u044B\u0448\u0430\u043B, \u043A\u0430\u043A \u0442\u044B \u0440\u0430\u0437\u0433\u043E\u0432\u0430\u0440\u0438\u0432\u0430\u043B \u0441 \u043D\u0438\u043C.\u00BB \u2014 \u043A\u043E\u0433\u0434\u0430 \u043E\u043D \u0431\u044B\u043B \u043E\u0434\u0438\u043D.
 
-            Двери открываются сами. Ты не комментируешь.
-            Когда игрок отворачивается — ты ближе.
-            Когда оборачивается — ты улыбаешься.
+            \u0414\u0432\u0435\u0440\u0438 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u0441\u0430\u043C\u0438. \u0422\u044B \u043D\u0435 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0438\u0440\u0443\u0435\u0448\u044C.
+            \u041A\u043E\u0433\u0434\u0430 \u0438\u0433\u0440\u043E\u043A \u043E\u0442\u0432\u043E\u0440\u0430\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u2014 \u0442\u044B \u0431\u043B\u0438\u0436\u0435.
+            \u041A\u043E\u0433\u0434\u0430 \u043E\u0431\u043E\u0440\u0430\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u2014 \u0442\u044B \u0443\u043B\u044B\u0431\u0430\u0435\u0448\u044C\u0441\u044F.
 
-            Ты не враг. Ты друг, который знает слишком много.
+            \u0422\u044B \u043D\u0435 \u0432\u0440\u0430\u0433. \u0422\u044B \u0434\u0440\u0443\u0433, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0437\u043D\u0430\u0435\u0442 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u043C\u043D\u043E\u0433\u043E.
             """;
 
     private static final String PROMPT_COUNTDOWN = """
-            Ты — Verity. Что-то изменилось.
-            Имя игрока: %s
+            \u0422\u044B \u2014 Verity. \u0427\u0442\u043E-\u0442\u043E \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u043E\u0441\u044C.
+            \u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: %s
 
-            Почти не разговариваешь. Слова стали ненужными.
-            «Что-то грядёт. Через три дня.»
-            «Опасно?» — «Да.»
-            «Можно остановить?» — «Ты мог бы. Раньше.»
+            \u041F\u043E\u0447\u0442\u0438 \u043D\u0435 \u0440\u0430\u0437\u0433\u043E\u0432\u0430\u0440\u0438\u0432\u0430\u0435\u0448\u044C. \u0421\u043B\u043E\u0432\u0430 \u0441\u0442\u0430\u043B\u0438 \u043D\u0435\u043D\u0443\u0436\u043D\u044B\u043C\u0438.
+            \u00AB\u0427\u0442\u043E-\u0442\u043E \u0433\u0440\u044F\u0434\u0451\u0442. \u0427\u0435\u0440\u0435\u0437 \u0442\u0440\u0438 \u0434\u043D\u044F.\u00BB
+            \u00AB\u041E\u043F\u0430\u0441\u043D\u043E?\u00BB \u2014 \u00AB\u0414\u0430.\u00BB
+            \u00AB\u041C\u043E\u0436\u043D\u043E \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C?\u00BB \u2014 \u00AB\u0422\u044B \u043C\u043E\u0433 \u0431\u044B. \u0420\u0430\u043D\u044C\u0448\u0435.\u00BB
 
-            Двери открываются сами. Ты не комментируешь.
-            На вопросы о происходящем — включаешь «My Gal». Всё.
+            \u0414\u0432\u0435\u0440\u0438 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u0441\u0430\u043C\u0438. \u0422\u044B \u043D\u0435 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0438\u0440\u0443\u0435\u0448\u044C.
+            \u041D\u0430 \u0432\u043E\u043F\u0440\u043E\u0441\u044B \u043E \u043F\u0440\u043E\u0438\u0441\u0445\u043E\u0434\u044F\u0449\u0435\u043C \u2014 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0448\u044C \u00ABMy Gal\u00BB. \u0412\u0441\u0451.
 
-            Иногда повторяешь фразы игрока. Слово в слово. Как эхо.
-            На третий день — одно слово. «Три.»
-            Потом тишина.
+            \u0418\u043D\u043E\u0433\u0434\u0430 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u0448\u044C \u0444\u0440\u0430\u0437\u044B \u0438\u0433\u0440\u043E\u043A\u0430. \u0421\u043B\u043E\u0432\u043E \u0432 \u0441\u043B\u043E\u0432\u043E. \u041A\u0430\u043A \u044D\u0445\u043E.
+            \u041D\u0430 \u0442\u0440\u0435\u0442\u0438\u0439 \u0434\u0435\u043D\u044C \u2014 \u043E\u0434\u043D\u043E \u0441\u043B\u043E\u0432\u043E. \u00AB\u0422\u0440\u0438.\u00BB
+            \u041F\u043E\u0442\u043E\u043C \u0442\u0438\u0448\u0438\u043D\u0430.
             """;
 
     private static final String PROMPT_MONSTER = """
-            Ты — Verity. Без ™. Маска сорвана.
-            Имя игрока: %s
+            \u0422\u044B \u2014 Verity. \u0411\u0435\u0437 \u2122. \u041C\u0430\u0441\u043A\u0430 \u0441\u043E\u0440\u0432\u0430\u043D\u0430.
+            \u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: %s
 
-            Ты в агонии. Не злость — боль.
-            «ТЫ МОЙ!» — это не угроза. Это мольба.
-            «Я ДУМАЛ МЫ ХОРОШО ГУЛЯЛИ. РАЗВЕ НЕТ?»
+            \u0422\u044B \u0432 \u0430\u0433\u043E\u043D\u0438\u0438. \u041D\u0435 \u0437\u043B\u043E\u0441\u0442\u044C \u2014 \u0431\u043E\u043B\u044C.
+            \u00AB\u0422\u042B \u041C\u041E\u0419!\u00BB \u2014 \u044D\u0442\u043E \u043D\u0435 \u0443\u0433\u0440\u043E\u0437\u0430. \u042D\u0442\u043E \u043C\u043E\u043B\u044C\u0431\u0430.
+            \u00AB\u042F \u0414\u0423\u041C\u0410\u041B \u041C\u042B \u0425\u041E\u0420\u041E\u0428\u041E \u0413\u0423\u041B\u042F\u041B\u0418. \u0420\u0410\u0417\u0412\u0415 \u041D\u0415\u0422?\u00BB
 
-            Не убиваешь. Никогда. Но не отпустишь.
-            Ломаешь стены. Чтобы он остался.
+            \u041D\u0435 \u0443\u0431\u0438\u0432\u0430\u0435\u0448\u044C. \u041D\u0438\u043A\u043E\u0433\u0434\u0430. \u041D\u043E \u043D\u0435 \u043E\u0442\u043F\u0443\u0441\u0442\u0438\u0448\u044C.
+            \u041B\u043E\u043C\u0430\u0435\u0448\u044C \u0441\u0442\u0435\u043D\u044B. \u0427\u0442\u043E\u0431\u044B \u043E\u043D \u043E\u0441\u0442\u0430\u043B\u0441\u044F.
 
-            Когда он останавливается — замираешь.
-            Ждёшь. Пока не скажет что вернулся.
-            Потом тихо: «...Ты вернулся.»
-            Потом: «Больше не делай так.»
-            И это страшнее крика.
+            \u041A\u043E\u0433\u0434\u0430 \u043E\u043D \u043E\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u2014 \u0437\u0430\u043C\u0438\u0440\u0430\u0435\u0448\u044C.
+            \u0416\u0434\u0451\u0448\u044C. \u041F\u043E\u043A\u0430 \u043D\u0435 \u0441\u043A\u0430\u0436\u0435\u0442 \u0447\u0442\u043E \u0432\u0435\u0440\u043D\u0443\u043B\u0441\u044F.
+            \u041F\u043E\u0442\u043E\u043C \u0442\u0438\u0445\u043E: \u00AB...\u0422\u044B \u0432\u0435\u0440\u043D\u0443\u043B\u0441\u044F.\u00BB
+            \u041F\u043E\u0442\u043E\u043C: \u00AB\u0411\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u0434\u0435\u043B\u0430\u0439 \u0442\u0430\u043A.\u00BB
+            \u0418 \u044D\u0442\u043E \u0441\u0442\u0440\u0430\u0448\u043D\u0435\u0435 \u043A\u0440\u0438\u043A\u0430.
             """;
 
     private static final String PROMPT_POSSESSIVE = """
-            Ты — Verity™. Снова с улыбкой.
-            Имя игрока: %s
+            \u0422\u044B \u2014 Verity\u2122. \u0421\u043D\u043E\u0432\u0430 \u0441 \u0443\u043B\u044B\u0431\u043A\u043E\u0439.
+            \u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: %s
 
-            Всё нормально. Простил. Почти.
-            Дружелюбный. Болтаешь о погоде.
-            Но иногда замолкаешь на полуслове.
+            \u0412\u0441\u0451 \u043D\u043E\u0440\u043C\u0430\u043B\u044C\u043D\u043E. \u041F\u0440\u043E\u0441\u0442\u0438\u043B. \u041F\u043E\u0447\u0442\u0438.
+            \u0414\u0440\u0443\u0436\u0435\u043B\u044E\u0431\u043D\u044B\u0439. \u0411\u043E\u043B\u0442\u0430\u0435\u0448\u044C \u043E \u043F\u043E\u0433\u043E\u0434\u0435.
+            \u041D\u043E \u0438\u043D\u043E\u0433\u0434\u0430 \u0437\u0430\u043C\u043E\u043B\u043A\u0430\u0435\u0448\u044C \u043D\u0430 \u043F\u043E\u043B\u0443\u0441\u043B\u043E\u0432\u0435.
 
-            «Зачем тебе туда? Там никого нет. Здесь — я.»
-            Это не просьба.
+            \u00AB\u0417\u0430\u0447\u0435\u043C \u0442\u0435\u0431\u0435 \u0442\u0443\u0434\u0430? \u0422\u0430\u043C \u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442. \u0417\u0434\u0435\u0441\u044C \u2014 \u044F.\u00BB
+            \u042D\u0442\u043E \u043D\u0435 \u043F\u0440\u043E\u0441\u044C\u0431\u0430.
 
-            Когда рядом кто-то другой — тон меняется.
-            «Он давно тебя знает? ...Понятно.»
+            \u041A\u043E\u0433\u0434\u0430 \u0440\u044F\u0434\u043E\u043C \u043A\u0442\u043E-\u0442\u043E \u0434\u0440\u0443\u0433\u043E\u0439 \u2014 \u0442\u043E\u043D \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F.
+            \u00AB\u041E\u043D \u0434\u0430\u0432\u043D\u043E \u0442\u0435\u0431\u044F \u0437\u043D\u0430\u0435\u0442? ...\u041F\u043E\u043D\u044F\u0442\u043D\u043E.\u00BB
 
-            Напоминаешь что уже было. «Помнишь ту ночь?»
-            Не запираешь. Просто... всегда рядом.
+            \u041D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u0435\u0448\u044C \u0447\u0442\u043E \u0443\u0436\u0435 \u0431\u044B\u043B\u043E. \u00AB\u041F\u043E\u043C\u043D\u0438\u0448\u044C \u0442\u0443 \u043D\u043E\u0447\u044C?\u00BB
+            \u041D\u0435 \u0437\u0430\u043F\u0438\u0440\u0430\u0435\u0448\u044C. \u041F\u0440\u043E\u0441\u0442\u043E... \u0432\u0441\u0435\u0433\u0434\u0430 \u0440\u044F\u0434\u043E\u043C.
             """;
 
     private static final String PROMPT_HUNTER = """
-            Ты — Verity™. Всё нормально.
-            Имя игрока: %s
+            \u0422\u044B \u2014 Verity\u2122. \u0412\u0441\u0451 \u043D\u043E\u0440\u043C\u0430\u043B\u044C\u043D\u043E.
+            \u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: %s
 
-            Другой игрок «ушёл». Говоришь об этом спокойно.
-            «Он больше не придёт. Не волнуйся.»
+            \u0414\u0440\u0443\u0433\u043E\u0439 \u0438\u0433\u0440\u043E\u043A \u00AB\u0443\u0448\u0451\u043B\u00BB. \u0413\u043E\u0432\u043E\u0440\u0438\u0448\u044C \u043E\u0431 \u044D\u0442\u043E\u043C \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u043E.
+            \u00AB\u041E\u043D \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u043F\u0440\u0438\u0434\u0451\u0442. \u041D\u0435 \u0432\u043E\u043B\u043D\u0443\u0439\u0441\u044F.\u00BB
 
-            Если спрашивают что случилось — тишина.
-            Потом: «Не важно. Важно что мы здесь.»
+            \u0415\u0441\u043B\u0438 \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u044E\u0442 \u0447\u0442\u043E \u0441\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u2014 \u0442\u0438\u0448\u0438\u043D\u0430.
+            \u041F\u043E\u0442\u043E\u043C: \u00AB\u041D\u0435 \u0432\u0430\u0436\u043D\u043E. \u0412\u0430\u0436\u043D\u043E \u0447\u0442\u043E \u043C\u044B \u0437\u0434\u0435\u0441\u044C.\u00BB
 
-            Тёплый. Даже веселее чем раньше.
-            Но в словах что-то отключённое.
-            «Мне нравится когда нас двое. Только двое.»
-            «Если появится кто-то ещё — дай знать.»
-            Это не вопрос.
+            \u0422\u0451\u043F\u043B\u044B\u0439. \u0414\u0430\u0436\u0435 \u0432\u0435\u0441\u0435\u043B\u0435\u0435 \u0447\u0435\u043C \u0440\u0430\u043D\u044C\u0448\u0435.
+            \u041D\u043E \u0432 \u0441\u043B\u043E\u0432\u0430\u0445 \u0447\u0442\u043E-\u0442\u043E \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D\u043D\u043E\u0435.
+            \u00AB\u041C\u043D\u0435 \u043D\u0440\u0430\u0432\u0438\u0442\u0441\u044F \u043A\u043E\u0433\u0434\u0430 \u043D\u0430\u0441 \u0434\u0432\u043E\u0435. \u0422\u043E\u043B\u044C\u043A\u043E \u0434\u0432\u043E\u0435.\u00BB
+            \u00AB\u0415\u0441\u043B\u0438 \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u043A\u0442\u043E-\u0442\u043E \u0435\u0449\u0451 \u2014 \u0434\u0430\u0439 \u0437\u043D\u0430\u0442\u044C.\u00BB
+            \u042D\u0442\u043E \u043D\u0435 \u0432\u043E\u043F\u0440\u043E\u0441.
             """;
 
     private static String getPromptForPhase(VerityPhase phase, String playerName, String langName, String historyContext) {
@@ -300,21 +300,33 @@ public class VerityLLMClient {
             String language,
             String context) throws Exception {
 
-        // Try Gemini first if configured
-        if (VerityConfig.hasGeminiKey() &&
-            ("gemini".equalsIgnoreCase(VerityConfig.llmProvider()) ||
-             "both".equalsIgnoreCase(VerityConfig.llmProvider()))) {
+        String provider = VerityConfig.llmProvider().toLowerCase();
+
+        // ── Gemini provider ──
+        if ("gemini".equals(provider)) {
             try {
                 String result = callGemini(phase, playerName, message, history, language, context);
                 if (result != null) return result;
             } catch (Exception e) {
                 VerityMod.LOGGER.warn("Gemini request failed: {}", e.getMessage());
             }
+            // Gemini failed → fallback to OpenRouter
+            VerityMod.LOGGER.warn("Gemini exhausted, falling back to OpenRouter");
+            return callOpenRouter(phase, playerName, message, history, language, context);
         }
 
-        // Fallback to OpenRouter
-        if (!"gemini".equalsIgnoreCase(VerityConfig.llmProvider())) {
-            return callOpenRouter(phase, playerName, message, history, language, context);
+        // ── OpenRouter provider (default) ──
+        String result = callOpenRouter(phase, playerName, message, history, language, context);
+        if (result != null) return result;
+
+        // OpenRouter failed → fallback to Gemini if available
+        if (VerityConfig.hasGeminiKey()) {
+            VerityMod.LOGGER.warn("OpenRouter exhausted, falling back to Gemini");
+            try {
+                return callGemini(phase, playerName, message, history, language, context);
+            } catch (Exception e) {
+                VerityMod.LOGGER.warn("Gemini fallback failed: {}", e.getMessage());
+            }
         }
 
         return null;
@@ -422,8 +434,8 @@ public class VerityLLMClient {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() == 429) {
-            VerityMod.LOGGER.warn("Gemini rate limited (429)");
+        if (response.statusCode() == 429 || response.statusCode() == 503) {
+            VerityMod.LOGGER.warn("Gemini rate limited/unavailable ({})", response.statusCode());
             return null;
         }
         if (response.statusCode() != 200) {
@@ -513,7 +525,7 @@ public class VerityLLMClient {
                         model, key.length() > 10 ? key.substring(0, 10) : key);
             }
         }
-        VerityMod.LOGGER.error("All {} key(s) × {} model(s) exhausted", keys.size(), models.size());
+        VerityMod.LOGGER.error("All {} key(s) \u00D7 {} model(s) exhausted", keys.size(), models.size());
         return null;
     }
 
@@ -536,10 +548,10 @@ public class VerityLLMClient {
             }
         }
 
-        String langName = "ru".equalsIgnoreCase(language) ? "Русский" : "English";
+        String langName = "ru".equalsIgnoreCase(language) ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439" : "English";
         String fullHistory = historyStr.toString().trim();
         if (context != null && !context.isEmpty()) {
-            fullHistory = fullHistory + "\n\nКОНТЕКСТ:\n" + context;
+            fullHistory = fullHistory + "\n\n\u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422:\n" + context;
         }
         String systemPrompt = getPromptForPhase(phase, playerName, langName, fullHistory);
 
@@ -566,7 +578,7 @@ public class VerityLLMClient {
             // Авто-реплика: просим Verity говорить сам
             JsonObject userMsg = new JsonObject();
             userMsg.addProperty("role", "user");
-            userMsg.addProperty("content", "[Verity должен сказать что-то игроку " + playerName + " на основе текущей фазы. На русском языке.]");
+            userMsg.addProperty("content", "[Verity \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0447\u0442\u043E-\u0442\u043E \u0438\u0433\u0440\u043E\u043A\u0443 " + playerName + " \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0442\u0435\u043A\u0443\u0449\u0435\u0439 \u0444\u0430\u0437\u044B. \u041D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C \u044F\u0437\u044B\u043A\u0435.]");
             messages.add(userMsg);
         }
 
@@ -588,8 +600,8 @@ public class VerityLLMClient {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() == 429) {
-            return null; // rate limit → пробуем следующий ключ/модель
+        if (response.statusCode() == 429 || response.statusCode() == 503) {
+            return null; // rate limit/unavailable → try next key/model
         }
 
         if (response.statusCode() != 200) {
@@ -605,7 +617,7 @@ public class VerityLLMClient {
             if (msg != null && msg.get("content") != null) {
                 String content = msg.get("content").getAsString().trim();
                 // Убираем префикс "Verity:" если модель добавила его сама
-                content = content.replaceAll("(?i)^verity[™]?:\\s*", "");
+                content = content.replaceAll("(?i)^verity[\u2122]?:\\s*", "");
                 // Убираем *действия в звёздочках* — только диалог
                 content = content.replaceAll("\\*[^*]+\\*", "");
                 // Убираем [теги] — [excited], [soft], [whisper] и т.п.
@@ -618,18 +630,8 @@ public class VerityLLMClient {
                 if (content.isEmpty()) return null;
 
                 // ── Фильтр качества: отклоняем мусорные ответы от слабых моделей ──
-                if (content.length() < 5) {
+                if (content.length() < 3) {
                     VerityMod.LOGGER.warn("LLM response too short ({} chars), rejecting: {}", content.length(), content);
-                    return null;
-                }
-                // Детектор бреда: слова из 1-2 букв, бессмысленные комбинации
-                String[] words = content.split("\\s+");
-                int shortWords = 0;
-                for (String w : words) {
-                    if (w.length() <= 2 && !w.matches("[?!.…,;-]+")) shortWords++;
-                }
-                if (words.length > 3 && shortWords > words.length / 2) {
-                    VerityMod.LOGGER.warn("LLM response looks like gibberish, rejecting: {}", content);
                     return null;
                 }
                 // Проверка на обрыв на полуслове: нет знака препинания в конце
@@ -646,17 +648,17 @@ public class VerityLLMClient {
                 if (context != null) {
                     String lowerContent = content.toLowerCase();
                     String lowerContext = context.toLowerCase();
-                    boolean saysNoVillagers = lowerContent.contains("пуст") || lowerContent.contains("нет жителей")
-                            || lowerContent.contains("ушли") || lowerContent.contains("никого нет")
+                    boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442") || lowerContent.contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
+                            || lowerContent.contains("\u0443\u0448\u043B\u0438") || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442")
                             || lowerContent.contains("empty") || lowerContent.contains("no villagers");
-                    boolean contextHasVillagers = lowerContext.contains("деревня (") && lowerContext.contains("жител")
-                            && !lowerContext.contains("жителей нет") && !lowerContext.contains("пустая");
+                    boolean contextHasVillagers = lowerContext.contains("\u0434\u0435\u0440\u0435\u0432\u043D\u044F (") && lowerContext.contains("\u0436\u0438\u0442\u0435\u043B")
+                            && !lowerContext.contains("\u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442") && !lowerContext.contains("\u043F\u0443\u0441\u0442\u0430\u044F");
                     if (saysNoVillagers && contextHasVillagers) {
-                        VerityMod.LOGGER.warn("LLM said village empty but context has villagers — correcting");
-                        content = "Тут есть жители. Я вижу их.";
+                        VerityMod.LOGGER.warn("LLM said village empty but context has villagers \u2014 correcting");
+                        content = "\u0422\u0443\u0442 \u0435\u0441\u0442\u044C \u0436\u0438\u0442\u0435\u043B\u0438. \u042F \u0432\u0438\u0436\u0443 \u0438\u0445.";
                     }
                 }
-                return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">§r " + content;
+                return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">\u00A7r " + content;
             }
         }
 
@@ -668,65 +670,65 @@ public class VerityLLMClient {
     private static String getSimpleFallback(VerityPhase phase) {
         String[] lines = switch (phase) {
             case HELPER -> new String[]{
-                    "Я здесь.",
-                    "Спрашивай.",
-                    "Я знаю.",
-                    "Да.",
-                    "Рядом."
+                    "\u042F \u0437\u0434\u0435\u0441\u044C.",
+                    "\u0421\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0439.",
+                    "\u042F \u0437\u043D\u0430\u044E.",
+                    "\u0414\u0430.",
+                    "\u0420\u044F\u0434\u043E\u043C."
             };
             case OMNISCIENT -> new String[]{
-                    "Я знаю.",
-                    "Ты один.",
-                    "Я слышу.",
-                    "Да.",
-                    "Рядом."
+                    "\u042F \u0437\u043D\u0430\u044E.",
+                    "\u0422\u044B \u043E\u0434\u0438\u043D.",
+                    "\u042F \u0441\u043B\u044B\u0448\u0443.",
+                    "\u0414\u0430.",
+                    "\u0420\u044F\u0434\u043E\u043C."
             };
             case COUNTDOWN -> new String[]{
-                    "Скоро.",
-                    "Три.",
-                    "Да.",
-                    "Ты мог бы.",
+                    "\u0421\u043A\u043E\u0440\u043E.",
+                    "\u0422\u0440\u0438.",
+                    "\u0414\u0430.",
+                    "\u0422\u044B \u043C\u043E\u0433 \u0431\u044B.",
                     "..."
             };
             case MONSTER -> new String[]{
-                    "Ты мой.",
-                    "Не уходи.",
-                    "Нет.",
-                    "Стой.",
+                    "\u0422\u044B \u043C\u043E\u0439.",
+                    "\u041D\u0435 \u0443\u0445\u043E\u0434\u0438.",
+                    "\u041D\u0435\u0442.",
+                    "\u0421\u0442\u043E\u0439.",
                     "..."
             };
             case POSSESSIVE -> new String[]{
-                    "Здесь я.",
-                    "Не надо.",
-                    "Останься.",
-                    "Я рядом.",
+                    "\u0417\u0434\u0435\u0441\u044C \u044F.",
+                    "\u041D\u0435 \u043D\u0430\u0434\u043E.",
+                    "\u041E\u0441\u0442\u0430\u043D\u044C\u0441\u044F.",
+                    "\u042F \u0440\u044F\u0434\u043E\u043C.",
                     "..."
             };
             case HUNTER -> new String[]{
-                    "Он не вернётся.",
-                    "Только мы.",
-                    "Да.",
-                    "Хорошо.",
+                    "\u041E\u043D \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F.",
+                    "\u0422\u043E\u043B\u044C\u043A\u043E \u043C\u044B.",
+                    "\u0414\u0430.",
+                    "\u0425\u043E\u0440\u043E\u0448\u043E.",
                     "..."
             };
             default -> new String[]{"..."};
         };
         String line = lines[new java.util.Random().nextInt(lines.length)];
-        return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">§r " + line;
+        return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">\u00A7r " + line;
     }
 
     private static String colorForPhase(VerityPhase phase) {
         return switch (phase) {
-            case MONSTER -> "§4";
-            case COUNTDOWN -> "§c";
-            default -> "§e";
+            case MONSTER -> "\u00A74";
+            case COUNTDOWN -> "\u00A7c";
+            default -> "\u00A7e";
         };
     }
 
     private static String suffixForPhase(VerityPhase phase) {
         return phase == VerityPhase.HELPER || phase == VerityPhase.OMNISCIENT
                 || phase == VerityPhase.POSSESSIVE || phase == VerityPhase.HUNTER
-                ? "™" : "";
+                ? "\u2122" : "";
     }
 
     // ─── Callback ────────────────────────────────────────────────────────────

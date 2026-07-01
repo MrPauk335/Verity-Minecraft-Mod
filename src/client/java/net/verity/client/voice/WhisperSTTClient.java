@@ -19,10 +19,10 @@ public class WhisperSTTClient {
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
 
     private static final String STT_PROMPT =
-            "Вирити, Верити — это имя персонажа. " +
-            "Игрок разговаривает с Вирити. " +
-            "Вирити, привет. Вирити, помоги. Вирити, кто ты. " +
-            "Шар, жёлтый шар. Верити, иди сюда.";
+            "\u0412\u0438\u0440\u0438\u0442\u0438, \u0412\u0435\u0440\u0438\u0442\u0438 \u2014 \u044D\u0442\u043E \u0438\u043C\u044F \u043F\u0435\u0440\u0441\u043E\u043D\u0430\u0436\u0430. " +
+            "\u0418\u0433\u0440\u043E\u043A \u0440\u0430\u0437\u0433\u043E\u0432\u0430\u0440\u0438\u0432\u0430\u0435\u0442 \u0441 \u0412\u0438\u0440\u0438\u0442\u0438. " +
+            "\u0412\u0438\u0440\u0438\u0442\u0438, \u043F\u0440\u0438\u0432\u0435\u0442. \u0412\u0438\u0440\u0438\u0442\u0438, \u043F\u043E\u043C\u043E\u0433\u0438. \u0412\u0438\u0440\u0438\u0442\u0438, \u043A\u0442\u043E \u0442\u044B. " +
+            "\u0428\u0430\u0440, \u0436\u0451\u043B\u0442\u044B\u0439 \u0448\u0430\u0440. \u0412\u0435\u0440\u0438\u0442\u0438, \u0438\u0434\u0438 \u0441\u044E\u0434\u0430.";
 
     public static String transcribe(byte[] wavData, String apiKey, String apiUrl, String model, String language) throws Exception {
         if (apiKey == null || apiKey.isBlank()) {

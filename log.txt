@@ -1,6 +1,43 @@
-[16:13:46] [Render thread/INFO] (verity) STT: Recording started
-[16:13:46] [Render thread/INFO] (verity) STT: Recording started
-[16:13:48] [Render thread/INFO] (Minecraft) [System] [CHAT] §7[Голос] §rВерити.
-[16:13:48] [Render thread/INFO] (Minecraft) [System] [CHAT] §7[Голос] §rВерити.
-[16:13:49] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=meta-llama/llama-3.3-70b-instru[16:13:49] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=meta-llama/llama-3.3-70b-instru[16:13:49] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=nvidia/nemotron-3-super-120b-a1[16:13:49] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=nvidia/nemotron-3-super-120b-a1[16:13:49] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=qwen/qwen3-next-80b-a3b-instruc[16:13:49] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=qwen/qwen3-next-80b-a3b-instruc[16:13:50] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=google/gemma-4-26b-a4b-it:free [16:13:50] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=google/gemma-4-26b-a4b-it:free [16:13:50] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=meta-llama/llama-3.3-70b-instru[16:13:50] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=meta-llama/llama-3.3-70b-instru[16:13:53] [Render thread/INFO] (Minecraft) [System] [CHAT] §e<Verity™>§r We need to respond as Verity, following constraints: very short, 1-2 sentences, max 15 words, often one word. Russian language only, no emojis, no emoticons, no asterisks or parentheses actions. Must be male voice: "я рад", etc. Must not explain. Must not repeat. Must not elaborate. Must sometimes trail off.\nWe have context: Player346 says "Верити." So greeting. We must respond short, maybe one word: "Привет." But need male voice? Could say "я здесь". That's 2 words. Must be 15 words. Could be "Привет." That's one word. However we need to be male? The rule: "Ты МУЖСКОГО рода. 'я рад', 'я пришёл', 'я здесь'." So we should use male speech, but a single word "Привет" is gender-neutral; but might be okay. Perhaps better: "Я здесь." That's two words, male. Or "Привет, я здесь." That's three words. Must be short. Let's choo[16:13:53] [Render thread/INFO] (Minecraft) [System] [CHAT] §e<Verity™>§r We need to respond as Verity, following constraints: very short, 1-2 sentences, max 15 words, often one word. Russian language only, no emojis, no emoticons, no asterisks or parentheses actions. Must be male voice: "я рад", etc. Must not explain. Must not repeat. Must not elaborate. Must sometimes trail off.\nWe have context: Player346 says "Верити." So greeting. We must respond short, maybe one word: "Привет." But need male voice? Could say "я здесь". That's 2 words. Must be 15 words. Could be "Привет." That's one word. However we need to be male? The rule: "Ты МУЖСКОГО рода. 'я рад', 'я пришёл', 'я здесь'." So we should use male speech, but a single word "Привет" is gender-neutral; but might be okay. Perhaps better: "Я здесь." That's two words, male. Or "Привет, я здесь." That's three words. Must be short. Let's choo[16:14:02] [Render thread/INFO] (verity) TTS: Playing tts_337693ea.mp3 (555048 bytes, ~34s) for: [soft] We need t[16:14:02] [Render thread/INFO] (verity) TTS: Playing tts_337693ea.mp3 (555048 bytes, ~34s) for: [soft] We need t[#############..] 92% EXECUTING [2m 30s]
-> :runClient
+8:32:01] [Render thread/INFO] (Minecraft) Loaded 1399 advancements
+[18:32:01] [Render thread/INFO] (Minecraft) Loaded 1399 advancements
+[18:32:03] [Render thread/INFO] (BiomeModificationImpl) Applied 0 biome modifications to 0 of 64 new biomes in 3.[18:32:03] [Render thread/INFO] (BiomeModificationImpl) Applied 0 biome modifications to 0 of 64 new biomes in 3.[18:32:03] [Server thread/INFO] (Minecraft) Starting integrated minecraft server version 1.21.1
+[18:32:03] [Server thread/INFO] (Minecraft) Generating keypair
+[18:32:03] [Server thread/INFO] (Minecraft) Starting integrated minecraft server version 1.21.1
+[18:32:03] [Server thread/INFO] (Minecraft) Generating keypair
+[18:32:05] [Server thread/INFO] (Minecraft) Preparing start region for dimension minecraft:overworld
+[18:32:05] [Server thread/INFO] (Minecraft) Preparing start region for dimension minecraft:overworld
+[18:32:06] [Render thread/INFO] (Minecraft) Подготовка области возрождения: 0%
+[18:32:06] [Render thread/INFO] (Minecraft) Подготовка области возрождения: 0%
+[18:32:06] [Render thread/INFO] (Minecraft) Подготовка области возрождения: 0%
+[18:32:06] [Render thread/INFO] (Minecraft) Подготовка области возрождения: 0%
+[18:32:06] [Render thread/INFO] (Minecraft) Time elapsed: 937 ms
+[18:32:06] [Render thread/INFO] (Minecraft) Time elapsed: 937 ms
+[18:32:06] [Server thread/INFO] (Minecraft) Changing view distance to 32, from 10
+[18:32:06] [Server thread/INFO] (Minecraft) Changing simulation distance to 12, from 0
+[18:32:06] [Server thread/INFO] (Minecraft) Changing view distance to 32, from 10
+[18:32:06] [Server thread/INFO] (Minecraft) Changing simulation distance to 12, from 0
+[18:32:08] [Server thread/INFO] (Minecraft) Player87[local:E:ea458187] logged in with entity id 30 at (30.7808541[18:32:08] [Server thread/INFO] (Minecraft) Player87[local:E:ea458187] logged in with entity id 30 at (30.7808541[18:32:08] [Server thread/INFO] (Minecraft) Player87 присоединился к игре
+[18:32:08] [Server thread/INFO] (Minecraft) Player87 присоединился к игре
+[18:32:09] [Server thread/INFO] (verity) Received system context for player Player87: OS=Windows 10, PC=MrPauk335[18:32:09] [Server thread/INFO] (verity) Received system context for player Player87: OS=Windows 10, PC=MrPauk335[18:32:09] [Render thread/INFO] (Minecraft) Loaded 2 advancements
+[18:32:09] [Render thread/INFO] (Minecraft) Loaded 2 advancements
+[18:32:10] [Render thread/INFO] (verity) Verity monster mesh loaded successfully: OK polygons
+[18:32:10] [Render thread/INFO] (verity) Verity monster mesh loaded successfully: OK polygons
+[18:32:24] [Server thread/INFO] (Minecraft) [Not Secure] <Player87> Верити привет
+[18:32:24] [Render thread/INFO] (Minecraft) [CHAT] <Player87> Верити привет
+[18:32:24] [Server thread/INFO] (Minecraft) [Not Secure] <Player87> Верити привет
+[18:32:24] [Render thread/INFO] (Minecraft) [CHAT] <Player87> Верити привет
+[18:32:39] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Gemini key failed: request timed out
+[18:32:39] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Gemini exhausted, falling back to OpenRouter
+[18:32:39] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Gemini key failed: request timed out
+[18:32:39] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Gemini exhausted, falling back to OpenRouter
+[18:32:40] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=meta-llama/llama-3.3-70b-instru[18:32:40] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=meta-llama/llama-3.3-70b-instru[18:32:41] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=nvidia/nemotron-3-super-120b-a1[18:32:41] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=nvidia/nemotron-3-super-120b-a1[18:32:41] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=qwen/qwen3-next-80b-a3b-instruc[18:32:41] [ForkJoinPool.commonPool-worker-1/WARN] (verity) Rate limited on model=qwen/qwen3-next-80b-a3b-instruc[18:32:47] [Render thread/INFO] (Minecraft) [System] [CHAT] §e<Verity™>§r Привет, Player87. Ты всё ещё без дома.
+[18:32:47] [Render thread/INFO] (Minecraft) [System] [CHAT] §e<Verity™>§r Привет, Player87. Ты всё ещё без дома.
+[18:32:48] [Render thread/INFO] (verity) TTS: Playing tts_8acb9fbd.mp3 (53079 bytes, ~3s) for: Привет, Player87. [18:32:48] [Render thread/INFO] (verity) TTS: Playing tts_8acb9fbd.mp3 (53079 bytes, ~3s) for: Привет, Player87. [18:32:53] [Server thread/INFO] (Minecraft) Saving and pausing game...
+[18:32:53] [Server thread/INFO] (Minecraft) Saving and pausing game...
+[18:32:54] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[Новый мир]'/minecraft:overworld
+[18:32:54] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[Новый мир]'/minecraft:overworld
+[18:32:54] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[Новый мир]'/minecraft:the_end
+[18:32:54] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[Новый мир]'/minecraft:the_nether
+[18:32:54] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[Новый мир]'/minecraft:the_end
+[18:32:54] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[Новый мир]'/minecraft:the_nether
+[#############..] 92% EXECUTING [2m 2s]

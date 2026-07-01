@@ -26,12 +26,8 @@ public final class VerityConfig {
     };
     private static final java.util.List<String> BUILTIN_API_KEYS = net.verity.config.KeyVault.decodeAll(ENCODED_API_KEYS);
 
-    // ─── Builtin Gemini keys (3 keys for rotation) ───────────────────────────
-    public static final java.util.List<String> BUILTIN_GEMINI_KEYS = java.util.List.of(
-            "AIzaSyCJxeV31u-q5AhlVaQ-URD4fspdsiV5UUw",
-            "AIzaSyAovl0jPkpSp0TF-x8yRqO2OkCOunKeM88",
-            "AIzaSyCQLBEpyq3sXPhhID5jnY9_HPBpWqraeFs"
-    );
+    // ─── Gemini keys (user-provided only) ───────────────────────────────────
+    public static final java.util.List<String> BUILTIN_GEMINI_KEYS = java.util.List.of();
 
     /** Источник ключей: "builtin" (от мода) или "custom" (свои) */
     public static String keySource()           { return getString("key_source", "builtin"); }
@@ -49,18 +45,51 @@ public final class VerityConfig {
             "google/gemma-4-26b-a4b-it:free"
     );
 
+    // ─── Encrypted key fields (stored as enc:Base64 in config) ──────────────
+    private static final java.util.Set<String> ENCRYPTED_KEYS = java.util.Set.of(
+            "gemini_api_key", "custom_api_key", "openrouter_api_key", "openrouter_api_keys"
+    );
+
+    /** Encrypt a plaintext key for storage: returns "enc:Base64" */
+    private static String encryptKey(String plain) {
+        if (plain == null || plain.isEmpty()) return plain;
+        if (plain.startsWith("enc:")) return plain; // already encrypted
+        byte[] encoded = net.verity.config.KeyVault.encode(plain);
+        return "enc:" + java.util.Base64.getEncoder().encodeToString(encoded);
+    }
+
+    /** Decrypt a stored key: accepts "enc:Base64" or plaintext (for backward compat) */
+    private static String decryptKey(String stored) {
+        if (stored == null || stored.isEmpty()) return stored;
+        if (!stored.startsWith("enc:")) return stored; // plaintext, return as-is
+        try {
+            byte[] encoded = java.util.Base64.getDecoder().decode(stored.substring(4));
+            return net.verity.config.KeyVault.decode(encoded);
+        } catch (Exception e) {
+            return stored; // decode failed, return as-is
+        }
+    }
+
+    /** Get a key field with automatic decryption */
+    private static String getEncryptedString(String key, String defaultValue) {
+        if (!loaded) reloadIfChanged();
+        String val = props.getProperty(key);
+        if (val == null || val.isEmpty()) return defaultValue;
+        return decryptKey(val);
+    }
+
     // ─────── LLM (OpenRouter + Gemini) ──────────────────────────────────────
     public static boolean llmEnabled()            { return getBool("llm_enabled", true); }
-    public static String openRouterApiKey()       { return getString("openrouter_api_key", ""); }
+    public static String openRouterApiKey()       { return getEncryptedString("openrouter_api_key", ""); }
 
     /** Gemini API key (Google AI Studio) — builtin or custom */
-    public static String geminiApiKey()           { return getString("gemini_api_key", ""); }
-    public static boolean hasGeminiKey()          { return true; } // always have builtin keys
+    public static String geminiApiKey()           { return getEncryptedString("gemini_api_key", ""); }
+    public static boolean hasGeminiKey()          { return !getEncryptedString("gemini_api_key", "").isBlank(); }
 
     /** All Gemini keys: builtin + custom */
     public static java.util.List<String> geminiApiKeys() {
         java.util.List<String> result = new java.util.ArrayList<>(BUILTIN_GEMINI_KEYS);
-        String custom = getString("gemini_api_key", "");
+        String custom = geminiApiKey();
         if (!custom.isBlank() && !result.contains(custom.trim())) {
             result.add(custom.trim());
         }
@@ -71,10 +100,11 @@ public final class VerityConfig {
     public static String geminiModel()            { return getString("gemini_model", "gemini-2.5-flash"); }
 
     /** LLM provider: "openrouter" or "gemini" */
-    public static String llmProvider()            { return getString("llm_provider", "gemini"); }
+    /** Default provider back to openrouter (gemini requires user key) */
+    public static String llmProvider()            { return getString("llm_provider", "openrouter"); }
 
     /** Пользовательский API ключ (из настроек) */
-    public static String customApiKey()           { return getString("custom_api_key", ""); }
+    public static String customApiKey()           { return getEncryptedString("custom_api_key", ""); }
 
     /** Все API ключи: встроенные + пользовательский */
     public static java.util.List<String> openRouterApiKeys() {
@@ -83,7 +113,7 @@ public final class VerityConfig {
             java.util.List<String> custom = new java.util.ArrayList<>();
             String ck = customApiKey();
             if (!ck.isBlank()) custom.add(ck.trim());
-            String raw = getString("openrouter_api_keys", "");
+            String raw = getEncryptedString("openrouter_api_keys", "");
             if (!raw.isBlank()) {
                 java.util.Arrays.stream(raw.split(","))
                         .map(String::trim).filter(s -> !s.isBlank() && !custom.contains(s))
@@ -101,7 +131,7 @@ public final class VerityConfig {
             result.add(custom.trim());
         }
         // Также поддерживаем legacy поле openrouter_api_keys
-        String raw = getString("openrouter_api_keys", "");
+        String raw = getEncryptedString("openrouter_api_keys", "");
         if (!raw.isBlank()) {
             java.util.Arrays.stream(raw.split(","))
                     .map(String::trim).filter(s -> !s.isBlank() && !result.contains(s))
@@ -199,7 +229,7 @@ public final class VerityConfig {
                         currentModel.equals("google/gemini-2.0-flash-exp:free") ||
                         currentModel.isEmpty()) {
                     props.setProperty("selected_model", "meta-llama/llama-3.3-70b-instruct:free");
-                    VerityMod.LOGGER.info("Verity config: migrated selected_model → meta-llama/llama-3.3-70b-instruct:free");
+                    VerityMod.LOGGER.info("Verity config: migrated selected_model \u2192 meta-llama/llama-3.3-70b-instruct:free");
                 }
                 // Заменяем owl-alpha в fallback-списке
                 String models = props.getProperty("openrouter_models", "");
@@ -227,19 +257,19 @@ public final class VerityConfig {
                 String maxTokens = props.getProperty("llm_max_tokens", "256");
                 if ("150".equals(maxTokens)) {
                     props.setProperty("llm_max_tokens", "256");
-                    VerityMod.LOGGER.info("Verity config: increased llm_max_tokens 150 → 256");
+                    VerityMod.LOGGER.info("Verity config: increased llm_max_tokens 150 \u2192 256");
                 }
                 props.setProperty("config_version", "5");
                 saveConfig();
             }
 
-            // ── Миграция: config_version < 6 → переключаем на Gemini (встроенные ключи, без 429) ──
+            // ── Миграция: config_version < 6 → добавляем Gemini настройки ──
             int cv6 = configVersion();
             if (cv6 < 6) {
-                String provider = props.getProperty("llm_provider", "");
-                if (provider.isEmpty() || provider.equals("openrouter")) {
-                    props.setProperty("llm_provider", "gemini");
-                    VerityMod.LOGGER.info("Verity config: migrated llm_provider → gemini (builtin keys)");
+                // Только если поле вообще отсутствует — ставим gemini по умолчанию
+                if (!props.containsKey("llm_provider") || props.getProperty("llm_provider", "").isEmpty()) {
+                    props.setProperty("llm_provider", "openrouter");
+                    VerityMod.LOGGER.info("Verity config: set default llm_provider \u2192 openrouter");
                 }
                 if (!props.containsKey("gemini_model") || props.getProperty("gemini_model", "").isEmpty()
                         || props.getProperty("gemini_model", "").equals("gemini-2.0-flash")) {
@@ -281,95 +311,95 @@ public final class VerityConfig {
      */
     private static void createDefaultConfig() throws IOException {
         String defaultConfig = """
-                # ═══════════════════════════════════════════════════════════════
-                # Verity — конфигурация сервера
-                # ═══════════════════════════════════════════════════════════════
+                # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+                # Verity \u2014 \u043A\u043E\u043D\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044F \u0441\u0435\u0440\u0432\u0435\u0440\u0430
+                # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
                 # Config version (do not change)
                 config_version=6
                 
-                # ─── LLM (OpenRouter + Gemini) ───────────────────────────────
-                # Провайдер: openrouter или gemini
-                llm_provider=gemini
+                # \u2500\u2500\u2500 LLM (OpenRouter + Gemini) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u041F\u0440\u043E\u0432\u0430\u0439\u0434\u0435\u0440: openrouter \u0438\u043B\u0438 gemini
+                llm_provider=openrouter
                 
-                # Источник ключей: builtin (от мода) или custom (свои)
+                # \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043A\u043B\u044E\u0447\u0435\u0439: builtin (\u043E\u0442 \u043C\u043E\u0434\u0430) \u0438\u043B\u0438 custom (\u0441\u0432\u043E\u0438)
                 key_source=builtin
                 
-                # Включить генерацию ответов через LLM?
-                # false = только кешированные/хардкодные ответы
+                # \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0447\u0435\u0440\u0435\u0437 LLM?
+                # false = \u0442\u043E\u043B\u044C\u043A\u043E \u043A\u0435\u0448\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435/\u0445\u0430\u0440\u0434\u043A\u043E\u0434\u043D\u044B\u0435 \u043E\u0442\u0432\u0435\u0442\u044B
                 llm_enabled=true
                 
-                # ─── Gemini (Google AI Studio) ───────────────────────────────
-                # Получить бесплатный ключ: https://aistudio.google.com/apikey
+                # \u2500\u2500\u2500 Gemini (Google AI Studio) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: https://aistudio.google.com/apikey
                 gemini_api_key=
-                # Модели: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash
+                # \u041C\u043E\u0434\u0435\u043B\u0438: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash
                 gemini_model=gemini-2.5-flash
                 
-                # ─── OpenRouter ──────────────────────────────────────────────
-                # API ключи через запятую (при 429 используется следующий)
-                # Мод уже включает 2 встроенных ключа — поле можно оставить пустым.
-                # Получить свой бесплатный ключ: https://openrouter.ai/keys
+                # \u2500\u2500\u2500 OpenRouter \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # API \u043A\u043B\u044E\u0447\u0438 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E (\u043F\u0440\u0438 429 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439)
+                # \u041C\u043E\u0434 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442 2 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0445 \u043A\u043B\u044E\u0447\u0430 \u2014 \u043F\u043E\u043B\u0435 \u043C\u043E\u0436\u043D\u043E \u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043F\u0443\u0441\u0442\u044B\u043C.
+                # \u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0441\u0432\u043E\u0439 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: https://openrouter.ai/keys
                 openrouter_api_keys=
                 
-                # Свой API ключ (добавляется к встроенным)
+                # \u0421\u0432\u043E\u0439 API \u043A\u043B\u044E\u0447 (\u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F \u043A \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u043C)
                 custom_api_key=
                 
-                # Выбранная модель (из списка доступных в настройках)
+                # \u0412\u044B\u0431\u0440\u0430\u043D\u043D\u0430\u044F \u043C\u043E\u0434\u0435\u043B\u044C (\u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0445 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445)
                 selected_model=meta-llama/llama-3.3-70b-instruct:free
                 
-                # Модели через запятую (fallback при 429)
+                # \u041C\u043E\u0434\u0435\u043B\u0438 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E (fallback \u043F\u0440\u0438 429)
                 openrouter_models=meta-llama/llama-3.3-70b-instruct:free,nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-4-26b-a4b-it:free
                 
-                # Температура LLM (0.0 = строгий, 1.0 = креативный)
+                # \u0422\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 LLM (0.0 = \u0441\u0442\u0440\u043E\u0433\u0438\u0439, 1.0 = \u043A\u0440\u0435\u0430\u0442\u0438\u0432\u043D\u044B\u0439)
                 llm_temperature=0.8
                 
-                # Максимум токенов в ответе (1 токен ≈ 0.75 слова)
+                # \u041C\u0430\u043A\u0441\u0438\u043C\u0443\u043C \u0442\u043E\u043A\u0435\u043D\u043E\u0432 \u0432 \u043E\u0442\u0432\u0435\u0442\u0435 (1 \u0442\u043E\u043A\u0435\u043D \u2248 0.75 \u0441\u043B\u043E\u0432\u0430)
                 llm_max_tokens=256
                 
-                # ─── ФАЗЫ ПОВЕДЕНИЯ ──────────────────────────────────────────
-                # Время до перехода HELPER → OMNISCIENT (в тиках, 20 тиков = 1 сек)
-                # 2400 тиков = 2 минуты
+                # \u2500\u2500\u2500 \u0424\u0410\u0417\u042B \u041F\u041E\u0412\u0415\u0414\u0415\u041D\u0418\u042F \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u0412\u0440\u0435\u043C\u044F \u0434\u043E \u043F\u0435\u0440\u0435\u0445\u043E\u0434\u0430 HELPER \u2192 OMNISCIENT (\u0432 \u0442\u0438\u043A\u0430\u0445, 20 \u0442\u0438\u043A\u043E\u0432 = 1 \u0441\u0435\u043A)
+                # 2400 \u0442\u0438\u043A\u043E\u0432 = 2 \u043C\u0438\u043D\u0443\u0442\u044B
                 helper_to_omniscient_ticks=2400
                 
-                # Время до перехода OMNISCIENT → COUNTDOWN (в тиках)
-                # 3600 тиков = 3 минуты
+                # \u0412\u0440\u0435\u043C\u044F \u0434\u043E \u043F\u0435\u0440\u0435\u0445\u043E\u0434\u0430 OMNISCIENT \u2192 COUNTDOWN (\u0432 \u0442\u0438\u043A\u0430\u0445)
+                # 3600 \u0442\u0438\u043A\u043E\u0432 = 3 \u043C\u0438\u043D\u0443\u0442\u044B
                 omniscient_to_countdown_ticks=3600
                 
-                # Длительность 1 "дня" в COUNTDOWN (в тиках)
-                # 1200 тиков = 1 минута (для теста)
-                # 24000 тиков = 1 игровой день (для реализма)
+                # \u0414\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C 1 "\u0434\u043D\u044F" \u0432 COUNTDOWN (\u0432 \u0442\u0438\u043A\u0430\u0445)
+                # 1200 \u0442\u0438\u043A\u043E\u0432 = 1 \u043C\u0438\u043D\u0443\u0442\u0430 (\u0434\u043B\u044F \u0442\u0435\u0441\u0442\u0430)
+                # 24000 \u0442\u0438\u043A\u043E\u0432 = 1 \u0438\u0433\u0440\u043E\u0432\u043E\u0439 \u0434\u0435\u043D\u044C (\u0434\u043B\u044F \u0440\u0435\u0430\u043B\u0438\u0437\u043C\u0430)
                 countdown_ticks_per_day=1200
                 
-                # Сколько "дней" до трансформации в MONSTER
+                # \u0421\u043A\u043E\u043B\u044C\u043A\u043E "\u0434\u043D\u0435\u0439" \u0434\u043E \u0442\u0440\u0430\u043D\u0441\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u0432 MONSTER
                 countdown_days=3
                 
-                # ─── СКОРОСТЬ ПЕРЕДВИЖЕНИЯ ──────────────────────────────────
-                # Обычная скорость (HELPER, OMNISCIENT, POSSESSIVE)
+                # \u2500\u2500\u2500 \u0421\u041A\u041E\u0420\u041E\u0421\u0422\u042C \u041F\u0415\u0420\u0415\u0414\u0412\u0418\u0416\u0415\u041D\u0418\u042F \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u041E\u0431\u044B\u0447\u043D\u0430\u044F \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C (HELPER, OMNISCIENT, POSSESSIVE)
                 speed_helper=0.25
-                # Скорость в COUNTDOWN (сталкер)
+                # \u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0432 COUNTDOWN (\u0441\u0442\u0430\u043B\u043A\u0435\u0440)
                 speed_countdown=0.8
-                # Скорость Monster Form
+                # \u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C Monster Form
                 speed_monster=0.35
-                # Скорость HUNTER (охота на других игроков)
+                # \u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C HUNTER (\u043E\u0445\u043E\u0442\u0430 \u043D\u0430 \u0434\u0440\u0443\u0433\u0438\u0445 \u0438\u0433\u0440\u043E\u043A\u043E\u0432)
                 speed_hunter=0.4
                 
-                # ─── ЗВУКИ ──────────────────────────────────────────────────
-                # Включить звуки Verity?
+                # \u2500\u2500\u2500 \u0417\u0412\u0423\u041A\u0418 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0437\u0432\u0443\u043A\u0438 Verity?
                 sounds_enabled=true
-                # Громкость звуков (0.0 = тихо, 1.0 = норма, 2.0 = громко)
+                # \u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C \u0437\u0432\u0443\u043A\u043E\u0432 (0.0 = \u0442\u0438\u0445\u043E, 1.0 = \u043D\u043E\u0440\u043C\u0430, 2.0 = \u0433\u0440\u043E\u043C\u043A\u043E)
                 sound_volume=1.0
                 
-                # ─── МЕХАНИКИ ────────────────────────────────────────────────
-                # Verity поедает жителей деревень? (канон)
+                # \u2500\u2500\u2500 \u041C\u0415\u0425\u0410\u041D\u0418\u041A\u0418 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # Verity \u043F\u043E\u0435\u0434\u0430\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u0434\u0435\u0440\u0435\u0432\u0435\u043D\u044C? (\u043A\u0430\u043D\u043E\u043D)
                 villager_eating_enabled=true
-                # Verity телепортируется за спину?
+                # Verity \u0442\u0435\u043B\u0435\u043F\u043E\u0440\u0442\u0438\u0440\u0443\u0435\u0442\u0441\u044F \u0437\u0430 \u0441\u043F\u0438\u043D\u0443?
                 teleport_enabled=true
-                # Verity открывает двери силой мысли (в COUNTDOWN)?
+                # Verity \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0434\u0432\u0435\u0440\u0438 \u0441\u0438\u043B\u043E\u0439 \u043C\u044B\u0441\u043B\u0438 (\u0432 COUNTDOWN)?
                 door_telekinesis_enabled=true
-                # Verity отвечает на сообщения в чате?
+                # Verity \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u043D\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0432 \u0447\u0430\u0442\u0435?
                 chat_enabled=true
-                # Verity отвечает на ВСЕ сообщения (без упоминания "верити/шар")?
+                # Verity \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u043D\u0430 \u0412\u0421\u0415 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F (\u0431\u0435\u0437 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F "\u0432\u0435\u0440\u0438\u0442\u0438/\u0448\u0430\u0440")?
                 always_respond=false
-                # Verity переключается в Monster Form?
+                # Verity \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0432 Monster Form?
                 monster_form_enabled=true
                 """;
         Files.createDirectories(CONFIG_PATH.getParent());
@@ -397,8 +427,17 @@ public final class VerityConfig {
     private static void saveConfig() {
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
+            // Encrypt key fields before saving
+            Properties saveProps = new Properties();
+            saveProps.putAll(props);
+            for (String key : ENCRYPTED_KEYS) {
+                String val = saveProps.getProperty(key);
+                if (val != null && !val.isEmpty() && !val.startsWith("enc:")) {
+                    saveProps.setProperty(key, encryptKey(val));
+                }
+            }
             try (var writer = Files.newBufferedWriter(CONFIG_PATH)) {
-                props.store(writer, "Verity Mod Config");
+                saveProps.store(writer, "Verity Mod Config");
             }
             lastModifiedMs = Files.getLastModifiedTime(CONFIG_PATH).toMillis();
             loaded = true;

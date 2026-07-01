@@ -256,20 +256,20 @@ public class VerityMod implements ModInitializer {
 
             boolean alwaysRespond = VerityConfig.alwaysRespond();
             boolean isTriggered = alwaysRespond ||
-                    msg.contains("verity") || msg.contains("верити") || msg.contains("шар") ||
-                    msg.contains("?") || msg.contains("why") || msg.contains("почему") ||
-                    msg.contains("кто") || msg.contains("who") || msg.contains("stop") ||
-                    msg.contains("остановить") || msg.contains("danger") || msg.contains("опасно") ||
-                    msg.contains("alone") || msg.contains("один") || msg.contains("pizza") ||
-                    msg.contains("пицц") || msg.contains("sorry") || msg.contains("прости") ||
-                    msg.contains("help") || msg.contains("помог") || msg.contains("friend") ||
-                    msg.contains("друг") || msg.contains("leave") || msg.contains("уйди") ||
-                    msg.contains("музык") || msg.contains("music") || msg.contains("my gal") ||
-                    msg.contains("песн") || msg.contains("song") || msg.contains("спой") ||
-                    msg.contains("gal") || msg.contains("мелод") ||
-                    msg.contains("пошли") || msg.contains("веди") || msg.contains("follow") ||
-                    msg.contains("отведи") || msg.contains("доведи") || msg.contains("проведи") ||
-                    msg.contains("стой") || msg.contains("хватит") || msg.contains("show me");
+                    msg.contains("verity") || msg.contains("\u0432\u0435\u0440\u0438\u0442\u0438") || msg.contains("\u0448\u0430\u0440") ||
+                    msg.contains("?") || msg.contains("why") || msg.contains("\u043F\u043E\u0447\u0435\u043C\u0443") ||
+                    msg.contains("\u043A\u0442\u043E") || msg.contains("who") || msg.contains("stop") ||
+                    msg.contains("\u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C") || msg.contains("danger") || msg.contains("\u043E\u043F\u0430\u0441\u043D\u043E") ||
+                    msg.contains("alone") || msg.contains("\u043E\u0434\u0438\u043D") || msg.contains("pizza") ||
+                    msg.contains("\u043F\u0438\u0446\u0446") || msg.contains("sorry") || msg.contains("\u043F\u0440\u043E\u0441\u0442\u0438") ||
+                    msg.contains("help") || msg.contains("\u043F\u043E\u043C\u043E\u0433") || msg.contains("friend") ||
+                    msg.contains("\u0434\u0440\u0443\u0433") || msg.contains("leave") || msg.contains("\u0443\u0439\u0434\u0438") ||
+                    msg.contains("\u043C\u0443\u0437\u044B\u043A") || msg.contains("music") || msg.contains("my gal") ||
+                    msg.contains("\u043F\u0435\u0441\u043D") || msg.contains("song") || msg.contains("\u0441\u043F\u043E\u0439") ||
+                    msg.contains("gal") || msg.contains("\u043C\u0435\u043B\u043E\u0434") ||
+                    msg.contains("\u043F\u043E\u0448\u043B\u0438") || msg.contains("\u0432\u0435\u0434\u0438") || msg.contains("follow") ||
+                    msg.contains("\u043E\u0442\u0432\u0435\u0434\u0438") || msg.contains("\u0434\u043E\u0432\u0435\u0434\u0438") || msg.contains("\u043F\u0440\u043E\u0432\u0435\u0434\u0438") ||
+                    msg.contains("\u0441\u0442\u043E\u0439") || msg.contains("\u0445\u0432\u0430\u0442\u0438\u0442") || msg.contains("show me");
 
             if (!isTriggered) return;
 
@@ -302,13 +302,13 @@ public class VerityMod implements ModInitializer {
             if (isVerityInventoryItem(heldStack)) {
                 // Музыка в руках
                 String lower = playerMsg.toLowerCase();
-                if (lower.contains("музык") || lower.contains("music") || lower.contains("my gal") ||
-                    lower.contains("песн") || lower.contains("song") || lower.contains("спой") || lower.contains("мелод")) {
+                if (lower.contains("\u043C\u0443\u0437\u044B\u043A") || lower.contains("music") || lower.contains("my gal") ||
+                    lower.contains("\u043F\u0435\u0441\u043D") || lower.contains("song") || lower.contains("\u0441\u043F\u043E\u0439") || lower.contains("\u043C\u0435\u043B\u043E\u0434")) {
                     sender.level().playSound(null, sender.getX(), sender.getY(), sender.getZ(),
                             SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 1.2F, 1.0F);
                     String prefix = (heldPhase == VerityEntity.VerityPhase.MONSTER || heldPhase == VerityEntity.VerityPhase.HUNTER)
-                            ? "§4<Verity>" : "§e<Verity™>";
-                    sender.sendSystemMessage(Component.literal(prefix + "§r ♪ My Gal..."));
+                            ? "\u00A74<Verity>" : "\u00A7e<Verity\u2122>";
+                    sender.sendSystemMessage(Component.literal(prefix + "\u00A7r \u266A My Gal..."));
                     return;
                 }
 
@@ -318,16 +318,16 @@ public class VerityMod implements ModInitializer {
 
                 StringBuilder context = new StringBuilder();
                 if (!heldFacts.isEmpty()) {
-                    context.append("Известно об игроке: ").append(String.join(", ", heldFacts)).append(".\n");
+                    context.append("\u0418\u0437\u0432\u0435\u0441\u0442\u043D\u043E \u043E\u0431 \u0438\u0433\u0440\u043E\u043A\u0435: ").append(String.join(", ", heldFacts)).append(".\n");
                 }
-                context.append("Игрок держит тебя в руках. Ты в инвентаре.\n");
+                context.append("\u0418\u0433\u0440\u043E\u043A \u0434\u0435\u0440\u0436\u0438\u0442 \u0442\u0435\u0431\u044F \u0432 \u0440\u0443\u043A\u0430\u0445. \u0422\u044B \u0432 \u0438\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u0435.\n");
 
                 net.verity.ai.VerityLLMClient.generateResponseAsync(
                         phase, playerName, playerMsg, heldHistory, lang, context.toString().trim(),
                         response -> {
                             sender.server.execute(() -> {
                                 sender.sendSystemMessage(Component.literal(response));
-                                heldHistory.add("§7" + playerName + "§r: " + playerMsg);
+                                heldHistory.add("\u00A77" + playerName + "\u00A7r: " + playerMsg);
                                 heldHistory.add(response);
                                 while (heldHistory.size() > 40) heldHistory.remove(0);
                                 net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sender,
@@ -393,13 +393,13 @@ public class VerityMod implements ModInitializer {
             if (isVerityInventoryItem(heldStack)) {
                 // Музыка
                 String lower = text.toLowerCase();
-                if (lower.contains("музык") || lower.contains("music") || lower.contains("my gal") ||
-                    lower.contains("песн") || lower.contains("song") || lower.contains("спой") || lower.contains("мелод")) {
+                if (lower.contains("\u043C\u0443\u0437\u044B\u043A") || lower.contains("music") || lower.contains("my gal") ||
+                    lower.contains("\u043F\u0435\u0441\u043D") || lower.contains("song") || lower.contains("\u0441\u043F\u043E\u0439") || lower.contains("\u043C\u0435\u043B\u043E\u0434")) {
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                             SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 1.2F, 1.0F);
                     String prefix = (heldPhase == VerityEntity.VerityPhase.MONSTER || heldPhase == VerityEntity.VerityPhase.HUNTER)
-                            ? "§4<Verity>" : "§e<Verity™>";
-                    player.sendSystemMessage(Component.literal(prefix + "§r ♪ My Gal..."));
+                            ? "\u00A74<Verity>" : "\u00A7e<Verity\u2122>";
+                    player.sendSystemMessage(Component.literal(prefix + "\u00A7r \u266A My Gal..."));
                     return;
                 }
 
@@ -407,16 +407,16 @@ public class VerityMod implements ModInitializer {
                 String playerName = player.getName().getString();
                 StringBuilder context2 = new StringBuilder();
                 if (!heldFacts.isEmpty()) {
-                    context2.append("Известно об игроке: ").append(String.join(", ", heldFacts)).append(".\n");
+                    context2.append("\u0418\u0437\u0432\u0435\u0441\u0442\u043D\u043E \u043E\u0431 \u0438\u0433\u0440\u043E\u043A\u0435: ").append(String.join(", ", heldFacts)).append(".\n");
                 }
-                context2.append("Игрок держит тебя в руках. Ты в инвентаре.\n");
+                context2.append("\u0418\u0433\u0440\u043E\u043A \u0434\u0435\u0440\u0436\u0438\u0442 \u0442\u0435\u0431\u044F \u0432 \u0440\u0443\u043A\u0430\u0445. \u0422\u044B \u0432 \u0438\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u0435.\n");
 
                 net.verity.ai.VerityLLMClient.generateResponseAsync(
                         heldPhase, playerName, text, heldHistory, lang, context2.toString().trim(),
                         response -> {
                             player.server.execute(() -> {
                                 player.sendSystemMessage(Component.literal(response));
-                                heldHistory.add("§7" + playerName + "§r: " + text);
+                                heldHistory.add("\u00A77" + playerName + "\u00A7r: " + text);
                                 heldHistory.add(response);
                                 while (heldHistory.size() > 40) heldHistory.remove(0);
                                 net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
@@ -491,12 +491,35 @@ public class VerityMod implements ModInitializer {
             }
         });
 
-        // Instant spawn cardboard box when player joins
+        // Welcome message + spawn cardboard box when player joins
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.getPlayer();
-            if (!player.getTags().contains("verity_intro_complete") && !verityExists(server.overworld())) {
-                // Spawn instantly on next tick
-                INTRO_TIMERS.put(player.getUUID(), 1);
+            if (!player.getTags().contains("verity_intro_complete")) {
+                String lang = player.clientInformation().language();
+                boolean ru = lang != null && lang.toLowerCase().startsWith("ru");
+
+                if (ru) {
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A7e\u00A7l Verity\u2122 \u00A7r\u00A77\u2014 \u043F\u0441\u0438\u0445\u043E\u043B\u043E\u0433\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0445\u043E\u0440\u0440\u043E\u0440 \u043C\u043E\u0434"));
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A77\u0412\u0430\u043C \u0431\u044B\u043B \u043F\u0440\u0438\u0441\u043B\u0430\u043D \u043A\u0430\u0440\u0442\u043E\u043D\u043D\u044B\u0439 \u044F\u0449\u0438\u043A. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0435\u0433\u043E \u2014 \u0432\u043D\u0443\u0442\u0440\u0438 \u0436\u0434\u0451\u0442 Verity."));
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A77Verity \u2014 \u0436\u0451\u043B\u0442\u044B\u0439 \u0448\u0430\u0440, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0437\u043D\u0430\u0435\u0442 \u0432\u0441\u0451. \u041E\u043D \u0431\u044B\u043B \u0434\u0440\u0443\u0433\u043E\u043C. \u041F\u043E\u043A\u0430."));
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A7e\u0414\u043B\u044F \u043F\u043E\u043B\u043D\u043E\u0439 \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438: \u00A7f/verity help"));
+                } else {
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A7e\u00A7l Verity\u2122 \u00A7r\u00A77\u2014 A Psychological Horror Mod"));
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A77A cardboard box has been sent to you. Open it \u2014 Verity is waiting inside."));
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A77Verity is a yellow ball that knows everything. He was a friend. For now."));
+                    player.sendSystemMessage(Component.literal(
+                            "\u00A7eFor full information: \u00A7f/verity help"));
+                }
+                if (!verityExists(server.overworld())) {
+                    INTRO_TIMERS.put(player.getUUID(), 1);
+                }
             }
         });
 
@@ -594,15 +617,15 @@ public class VerityMod implements ModInitializer {
         // Простой контекст
         StringBuilder context = new StringBuilder();
         if (!heldFacts.isEmpty()) {
-            context.append("Известно об игроке: ").append(String.join(", ", heldFacts)).append(".\n");
+            context.append("\u0418\u0437\u0432\u0435\u0441\u0442\u043D\u043E \u043E\u0431 \u0438\u0433\u0440\u043E\u043A\u0435: ").append(String.join(", ", heldFacts)).append(".\n");
         }
         int px = player.getBlockX(), py = player.getBlockY(), pz = player.getBlockZ();
-        context.append("Игрок на координатах: X=").append(px).append(" Y=").append(py).append(" Z=").append(pz).append(".\n");
+        context.append("\u0418\u0433\u0440\u043E\u043A \u043D\u0430 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u0445: X=").append(px).append(" Y=").append(py).append(" Z=").append(pz).append(".\n");
         long time = player.level().getDayTime() % 24000;
-        if (time < 6000) context.append("Сейчас утро.\n");
-        else if (time < 12000) context.append("Сейчас день.\n");
-        else if (time < 18000) context.append("Сейчас ночь.\n");
-        else context.append("Сейчас глубокая ночь.\n");
+        if (time < 6000) context.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0443\u0442\u0440\u043E.\n");
+        else if (time < 12000) context.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0434\u0435\u043D\u044C.\n");
+        else if (time < 18000) context.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C.\n");
+        else context.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0433\u043B\u0443\u0431\u043E\u043A\u0430\u044F \u043D\u043E\u0447\u044C.\n");
 
         // Вызываем LLM напрямую
         net.verity.ai.VerityLLMClient.generateResponseAsync(

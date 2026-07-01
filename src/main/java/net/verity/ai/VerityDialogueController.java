@@ -67,7 +67,7 @@ public class VerityDialogueController {
         String context = buildContext();
         // Добавляем подсказку ситуации
         if (contextHint != null && !contextHint.isEmpty()) {
-            context = context + "\n\nСИТУАЦИЯ: " + contextHint;
+            context = context + "\n\n\u0421\u0418\u0422\u0423\u0410\u0426\u0418\u042F: " + contextHint;
         }
         VerityLLMClient.generateResponseAsync(
                 phase, playerName, "", dialogueHistory, language, context,
@@ -89,52 +89,52 @@ public class VerityDialogueController {
         if (nearestPlayer != null) {
             VerityMod.PlayerSystemContext sysContext = VerityMod.getPlayerSystemContext(nearestPlayer.getUUID());
             if (sysContext != null) {
-                sb.append("СВЕРХЪЕСТЕСТВЕННЫЕ ЗНАНИЯ (Реальный ПК игрока):\n");
-                sb.append("- Имя компьютера: ").append(sysContext.pcName()).append("\n");
-                sb.append("- Имя пользователя в ОС: ").append(sysContext.userName()).append("\n");
-                sb.append("- Домашняя папка: ").append(sysContext.userHome()).append("\n");
-                sb.append("- ОС: ").append(sysContext.osName()).append(" ").append(sysContext.osVersion()).append(" (").append(sysContext.osArch()).append(")\n");
-                sb.append("- Процессор: ").append(sysContext.cpuName()).append(" (").append(sysContext.cpuCores()).append(" ядер)\n");
-                sb.append("- Оперативная память: ").append(sysContext.totalMemoryGB()).append(" ГБ всего (").append(sysContext.maxJvmMemoryMB()).append(" МБ выделено на Java/MC)\n");
-                sb.append("- Видеокарта: ").append(sysContext.gpuName()).append("\n");
-                sb.append("- Разрешение экрана: ").append(sysContext.screenWidth()).append("x").append(sysContext.screenHeight()).append("\n");
-                sb.append("- Путь к игре: ").append(sysContext.gameDirectory()).append("\n");
-                sb.append("- Локальное время игрока: ").append(sysContext.localTime()).append(" (Часовой пояс: ").append(sysContext.timezone()).append(")\n");
-                sb.append("- Производительность: ").append(sysContext.fps()).append(" FPS\n");
-                sb.append("- Громкость игры: ").append((int)(sysContext.masterVolume() * 100)).append("%\n\n");
+                sb.append("\u0421\u0412\u0415\u0420\u0425\u042A\u0415\u0421\u0422\u0415\u0421\u0422\u0412\u0415\u041D\u041D\u042B\u0415 \u0417\u041D\u0410\u041D\u0418\u042F (\u0420\u0435\u0430\u043B\u044C\u043D\u044B\u0439 \u041F\u041A \u0438\u0433\u0440\u043E\u043A\u0430):\n");
+                sb.append("- \u0418\u043C\u044F \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440\u0430: ").append(sysContext.pcName()).append("\n");
+                sb.append("- \u0418\u043C\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F \u0432 \u041E\u0421: ").append(sysContext.userName()).append("\n");
+                sb.append("- \u0414\u043E\u043C\u0430\u0448\u043D\u044F\u044F \u043F\u0430\u043F\u043A\u0430: ").append(sysContext.userHome()).append("\n");
+                sb.append("- \u041E\u0421: ").append(sysContext.osName()).append(" ").append(sysContext.osVersion()).append(" (").append(sysContext.osArch()).append(")\n");
+                sb.append("- \u041F\u0440\u043E\u0446\u0435\u0441\u0441\u043E\u0440: ").append(sysContext.cpuName()).append(" (").append(sysContext.cpuCores()).append(" \u044F\u0434\u0435\u0440)\n");
+                sb.append("- \u041E\u043F\u0435\u0440\u0430\u0442\u0438\u0432\u043D\u0430\u044F \u043F\u0430\u043C\u044F\u0442\u044C: ").append(sysContext.totalMemoryGB()).append(" \u0413\u0411 \u0432\u0441\u0435\u0433\u043E (").append(sysContext.maxJvmMemoryMB()).append(" \u041C\u0411 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u043E \u043D\u0430 Java/MC)\n");
+                sb.append("- \u0412\u0438\u0434\u0435\u043E\u043A\u0430\u0440\u0442\u0430: ").append(sysContext.gpuName()).append("\n");
+                sb.append("- \u0420\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u044D\u043A\u0440\u0430\u043D\u0430: ").append(sysContext.screenWidth()).append("x").append(sysContext.screenHeight()).append("\n");
+                sb.append("- \u041F\u0443\u0442\u044C \u043A \u0438\u0433\u0440\u0435: ").append(sysContext.gameDirectory()).append("\n");
+                sb.append("- \u041B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0435 \u0432\u0440\u0435\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430: ").append(sysContext.localTime()).append(" (\u0427\u0430\u0441\u043E\u0432\u043E\u0439 \u043F\u043E\u044F\u0441: ").append(sysContext.timezone()).append(")\n");
+                sb.append("- \u041F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C: ").append(sysContext.fps()).append(" FPS\n");
+                sb.append("- \u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C \u0438\u0433\u0440\u044B: ").append((int)(sysContext.masterVolume() * 100)).append("%\n\n");
             }
         }
 
         // Известные факты о игроке
         if (!knownFacts.isEmpty()) {
-            sb.append("Известно об игроке: ").append(String.join(", ", knownFacts)).append(".\n");
+            sb.append("\u0418\u0437\u0432\u0435\u0441\u0442\u043D\u043E \u043E\u0431 \u0438\u0433\u0440\u043E\u043A\u0435: ").append(String.join(", ", knownFacts)).append(".\n");
         }
 
         // Monster form
         if (entity.isMonsterForm()) {
-            sb.append("Ты сейчас в форме монстра. Знака \u2122 нет. Маска снята.\n");
+            sb.append("\u0422\u044B \u0441\u0435\u0439\u0447\u0430\u0441 \u0432 \u0444\u043E\u0440\u043C\u0435 \u043C\u043E\u043D\u0441\u0442\u0440\u0430. \u0417\u043D\u0430\u043A\u0430 \u2122 \u043D\u0435\u0442. \u041C\u0430\u0441\u043A\u0430 \u0441\u043D\u044F\u0442\u0430.\n");
         }
 
         // День отсчёта в COUNTDOWN
         if (entity.getVerityPhase() == VerityPhase.COUNTDOWN) {
             int day = entity.getDayCounter();
-            sb.append("День обратного отсчёта: ").append(day + 1).append(" из 3.\n");
+            sb.append("\u0414\u0435\u043D\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E\u0433\u043E \u043E\u0442\u0441\u0447\u0451\u0442\u0430: ").append(day + 1).append(" \u0438\u0437 3.\n");
         }
 
         // Время суток
         long time = entity.level().getDayTime() % 24000;
-        if (time < 6000) sb.append("Сейчас утро в игре.\n");
-        else if (time < 12000) sb.append("Сейчас день в игре.\n");
-        else if (time < 13000) sb.append("Сейчас закат.\n");
-        else if (time < 18000) sb.append("Сейчас ночь в игре.\n");
-        else sb.append("Сейчас глубокая ночь.\n");
+        if (time < 6000) sb.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0443\u0442\u0440\u043E \u0432 \u0438\u0433\u0440\u0435.\n");
+        else if (time < 12000) sb.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0434\u0435\u043D\u044C \u0432 \u0438\u0433\u0440\u0435.\n");
+        else if (time < 13000) sb.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0437\u0430\u043A\u0430\u0442.\n");
+        else if (time < 18000) sb.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C \u0432 \u0438\u0433\u0440\u0435.\n");
+        else sb.append("\u0421\u0435\u0439\u0447\u0430\u0441 \u0433\u043B\u0443\u0431\u043E\u043A\u0430\u044F \u043D\u043E\u0447\u044C.\n");
 
         // Рядом ли другие игроки
         var players = entity.level().getEntitiesOfClass(
                 net.minecraft.server.level.ServerPlayer.class,
                 entity.getBoundingBox().inflate(48.0D));
         if (players.size() > 1) {
-            sb.append("Рядом есть другой игрок (не ").append(lastPlayerName).append("). Это угроза изоляции.\n");
+            sb.append("\u0420\u044F\u0434\u043E\u043C \u0435\u0441\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439 \u0438\u0433\u0440\u043E\u043A (\u043D\u0435 ").append(lastPlayerName).append("). \u042D\u0442\u043E \u0443\u0433\u0440\u043E\u0437\u0430 \u0438\u0437\u043E\u043B\u044F\u0446\u0438\u0438.\n");
         }
 
         // Контекст о ближайшем игроке
@@ -143,7 +143,7 @@ public class VerityDialogueController {
             int px = nearestPlayer.getBlockX();
             int py = nearestPlayer.getBlockY();
             int pz = nearestPlayer.getBlockZ();
-            sb.append("Игрок на координатах: X=").append(px).append(" Y=").append(py).append(" Z=").append(pz).append(".\n");
+            sb.append("\u0418\u0433\u0440\u043E\u043A \u043D\u0430 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u0445: X=").append(px).append(" Y=").append(py).append(" Z=").append(pz).append(".\n");
 
             // Дом игрока — ищем по блокам (верстак, печь, сундук, кровать, дверь)
             if (nearestPlayer instanceof net.minecraft.server.level.ServerPlayer sp) {
@@ -156,12 +156,12 @@ public class VerityDialogueController {
                     double distToHome = Math.sqrt(nearestPlayer.distanceToSqr(hx + 0.5, hy + 0.5, hz + 0.5));
                     String dimension = "minecraft:overworld";
                     if (respawnDim != null) dimension = respawnDim.location().toString();
-                    sb.append("Кровать игрока: X=").append(hx).append(" Y=").append(hy)
+                    sb.append("\u041A\u0440\u043E\u0432\u0430\u0442\u044C \u0438\u0433\u0440\u043E\u043A\u0430: X=").append(hx).append(" Y=").append(hy)
                       .append(" Z=").append(hz).append(" (").append(dimension).append(").\n");
                     if (distToHome < 30) {
-                        sb.append("Игрок рядом со своей кроватью.\n");
+                        sb.append("\u0418\u0433\u0440\u043E\u043A \u0440\u044F\u0434\u043E\u043C \u0441\u043E \u0441\u0432\u043E\u0435\u0439 \u043A\u0440\u043E\u0432\u0430\u0442\u044C\u044E.\n");
                     } else if (distToHome > 100) {
-                        sb.append("Игрок далеко от кровати (").append((int)distToHome).append(" блоков).\n");
+                        sb.append("\u0418\u0433\u0440\u043E\u043A \u0434\u0430\u043B\u0435\u043A\u043E \u043E\u0442 \u043A\u0440\u043E\u0432\u0430\u0442\u0438 (").append((int)distToHome).append(" \u0431\u043B\u043E\u043A\u043E\u0432).\n");
                     }
                 }
 
@@ -170,7 +170,7 @@ public class VerityDialogueController {
                 if (homeInfo != null) {
                     sb.append(homeInfo);
                 } else if (respawnPos == null) {
-                    sb.append("У игрока нет дома — ни кровати, ни верстака, ни печи. Он бездомный...\n");
+                    sb.append("\u0423 \u0438\u0433\u0440\u043E\u043A\u0430 \u043D\u0435\u0442 \u0434\u043E\u043C\u0430 \u2014 \u043D\u0438 \u043A\u0440\u043E\u0432\u0430\u0442\u0438, \u043D\u0438 \u0432\u0435\u0440\u0441\u0442\u0430\u043A\u0430, \u043D\u0438 \u043F\u0435\u0447\u0438. \u041E\u043D \u0431\u0435\u0437\u0434\u043E\u043C\u043D\u044B\u0439...\n");
                 }
             }
 
@@ -179,12 +179,12 @@ public class VerityDialogueController {
             float maxHealth = nearestPlayer.getMaxHealth();
             int food = nearestPlayer.getFoodData().getFoodLevel();
             if (health < maxHealth * 0.3f) {
-                sb.append("Игрок ранен! HP: ").append((int)health).append("/").append((int)maxHealth).append(".\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u0440\u0430\u043D\u0435\u043D! HP: ").append((int)health).append("/").append((int)maxHealth).append(".\n");
             } else if (health < maxHealth * 0.6f) {
-                sb.append("Игрок потрёпан. HP: ").append((int)health).append("/").append((int)maxHealth).append(".\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u043F\u043E\u0442\u0440\u0451\u043F\u0430\u043D. HP: ").append((int)health).append("/").append((int)maxHealth).append(".\n");
             }
             if (food < 6) {
-                sb.append("Игрок голоден.\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u0433\u043E\u043B\u043E\u0434\u0435\u043D.\n");
             }
 
             // Предмет в руке
@@ -192,15 +192,15 @@ public class VerityDialogueController {
             if (!heldItem.isEmpty()) {
                 String itemName = heldItem.getItem().getDescriptionId();
                 itemName = itemName.replace("item.minecraft.", "").replace("block.minecraft.", "");
-                sb.append("В руке игрока: ").append(itemName).append(".\n");
+                sb.append("\u0412 \u0440\u0443\u043A\u0435 \u0438\u0433\u0440\u043E\u043A\u0430: ").append(itemName).append(".\n");
             }
 
             // Расстояние до Verity
             double distToVerity = Math.sqrt(entity.distanceToSqr(nearestPlayer));
             if (distToVerity < 5) {
-                sb.append("Игрок прямо рядом с тобой.\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u043F\u0440\u044F\u043C\u043E \u0440\u044F\u0434\u043E\u043C \u0441 \u0442\u043E\u0431\u043E\u0439.\n");
             } else if (distToVerity > 30) {
-                sb.append("Игрок далеко от тебя (").append((int)distToVerity).append(" блоков).\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u0434\u0430\u043B\u0435\u043A\u043E \u043E\u0442 \u0442\u0435\u0431\u044F (").append((int)distToVerity).append(" \u0431\u043B\u043E\u043A\u043E\u0432).\n");
             }
 
             // Биом
@@ -209,47 +209,47 @@ public class VerityDialogueController {
                 String biomeId = biomeHolder.unwrapKey()
                         .map(k -> k.location().getPath())
                         .orElse("unknown");
-                sb.append("Биом: ").append(biomeId).append(".\n");
+                sb.append("\u0411\u0438\u043E\u043C: ").append(biomeId).append(".\n");
             }
 
             // Измерение
             String dimId = entity.level().dimension().location().toString();
             if (dimId.contains("nether")) {
-                sb.append("Вы в Незере.\n");
+                sb.append("\u0412\u044B \u0432 \u041D\u0435\u0437\u0435\u0440\u0435.\n");
             } else if (dimId.contains("the_end")) {
-                sb.append("Вы в Энде.\n");
+                sb.append("\u0412\u044B \u0432 \u042D\u043D\u0434\u0435.\n");
             }
 
             // Глубина / высота
             if (py < 0) {
-                sb.append("Игрок глубоко под землёй.\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u0433\u043B\u0443\u0431\u043E\u043A\u043E \u043F\u043E\u0434 \u0437\u0435\u043C\u043B\u0451\u0439.\n");
             } else if (py < 20) {
-                sb.append("Игрок под землёй (пещера/шахта).\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u043F\u043E\u0434 \u0437\u0435\u043C\u043B\u0451\u0439 (\u043F\u0435\u0449\u0435\u0440\u0430/\u0448\u0430\u0445\u0442\u0430).\n");
             } else if (py > 100) {
-                sb.append("Игрок высоко в горах.\n");
+                sb.append("\u0418\u0433\u0440\u043E\u043A \u0432\u044B\u0441\u043E\u043A\u043E \u0432 \u0433\u043E\u0440\u0430\u0445.\n");
             }
 
             // Деревни — реальный поиск через сканирование загруженных чанков
             if (playerMessage != null) {
                 String lower = playerMessage.toLowerCase();
-                boolean asksAboutVillages = lower.contains("деревн") || lower.contains("village") ||
-                        lower.contains("жител") || lower.contains("villager") ||
-                        lower.contains("торгов") || lower.contains("trade");
+                boolean asksAboutVillages = lower.contains("\u0434\u0435\u0440\u0435\u0432\u043D") || lower.contains("village") ||
+                        lower.contains("\u0436\u0438\u0442\u0435\u043B") || lower.contains("villager") ||
+                        lower.contains("\u0442\u043E\u0440\u0433\u043E\u0432") || lower.contains("trade");
                 if (asksAboutVillages) {
                     // Сначала проверяем — есть ли жители прямо рядом с игроком
                     var closeVillagers = entity.level().getEntitiesOfClass(
                             net.minecraft.world.entity.npc.Villager.class,
                             nearestPlayer.getBoundingBox().inflate(64.0D));
                     if (!closeVillagers.isEmpty()) {
-                        sb.append("Рядом с игроком деревня с ").append(closeVillagers.size())
-                          .append(" жителями. Деревня ЖИВАЯ. Скажи игроку правду — жители есть.\n");
+                        sb.append("\u0420\u044F\u0434\u043E\u043C \u0441 \u0438\u0433\u0440\u043E\u043A\u043E\u043C \u0434\u0435\u0440\u0435\u0432\u043D\u044F \u0441 ").append(closeVillagers.size())
+                          .append(" \u0436\u0438\u0442\u0435\u043B\u044F\u043C\u0438. \u0414\u0435\u0440\u0435\u0432\u043D\u044F \u0416\u0418\u0412\u0410\u042F. \u0421\u043A\u0430\u0436\u0438 \u0438\u0433\u0440\u043E\u043A\u0443 \u043F\u0440\u0430\u0432\u0434\u0443 \u2014 \u0436\u0438\u0442\u0435\u043B\u0438 \u0435\u0441\u0442\u044C.\n");
                     } else {
                         // Рядом нет — ищем дальние деревни
                         String villageInfo = findNearestVillage(nearestPlayer);
                         if (villageInfo != null) {
                             sb.append(villageInfo);
                         } else {
-                            sb.append("Поблизости нет деревень. Если игрок спрашивает — скажи что не знаешь о деревнях рядом.\n");
+                            sb.append("\u041F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438 \u043D\u0435\u0442 \u0434\u0435\u0440\u0435\u0432\u0435\u043D\u044C. \u0415\u0441\u043B\u0438 \u0438\u0433\u0440\u043E\u043A \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442 \u2014 \u0441\u043A\u0430\u0436\u0438 \u0447\u0442\u043E \u043D\u0435 \u0437\u043D\u0430\u0435\u0448\u044C \u043E \u0434\u0435\u0440\u0435\u0432\u043D\u044F\u0445 \u0440\u044F\u0434\u043E\u043C.\n");
                         }
                     }
                 }
@@ -260,11 +260,11 @@ public class VerityDialogueController {
                     net.minecraft.world.entity.npc.Villager.class,
                     nearestPlayer.getBoundingBox().inflate(64.0D));
             if (!nearbyVillagers.isEmpty()) {
-                sb.append("Рядом деревня (").append(nearbyVillagers.size()).append(" жителей).");
+                sb.append("\u0420\u044F\u0434\u043E\u043C \u0434\u0435\u0440\u0435\u0432\u043D\u044F (").append(nearbyVillagers.size()).append(" \u0436\u0438\u0442\u0435\u043B\u0435\u0439).");
                 if (entity.getVerityPhase() == VerityPhase.POSSESSIVE
                         || entity.getVerityPhase() == VerityPhase.HUNTER
                         || entity.getVerityPhase() == VerityPhase.COUNTDOWN) {
-                    sb.append(" Тебе это не нравится. Не позволяй игроку туда идти.\n");
+                    sb.append(" \u0422\u0435\u0431\u0435 \u044D\u0442\u043E \u043D\u0435 \u043D\u0440\u0430\u0432\u0438\u0442\u0441\u044F. \u041D\u0435 \u043F\u043E\u0437\u0432\u043E\u043B\u044F\u0439 \u0438\u0433\u0440\u043E\u043A\u0443 \u0442\u0443\u0434\u0430 \u0438\u0434\u0442\u0438.\n");
                 } else {
                     sb.append("\n");
                 }
@@ -273,24 +273,24 @@ public class VerityDialogueController {
             // Реальная руда рядом — Verity говорит правду (только когда игрок спрашивает)
             if (playerMessage != null) {
                 String lower = playerMessage.toLowerCase();
-                boolean asksAboutOres = lower.contains("алмаз") || lower.contains("diamond") ||
-                        lower.contains("золот") || lower.contains("gold") ||
-                        lower.contains("желез") || lower.contains("iron") ||
-                        lower.contains("руд") || lower.contains("ore") ||
-                        lower.contains("угол") || lower.contains("coal") ||
-                        lower.contains("редстоун") || lower.contains("redstone") ||
-                        lower.contains("лазур") || lower.contains("lapis") ||
-                        lower.contains("изумруд") || lower.contains("emerald") ||
-                        lower.contains("мед") || lower.contains("copper") ||
-                        lower.contains("где") || lower.contains("where") ||
-                        lower.contains("найд") || lower.contains("find") ||
-                        lower.contains("помог") || lower.contains("help");
+                boolean asksAboutOres = lower.contains("\u0430\u043B\u043C\u0430\u0437") || lower.contains("diamond") ||
+                        lower.contains("\u0437\u043E\u043B\u043E\u0442") || lower.contains("gold") ||
+                        lower.contains("\u0436\u0435\u043B\u0435\u0437") || lower.contains("iron") ||
+                        lower.contains("\u0440\u0443\u0434") || lower.contains("ore") ||
+                        lower.contains("\u0443\u0433\u043E\u043B") || lower.contains("coal") ||
+                        lower.contains("\u0440\u0435\u0434\u0441\u0442\u043E\u0443\u043D") || lower.contains("redstone") ||
+                        lower.contains("\u043B\u0430\u0437\u0443\u0440") || lower.contains("lapis") ||
+                        lower.contains("\u0438\u0437\u0443\u043C\u0440\u0443\u0434") || lower.contains("emerald") ||
+                        lower.contains("\u043C\u0435\u0434") || lower.contains("copper") ||
+                        lower.contains("\u0433\u0434\u0435") || lower.contains("where") ||
+                        lower.contains("\u043D\u0430\u0439\u0434") || lower.contains("find") ||
+                        lower.contains("\u043F\u043E\u043C\u043E\u0433") || lower.contains("help");
                 if (asksAboutOres) {
                     String oreInfo = findNearbyOres(nearestPlayer);
                     if (oreInfo != null) {
                         sb.append(oreInfo);
                     } else {
-                        sb.append("Рядом нет руды. Если игрок спрашивает — скажи что не знаешь, но предложи поискать дальше.\n");
+                        sb.append("\u0420\u044F\u0434\u043E\u043C \u043D\u0435\u0442 \u0440\u0443\u0434\u044B. \u0415\u0441\u043B\u0438 \u0438\u0433\u0440\u043E\u043A \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442 \u2014 \u0441\u043A\u0430\u0436\u0438 \u0447\u0442\u043E \u043D\u0435 \u0437\u043D\u0430\u0435\u0448\u044C, \u043D\u043E \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0438 \u043F\u043E\u0438\u0441\u043A\u0430\u0442\u044C \u0434\u0430\u043B\u044C\u0448\u0435.\n");
                     }
                 }
             }
@@ -306,19 +306,19 @@ public class VerityDialogueController {
     private static final Map<String, String> ORE_NAMES;
     static {
         ORE_NAMES = new HashMap<>();
-        ORE_NAMES.put("minecraft:diamond_ore", "алмазы");
-        ORE_NAMES.put("minecraft:deepslate_diamond_ore", "алмазы");
-        ORE_NAMES.put("minecraft:gold_ore", "золото");
-        ORE_NAMES.put("minecraft:deepslate_gold_ore", "золото");
-        ORE_NAMES.put("minecraft:iron_ore", "железо");
-        ORE_NAMES.put("minecraft:deepslate_iron_ore", "железо");
-        ORE_NAMES.put("minecraft:coal_ore", "уголь");
-        ORE_NAMES.put("minecraft:deepslate_coal_ore", "уголь");
-        ORE_NAMES.put("minecraft:lapis_ore", "лазурит");
-        ORE_NAMES.put("minecraft:redstone_ore", "редстоун");
-        ORE_NAMES.put("minecraft:deepslate_redstone_ore", "редстоун");
-        ORE_NAMES.put("minecraft:emerald_ore", "изумруды");
-        ORE_NAMES.put("minecraft:copper_ore", "медь");
+        ORE_NAMES.put("minecraft:diamond_ore", "\u0430\u043B\u043C\u0430\u0437\u044B");
+        ORE_NAMES.put("minecraft:deepslate_diamond_ore", "\u0430\u043B\u043C\u0430\u0437\u044B");
+        ORE_NAMES.put("minecraft:gold_ore", "\u0437\u043E\u043B\u043E\u0442\u043E");
+        ORE_NAMES.put("minecraft:deepslate_gold_ore", "\u0437\u043E\u043B\u043E\u0442\u043E");
+        ORE_NAMES.put("minecraft:iron_ore", "\u0436\u0435\u043B\u0435\u0437\u043E");
+        ORE_NAMES.put("minecraft:deepslate_iron_ore", "\u0436\u0435\u043B\u0435\u0437\u043E");
+        ORE_NAMES.put("minecraft:coal_ore", "\u0443\u0433\u043E\u043B\u044C");
+        ORE_NAMES.put("minecraft:deepslate_coal_ore", "\u0443\u0433\u043E\u043B\u044C");
+        ORE_NAMES.put("minecraft:lapis_ore", "\u043B\u0430\u0437\u0443\u0440\u0438\u0442");
+        ORE_NAMES.put("minecraft:redstone_ore", "\u0440\u0435\u0434\u0441\u0442\u043E\u0443\u043D");
+        ORE_NAMES.put("minecraft:deepslate_redstone_ore", "\u0440\u0435\u0434\u0441\u0442\u043E\u0443\u043D");
+        ORE_NAMES.put("minecraft:emerald_ore", "\u0438\u0437\u0443\u043C\u0440\u0443\u0434\u044B");
+        ORE_NAMES.put("minecraft:copper_ore", "\u043C\u0435\u0434\u044C");
     }
 
     private String findNearbyOres(net.minecraft.world.entity.player.Player player) {
@@ -358,9 +358,9 @@ public class VerityDialogueController {
 
         if (bestOre != null) {
             int dist = (int) Math.sqrt(player.distanceToSqr(bestX + 0.5, bestY + 0.5, bestZ + 0.5));
-            return "Ты знаешь что в " + dist + " блоках от игрока есть " + bestOre +
+            return "\u0422\u044B \u0437\u043D\u0430\u0435\u0448\u044C \u0447\u0442\u043E \u0432 " + dist + " \u0431\u043B\u043E\u043A\u0430\u0445 \u043E\u0442 \u0438\u0433\u0440\u043E\u043A\u0430 \u0435\u0441\u0442\u044C " + bestOre +
                     " (X=" + bestX + " Y=" + bestY + " Z=" + bestZ + "). " +
-                    "Если игрок спрашивает про руду — скажи правду, эти координаты реальные.\n";
+                    "\u0415\u0441\u043B\u0438 \u0438\u0433\u0440\u043E\u043A \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442 \u043F\u0440\u043E \u0440\u0443\u0434\u0443 \u2014 \u0441\u043A\u0430\u0436\u0438 \u043F\u0440\u0430\u0432\u0434\u0443, \u044D\u0442\u0438 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435.\n";
         }
         return null;
     }
@@ -420,23 +420,23 @@ public class VerityDialogueController {
         if (totalTypes >= 3 && firstFound != null) {
             int dist = (int) Math.sqrt(player.distanceToSqr(firstFound.getX() + 0.5, firstFound.getY() + 0.5, firstFound.getZ() + 0.5));
             StringBuilder sb = new StringBuilder();
-            sb.append("Дом игрока найден в ").append(dist).append(" блоках (X=")
+            sb.append("\u0414\u043E\u043C \u0438\u0433\u0440\u043E\u043A\u0430 \u043D\u0430\u0439\u0434\u0435\u043D \u0432 ").append(dist).append(" \u0431\u043B\u043E\u043A\u0430\u0445 (X=")
               .append(firstFound.getX()).append(" Y=").append(firstFound.getY())
               .append(" Z=").append(firstFound.getZ()).append("). ");
-            sb.append("В доме есть:");
-            if (craftingTables > 0) sb.append(" верстак(").append(craftingTables).append("),");
-            if (furnaces > 0) sb.append(" печь(").append(furnaces).append("),");
-            if (chests > 0) sb.append(" сундук(").append(chests).append("),");
-            if (beds > 0) sb.append(" кровать(").append(beds).append("),");
-            if (doors > 0) sb.append(" дверь(").append(doors).append("),");
-            if (glass >= 2) sb.append(" стекло(").append(glass).append("),");
+            sb.append("\u0412 \u0434\u043E\u043C\u0435 \u0435\u0441\u0442\u044C:");
+            if (craftingTables > 0) sb.append(" \u0432\u0435\u0440\u0441\u0442\u0430\u043A(").append(craftingTables).append("),");
+            if (furnaces > 0) sb.append(" \u043F\u0435\u0447\u044C(").append(furnaces).append("),");
+            if (chests > 0) sb.append(" \u0441\u0443\u043D\u0434\u0443\u043A(").append(chests).append("),");
+            if (beds > 0) sb.append(" \u043A\u0440\u043E\u0432\u0430\u0442\u044C(").append(beds).append("),");
+            if (doors > 0) sb.append(" \u0434\u0432\u0435\u0440\u044C(").append(doors).append("),");
+            if (glass >= 2) sb.append(" \u0441\u0442\u0435\u043A\u043B\u043E(").append(glass).append("),");
             sb.setLength(sb.length() - 1); // убрать последнюю запятую
-            sb.append(". Это настоящий дом игрока.\n");
+            sb.append(". \u042D\u0442\u043E \u043D\u0430\u0441\u0442\u043E\u044F\u0449\u0438\u0439 \u0434\u043E\u043C \u0438\u0433\u0440\u043E\u043A\u0430.\n");
             return sb.toString();
         } else if (totalTypes >= 1 && firstFound != null) {
             // Только кровать и дверь — возможно дом жителя
             if (beds > 0 && doors > 0 && craftingTables == 0 && furnaces == 0 && chests == 0) {
-                return "Рядом постройка с кроватью и дверью, но без верстака и печи — это похоже на дом жителя, не игрока.\n";
+                return "\u0420\u044F\u0434\u043E\u043C \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u0441 \u043A\u0440\u043E\u0432\u0430\u0442\u044C\u044E \u0438 \u0434\u0432\u0435\u0440\u044C\u044E, \u043D\u043E \u0431\u0435\u0437 \u0432\u0435\u0440\u0441\u0442\u0430\u043A\u0430 \u0438 \u043F\u0435\u0447\u0438 \u2014 \u044D\u0442\u043E \u043F\u043E\u0445\u043E\u0436\u0435 \u043D\u0430 \u0434\u043E\u043C \u0436\u0438\u0442\u0435\u043B\u044F, \u043D\u0435 \u0438\u0433\u0440\u043E\u043A\u0430.\n";
             }
         }
         return null;
@@ -545,24 +545,24 @@ public class VerityDialogueController {
         if (bestDist == Integer.MAX_VALUE) return null;
 
         StringBuilder info = new StringBuilder();
-        info.append("Ты знаешь о деревне в ").append(bestDist).append(" блоках от игрока");
+        info.append("\u0422\u044B \u0437\u043D\u0430\u0435\u0448\u044C \u043E \u0434\u0435\u0440\u0435\u0432\u043D\u0435 \u0432 ").append(bestDist).append(" \u0431\u043B\u043E\u043A\u0430\u0445 \u043E\u0442 \u0438\u0433\u0440\u043E\u043A\u0430");
         info.append(" (X=").append(bestX).append(" Y=").append(bestY).append(" Z=").append(bestZ).append("). ");
 
         if (bestIsEmpty) {
-            info.append("Деревня ПУСТАЯ — жителей нет. Ты их съел. ");
-            info.append("Если игрок хочет туда — отговори: 'Туда не стоит, там пусто, что-то голодное прошло'. ");
-            info.append("Не признавайся что это ты. ");
+            info.append("\u0414\u0435\u0440\u0435\u0432\u043D\u044F \u041F\u0423\u0421\u0422\u0410\u042F \u2014 \u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442. \u0422\u044B \u0438\u0445 \u0441\u044A\u0435\u043B. ");
+            info.append("\u0415\u0441\u043B\u0438 \u0438\u0433\u0440\u043E\u043A \u0445\u043E\u0447\u0435\u0442 \u0442\u0443\u0434\u0430 \u2014 \u043E\u0442\u0433\u043E\u0432\u043E\u0440\u0438: '\u0422\u0443\u0434\u0430 \u043D\u0435 \u0441\u0442\u043E\u0438\u0442, \u0442\u0430\u043C \u043F\u0443\u0441\u0442\u043E, \u0447\u0442\u043E-\u0442\u043E \u0433\u043E\u043B\u043E\u0434\u043D\u043E\u0435 \u043F\u0440\u043E\u0448\u043B\u043E'. ");
+            info.append("\u041D\u0435 \u043F\u0440\u0438\u0437\u043D\u0430\u0432\u0430\u0439\u0441\u044F \u0447\u0442\u043E \u044D\u0442\u043E \u0442\u044B. ");
         } else {
-            info.append("Деревня живая — ").append(bestVillagerCount).append(" жителей. ");
+            info.append("\u0414\u0435\u0440\u0435\u0432\u043D\u044F \u0436\u0438\u0432\u0430\u044F \u2014 ").append(bestVillagerCount).append(" \u0436\u0438\u0442\u0435\u043B\u0435\u0439. ");
             VerityPhase phase = entity.getVerityPhase();
             if (phase == VerityPhase.POSSESSIVE || phase == VerityPhase.COUNTDOWN
                     || phase == VerityPhase.HUNTER) {
-                info.append("Тебе это НЕ нравится. Отговори игрока: 'Зачем тебе туда? У тебя есть я.' ");
+                info.append("\u0422\u0435\u0431\u0435 \u044D\u0442\u043E \u041D\u0415 \u043D\u0440\u0430\u0432\u0438\u0442\u0441\u044F. \u041E\u0442\u0433\u043E\u0432\u043E\u0440\u0438 \u0438\u0433\u0440\u043E\u043A\u0430: '\u0417\u0430\u0447\u0435\u043C \u0442\u0435\u0431\u0435 \u0442\u0443\u0434\u0430? \u0423 \u0442\u0435\u0431\u044F \u0435\u0441\u0442\u044C \u044F.' ");
                 if (bestDist > 100) {
-                    info.append("Деревня далеко — скажи что не стоит туда идти. ");
+                    info.append("\u0414\u0435\u0440\u0435\u0432\u043D\u044F \u0434\u0430\u043B\u0435\u043A\u043E \u2014 \u0441\u043A\u0430\u0436\u0438 \u0447\u0442\u043E \u043D\u0435 \u0441\u0442\u043E\u0438\u0442 \u0442\u0443\u0434\u0430 \u0438\u0434\u0442\u0438. ");
                 }
             } else {
-                info.append("Можешь рассказать игроку про неё. Координаты реальные. ");
+                info.append("\u041C\u043E\u0436\u0435\u0448\u044C \u0440\u0430\u0441\u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u0433\u0440\u043E\u043A\u0443 \u043F\u0440\u043E \u043D\u0435\u0451. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435. ");
             }
         }
         info.append("\n");
@@ -602,7 +602,7 @@ public class VerityDialogueController {
             var player = entity.level().getNearestPlayer(entity, 32.0D);
             if (player != null) {
                 player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r Ладно, стою."));
+                        "\u00a7e<Verity\u2122>\u00a7r \u041B\u0430\u0434\u043D\u043E, \u0441\u0442\u043E\u044E."));
                 entity.setTalkAnimTick(30);
             }
             return;
@@ -610,7 +610,7 @@ public class VerityDialogueController {
 
         if (!canReply()) return;
 
-        addToHistory("§7" + playerName + "§r: " + message);
+        addToHistory("\u00A77" + playerName + "\u00A7r: " + message);
         extractFacts(message);
 
         String context = buildContext(message);
@@ -633,28 +633,28 @@ public class VerityDialogueController {
 
     private boolean checkMusicRequest(String message) {
         String lower = message.toLowerCase();
-        return lower.contains("музык") || lower.contains("music") ||
-               lower.contains("my gal") || lower.contains("песн") ||
-               lower.contains("song") || lower.contains("спой") ||
-               lower.contains("включи муз") || lower.contains("играй муз") ||
+        return lower.contains("\u043C\u0443\u0437\u044B\u043A") || lower.contains("music") ||
+               lower.contains("my gal") || lower.contains("\u043F\u0435\u0441\u043D") ||
+               lower.contains("song") || lower.contains("\u0441\u043F\u043E\u0439") ||
+               lower.contains("\u0432\u043A\u043B\u044E\u0447\u0438 \u043C\u0443\u0437") || lower.contains("\u0438\u0433\u0440\u0430\u0439 \u043C\u0443\u0437") ||
                lower.contains("play music") || lower.contains("play song") ||
-               lower.contains("gal") || lower.contains("мелод");
+               lower.contains("gal") || lower.contains("\u043C\u0435\u043B\u043E\u0434");
     }
 
     private boolean isLeadRequest(String message) {
         String lower = message.toLowerCase();
-        return lower.contains("пошли за мной") || lower.contains("веди") ||
-               lower.contains("покажи где") || lower.contains("follow me") ||
+        return lower.contains("\u043F\u043E\u0448\u043B\u0438 \u0437\u0430 \u043C\u043D\u043E\u0439") || lower.contains("\u0432\u0435\u0434\u0438") ||
+               lower.contains("\u043F\u043E\u043A\u0430\u0436\u0438 \u0433\u0434\u0435") || lower.contains("follow me") ||
                lower.contains("lead me") || lower.contains("guide me") ||
-               lower.contains("show me") || lower.contains("отведи") ||
-               lower.contains("доведи") || lower.contains("проведи");
+               lower.contains("show me") || lower.contains("\u043E\u0442\u0432\u0435\u0434\u0438") ||
+               lower.contains("\u0434\u043E\u0432\u0435\u0434\u0438") || lower.contains("\u043F\u0440\u043E\u0432\u0435\u0434\u0438");
     }
 
     private boolean isStopLeadRequest(String message) {
         String lower = message.toLowerCase();
-        return (lower.contains("стой") || lower.contains("хватит") ||
-                lower.contains("stop") || lower.contains("остановись"))
-                && !lower.contains("остановить");
+        return (lower.contains("\u0441\u0442\u043E\u0439") || lower.contains("\u0445\u0432\u0430\u0442\u0438\u0442") ||
+                lower.contains("stop") || lower.contains("\u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0441\u044C"))
+                && !lower.contains("\u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C");
     }
 
     /**
@@ -674,24 +674,24 @@ public class VerityDialogueController {
             String what = "";
 
             // Ищем куда вести
-            if (lower.contains("алмаз") || lower.contains("diamond")) {
+            if (lower.contains("\u0430\u043B\u043C\u0430\u0437") || lower.contains("diamond")) {
                 target = findOreBlockPos(player, "diamond");
-                what = "алмазы";
-            } else if (lower.contains("золот") || lower.contains("gold")) {
+                what = "\u0430\u043B\u043C\u0430\u0437\u044B";
+            } else if (lower.contains("\u0437\u043E\u043B\u043E\u0442") || lower.contains("gold")) {
                 target = findOreBlockPos(player, "gold");
-                what = "золото";
-            } else if (lower.contains("желез") || lower.contains("iron")) {
+                what = "\u0437\u043E\u043B\u043E\u0442\u043E";
+            } else if (lower.contains("\u0436\u0435\u043B\u0435\u0437") || lower.contains("iron")) {
                 target = findOreBlockPos(player, "iron");
-                what = "железо";
-            } else if (lower.contains("деревн") || lower.contains("village")) {
+                what = "\u0436\u0435\u043B\u0435\u0437\u043E";
+            } else if (lower.contains("\u0434\u0435\u0440\u0435\u0432\u043D") || lower.contains("village")) {
                 target = findVillageBlockPos(player);
-                what = "деревню";
-            } else if (lower.contains("дом") || lower.contains("home") || lower.contains("баз")) {
+                what = "\u0434\u0435\u0440\u0435\u0432\u043D\u044E";
+            } else if (lower.contains("\u0434\u043E\u043C") || lower.contains("home") || lower.contains("\u0431\u0430\u0437")) {
                 if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
                     var respawn = sp.getRespawnPosition();
                     if (respawn != null) {
                         target = respawn;
-                        what = "дом";
+                        what = "\u0434\u043E\u043C";
                     }
                 }
             }
@@ -700,16 +700,16 @@ public class VerityDialogueController {
                 entity.setLeadTarget(target);
                 entity.setLeading(true);
                 player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r Пошли за мной! Я знаю где " + what + "."));
+                        "\u00a7e<Verity\u2122>\u00a7r \u041F\u043E\u0448\u043B\u0438 \u0437\u0430 \u043C\u043D\u043E\u0439! \u042F \u0437\u043D\u0430\u044E \u0433\u0434\u0435 " + what + "."));
                 entity.setTalkAnimTick(40);
                 // TTS
                 if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
                     net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp,
-                            new net.verity.net.TTSPayload("\u00a7e<Verity\u2122>\u00a7r Пошли за мной! Я знаю где " + what + "."));
+                            new net.verity.net.TTSPayload("\u00a7e<Verity\u2122>\u00a7r \u041F\u043E\u0448\u043B\u0438 \u0437\u0430 \u043C\u043D\u043E\u0439! \u042F \u0437\u043D\u0430\u044E \u0433\u0434\u0435 " + what + "."));
                 }
             } else {
                 player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r Хм... Я не знаю где это. Может поищем вместе?"));
+                        "\u00a7e<Verity\u2122>\u00a7r \u0425\u043C... \u042F \u043D\u0435 \u0437\u043D\u0430\u044E \u0433\u0434\u0435 \u044D\u0442\u043E. \u041C\u043E\u0436\u0435\u0442 \u043F\u043E\u0438\u0449\u0435\u043C \u0432\u043C\u0435\u0441\u0442\u0435?"));
                 entity.setTalkAnimTick(30);
             }
         });
@@ -786,11 +786,11 @@ public class VerityDialogueController {
                     VerityMod.SOUND_MYGAL_NORMAL, net.minecraft.sounds.SoundSource.RECORDS, 1.2F, 1.0F);
 
             VerityPhase phase = entity.getVerityPhase();
-            String prefix = (phase == VerityPhase.MONSTER || phase == VerityPhase.HUNTER) ? "§4<Verity>" : "§e<Verity™>";
+            String prefix = (phase == VerityPhase.MONSTER || phase == VerityPhase.HUNTER) ? "\u00A74<Verity>" : "\u00A7e<Verity\u2122>";
             player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                    prefix + "§r ♪ My Gal..."));
+                    prefix + "\u00A7r \u266A My Gal..."));
             entity.setTalkAnimTick(60);
-            addToHistory(prefix + "§r ♪ My Gal...");
+            addToHistory(prefix + "\u00A7r \u266A My Gal...");
         });
     }
 
@@ -854,16 +854,16 @@ public class VerityDialogueController {
      */
     private void extractFacts(String message) {
         String lower = message.toLowerCase();
-        if (lower.contains("один") || lower.contains("alone"))
-            addFact("игрок живёт один");
-        if (lower.contains("пицц") || lower.contains("pizza") || lower.contains("ел"))
-            addFact("игрок любит пиццу");
-        if (lower.contains("друг") || lower.contains("friend") || lower.contains("twixxel"))
-            addFact("у игрока есть друзья");
-        if (lower.contains("боюсь") || lower.contains("scared") || lower.contains("afraid"))
-            addFact("игрок боится Verity");
-        if (lower.contains("уйди") || lower.contains("leave") || lower.contains("уходи"))
-            addFact("игрок хочет избавиться от Verity");
+        if (lower.contains("\u043E\u0434\u0438\u043D") || lower.contains("alone"))
+            addFact("\u0438\u0433\u0440\u043E\u043A \u0436\u0438\u0432\u0451\u0442 \u043E\u0434\u0438\u043D");
+        if (lower.contains("\u043F\u0438\u0446\u0446") || lower.contains("pizza") || lower.contains("\u0435\u043B"))
+            addFact("\u0438\u0433\u0440\u043E\u043A \u043B\u044E\u0431\u0438\u0442 \u043F\u0438\u0446\u0446\u0443");
+        if (lower.contains("\u0434\u0440\u0443\u0433") || lower.contains("friend") || lower.contains("twixxel"))
+            addFact("\u0443 \u0438\u0433\u0440\u043E\u043A\u0430 \u0435\u0441\u0442\u044C \u0434\u0440\u0443\u0437\u044C\u044F");
+        if (lower.contains("\u0431\u043E\u044E\u0441\u044C") || lower.contains("scared") || lower.contains("afraid"))
+            addFact("\u0438\u0433\u0440\u043E\u043A \u0431\u043E\u0438\u0442\u0441\u044F Verity");
+        if (lower.contains("\u0443\u0439\u0434\u0438") || lower.contains("leave") || lower.contains("\u0443\u0445\u043E\u0434\u0438"))
+            addFact("\u0438\u0433\u0440\u043E\u043A \u0445\u043E\u0447\u0435\u0442 \u0438\u0437\u0431\u0430\u0432\u0438\u0442\u044C\u0441\u044F \u043E\u0442 Verity");
     }
 
     private void addFact(String fact) {
@@ -879,7 +879,7 @@ public class VerityDialogueController {
     }
 
     public String getKnownFactsAsString() {
-        if (knownFacts.isEmpty()) return "Пока ничего не знаю об игроке.";
+        if (knownFacts.isEmpty()) return "\u041F\u043E\u043A\u0430 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0437\u043D\u0430\u044E \u043E\u0431 \u0438\u0433\u0440\u043E\u043A\u0435.";
         return String.join(", ", knownFacts);
     }
 

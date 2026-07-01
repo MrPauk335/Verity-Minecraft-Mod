@@ -129,51 +129,51 @@ public final class VerityClientConfig {
 
     private static void createDefaultConfig() throws IOException {
         String defaultConfig = """
-                # Verity — клиентский конфиг (STT / голосовой ввод)
-                # Получить бесплатный Groq API ключ: https://console.groq.com/keys
+                # Verity \u2014 \u043A\u043B\u0438\u0435\u043D\u0442\u0441\u043A\u0438\u0439 \u043A\u043E\u043D\u0444\u0438\u0433 (STT / \u0433\u043E\u043B\u043E\u0441\u043E\u0432\u043E\u0439 \u0432\u0432\u043E\u0434)
+                # \u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0439 Groq API \u043A\u043B\u044E\u0447: https://console.groq.com/keys
 
-                # Включить голосовой ввод (push-to-talk)
+                # \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u043E\u0432\u043E\u0439 \u0432\u0432\u043E\u0434 (push-to-talk)
                 stt_enabled=true
 
-                # Источник STT ключей: builtin (от мода) или custom (свои)
+                # \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A STT \u043A\u043B\u044E\u0447\u0435\u0439: builtin (\u043E\u0442 \u043C\u043E\u0434\u0430) \u0438\u043B\u0438 custom (\u0441\u0432\u043E\u0438)
                 stt_key_source=builtin
 
-                # API ключ для STT (используется в режиме custom)
+                # API \u043A\u043B\u044E\u0447 \u0434\u043B\u044F STT (\u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 custom)
                 stt_api_key=
 
-                # URL API (Groq по умолчанию, можно заменить на OpenAI)
+                # URL API (Groq \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u043C\u043E\u0436\u043D\u043E \u0437\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u043D\u0430 OpenAI)
                 stt_api_url=https://api.groq.com/openai/v1/audio/transcriptions
 
-                # Модель Whisper
+                # \u041C\u043E\u0434\u0435\u043B\u044C Whisper
                 stt_model=whisper-large-v3
 
-                # Язык распознавания (ru, en, или пусто для авто)
+                # \u042F\u0437\u044B\u043A \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u043D\u0438\u044F (ru, en, \u0438\u043B\u0438 \u043F\u0443\u0441\u0442\u043E \u0434\u043B\u044F \u0430\u0432\u0442\u043E)
                 stt_language=ru
 
-                # ─── Голос: кнопка и режим ───────────────────────────────────
-                # GLFW код кнопки (V=86, H=72, G=71, X=88, Z=90, L=76, C=67)
+                # \u2500\u2500\u2500 \u0413\u043E\u043B\u043E\u0441: \u043A\u043D\u043E\u043F\u043A\u0430 \u0438 \u0440\u0435\u0436\u0438\u043C \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # GLFW \u043A\u043E\u0434 \u043A\u043D\u043E\u043F\u043A\u0438 (V=86, H=72, G=71, X=88, Z=90, L=76, C=67)
                 voice_key=86
 
-                # Режим: push (удержание) или toggle (переключение)
+                # \u0420\u0435\u0436\u0438\u043C: push (\u0443\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435) \u0438\u043B\u0438 toggle (\u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435)
                 voice_mode=push
 
-                # ─── TTS (Fish Audio — озвучка реплик Verity) ──────────────
-                # Включить озвучку? (ключи встроены)
+                # \u2500\u2500\u2500 TTS (Fish Audio \u2014 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u0440\u0435\u043F\u043B\u0438\u043A Verity) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0437\u0432\u0443\u0447\u043A\u0443? (\u043A\u043B\u044E\u0447\u0438 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u044B)
                 tts_enabled=true
 
-                # Источник TTS ключей: builtin (от мода) или custom (свои)
+                # \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A TTS \u043A\u043B\u044E\u0447\u0435\u0439: builtin (\u043E\u0442 \u043C\u043E\u0434\u0430) \u0438\u043B\u0438 custom (\u0441\u0432\u043E\u0438)
                 tts_key_source=builtin
 
-                # API ключ Fish Audio (в режиме custom)
+                # API \u043A\u043B\u044E\u0447 Fish Audio (\u0432 \u0440\u0435\u0436\u0438\u043C\u0435 custom)
                 tts_api_key=
 
-                # ID голоса Verity (по умолчанию)
+                # ID \u0433\u043E\u043B\u043E\u0441\u0430 Verity (\u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E)
                 tts_voice_id=b3c51bf6029f4201a342b40827250784
 
-                # Модель TTS
+                # \u041C\u043E\u0434\u0435\u043B\u044C TTS
                 tts_model=s2.1-pro-free
 
-                # Скорость речи (0.5-2.0, 1.0 = норма)
+                # \u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0440\u0435\u0447\u0438 (0.5-2.0, 1.0 = \u043D\u043E\u0440\u043C\u0430)
                 tts_speed=1.0
                 """;
         Files.createDirectories(CONFIG_PATH.getParent());

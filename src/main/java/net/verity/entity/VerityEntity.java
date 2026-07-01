@@ -64,13 +64,13 @@ public class VerityEntity extends PathfinderMob {
     private static final EntityDataAccessor<Integer> INTRO_PHASE =
             SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.INT);
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р“Р›РћР‘РђР›Р¬РќР«Р™ РўР Р•РљР•Р  (Р±С‹СЃС‚СЂРµРµ, С‡РµРј СЃРєР°РЅРёСЂРѕРІР°С‚СЊ РІРµСЃСЊ РјРёСЂ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р“Р›РћР‘РђР›Р¬РќР«Р\u2122 РўР Р•РљР•Р  (Р±С‹СЃС‚СЂРµРµ, С‡РµРј СЃРєР°РЅРёСЂРѕРІР°С‚СЊ РІРµСЃСЊ РјРёСЂ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     /** РџРѕС‚РѕРєРѕР±РµР·РѕРїР°СЃРЅС‹Р№ РЅР°Р±РѕСЂ РІСЃРµС… Р¶РёРІС‹С… VerityEntity РЅР° СЃРµСЂРІРµСЂРµ. */
     public static final java.util.Set<VerityEntity> ACTIVE_VERITIES =
             java.util.Collections.synchronizedSet(
                     java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РљРћРќРЎРўРђРќРўР« РЎРћРЎРўРћРЇРќРР™ Р›РР¦Рђ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РљРћРќРЎРўРђРќРўР« РЎРћРЎРўРћРЇРќРР\u2122 Р›РР¦Рђ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     public static final int FACE_SMILE = 0;
     public static final int FACE_SPEAK = 1;
     public static final int FACE_HURT = 2;
@@ -142,7 +142,7 @@ public class VerityEntity extends PathfinderMob {
                 .add(Attributes.ATTACK_DAMAGE, 0.0);
     }
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р Р•Р“РРЎРўР РђР¦РРЇ Р¦Р•Р›Р•Р™ (Goals) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р Р•Р“РРЎРўР РђР¦РРЇ Р¦Р•Р›Р•Р\u2122 (Goals) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
@@ -348,7 +348,7 @@ public class VerityEntity extends PathfinderMob {
         this.talkAnimTick = ticks;
     }
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р’Р—РђРРњРћР”Р•Р™РЎРўР’РР• (РџРљРњ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р’Р—РђРРњРћР”Р•Р\u2122РЎРўР’РР• (РџРљРњ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (this.level().isClientSide) {
@@ -359,7 +359,7 @@ public class VerityEntity extends PathfinderMob {
         }
         if (getVerityPhase() == VerityPhase.MONSTER || getVerityPhase() == VerityPhase.HUNTER) {
             // Р’ С„Р°Р·Рµ РјРѕРЅСЃС‚СЂР° РЅРµР»СЊР·СЏ РІР·СЏС‚СЊ РІ РёРЅРІРµРЅС‚Р°СЂСЊ
-            player.sendSystemMessage(Component.literal("В§c<Verity>В§r РќР•Рў."));
+            player.sendSystemMessage(Component.literal("\u0412\u00A7c<Verity>\u0412\u00A7r \u0420\u045C\u0420\u2022\u0420\u045E."));
             return InteractionResult.FAIL;
         }
 
@@ -564,7 +564,7 @@ public class VerityEntity extends PathfinderMob {
         this.level().addFreshEntity(monster);
     }
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РћРЎРќРћР’РќРћР™ РўРРљ (FSM + РїРѕРІРµРґРµРЅРёСЏ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РћРЎРќРћР’РќРћР\u2122 РўРРљ (FSM + РїРѕРІРµРґРµРЅРёСЏ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     @Override
     public void tick() {
         // в”Ђв”Ђ РђРќРРњРђР¦РРЇ РџРћРЇР’Р›Р•РќРРЇ (suspend в†’ drop в†’ bounce) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
@@ -614,7 +614,7 @@ public class VerityEntity extends PathfinderMob {
                     Player player = this.level().getNearestPlayer(this, 32.0D);
                     if (player != null) {
                     player.sendSystemMessage(Component.literal(
-                            "В§e<Verity>В§r РџСЂРёРІРµС‚! РЇ Р’РµСЂРёС‚Рё, С‚РІРѕР№ Р»РёС‡РЅС‹Р№ РїРѕРјРѕС‰РЅРёРє-РґСЂСѓРі. РЎРїСЂР°С€РёРІР°Р№ С‡С‚Рѕ СѓРіРѕРґРЅРѕ вЂ” СЏ Р·РЅР°СЋ РІСЃС‘."));
+                            "\u0412\u00A7e<Verity>\u0412\u00A7r \u0420\u045F\u0421\u0402\u0420\u0451\u0420\u0406\u0420\u00B5\u0421\u201A! \u0420\u0407 \u0420\u2019\u0420\u00B5\u0421\u0402\u0420\u0451\u0421\u201A\u0420\u0451, \u0421\u201A\u0420\u0406\u0420\u0455\u0420\u2116 \u0420\u00BB\u0420\u0451\u0421\u2021\u0420\u0405\u0421\u2039\u0420\u2116 \u0420\u0457\u0420\u0455\u0420\u0458\u0420\u0455\u0421\u2030\u0420\u0405\u0420\u0451\u0420\u0454-\u0420\u0491\u0421\u0402\u0421\u0453\u0420\u0456. \u0420\u040E\u0420\u0457\u0421\u0402\u0420\u00B0\u0421\u20AC\u0420\u0451\u0420\u0406\u0420\u00B0\u0420\u2116 \u0421\u2021\u0421\u201A\u0420\u0455 \u0421\u0453\u0420\u0456\u0420\u0455\u0420\u0491\u0420\u0405\u0420\u0455 \u0432\u0402\u201D \u0421\u040F \u0420\u00B7\u0420\u0405\u0420\u00B0\u0421\u040B \u0420\u0406\u0421\u0403\u0421\u2018."));
                     }
                     setVerityPhase(VerityPhase.HELPER);
                 }
@@ -655,7 +655,7 @@ public class VerityEntity extends PathfinderMob {
                 Player nearest = this.level().getNearestPlayer(this, 32.0D);
                 if (nearest != null) {
                     nearest.sendSystemMessage(Component.literal(
-                            "В§e<Verityв„ў>В§r ...Р’СЃС‘ С…РѕСЂРѕС€Рѕ. РЇ РїСЂРѕС‰Р°СЋ С‚РµР±СЏ. РЇ Р·РЅР°СЋ, СЌС‚Рѕ Р±С‹Р»Рѕ СЃР»СѓС‡Р°Р№РЅРѕ."));
+                            "\u0412\u00A7e<Verity\u0432\u201E\u045E>\u0412\u00A7r ...\u0420\u2019\u0421\u0403\u0421\u2018 \u0421\u2026\u0420\u0455\u0421\u0402\u0420\u0455\u0421\u20AC\u0420\u0455. \u0420\u0407 \u0420\u0457\u0421\u0402\u0420\u0455\u0421\u2030\u0420\u00B0\u0421\u040B \u0421\u201A\u0420\u00B5\u0420\u00B1\u0421\u040F. \u0420\u0407 \u0420\u00B7\u0420\u0405\u0420\u00B0\u0421\u040B, \u0421\u040C\u0421\u201A\u0420\u0455 \u0420\u00B1\u0421\u2039\u0420\u00BB\u0420\u0455 \u0421\u0403\u0420\u00BB\u0421\u0453\u0421\u2021\u0420\u00B0\u0420\u2116\u0420\u0405\u0420\u0455."));
                 }
             }
         }
@@ -774,16 +774,16 @@ public class VerityEntity extends PathfinderMob {
         // ── 4. Криповые шёпоты — случайные сообщения без LLM ──
         if (this.horrorCooldown == 0 && this.random.nextInt(1200) == 0) {
             String[] whispers = {
-                    "§7...ты один?",
-                    "§7...я слышу тебя.",
-                    "§7...не уходи.",
-                    "§7...я знаю.",
-                    "§7...скоро.",
-                    "§7...три.",
-                    "§7...ты ел пиццу?",
-                    "§7...я всегда здесь.",
-                    "§7...тебе не холодно?",
-                    "§7...я вижу тебя."
+                    "\u00A77...\u0442\u044B \u043E\u0434\u0438\u043D?",
+                    "\u00A77...\u044F \u0441\u043B\u044B\u0448\u0443 \u0442\u0435\u0431\u044F.",
+                    "\u00A77...\u043D\u0435 \u0443\u0445\u043E\u0434\u0438.",
+                    "\u00A77...\u044F \u0437\u043D\u0430\u044E.",
+                    "\u00A77...\u0441\u043A\u043E\u0440\u043E.",
+                    "\u00A77...\u0442\u0440\u0438.",
+                    "\u00A77...\u0442\u044B \u0435\u043B \u043F\u0438\u0446\u0446\u0443?",
+                    "\u00A77...\u044F \u0432\u0441\u0435\u0433\u0434\u0430 \u0437\u0434\u0435\u0441\u044C.",
+                    "\u00A77...\u0442\u0435\u0431\u0435 \u043D\u0435 \u0445\u043E\u043B\u043E\u0434\u043D\u043E?",
+                    "\u00A77...\u044F \u0432\u0438\u0436\u0443 \u0442\u0435\u0431\u044F."
             };
             player.sendSystemMessage(Component.literal(whispers[this.random.nextInt(whispers.length)]));
             this.horrorCooldown = 600; // 30 сек кулдаун
@@ -811,7 +811,7 @@ public class VerityEntity extends PathfinderMob {
         if (time > 13000 && time < 18000 && this.horrorCooldown == 0 && this.random.nextInt(2400) == 0) {
             this.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     VerityMod.SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 0.4F, 0.8F);
-            player.sendSystemMessage(Component.literal("§7♪ ..."));
+            player.sendSystemMessage(Component.literal("\u00A77\u266A ..."));
             this.horrorCooldown = 1200; // 60 сек кулдаун
         }
 
@@ -835,7 +835,7 @@ public class VerityEntity extends PathfinderMob {
                 var bedPos = sp.getRespawnPosition();
                 if (bedPos != null && this.distanceToSqr(bedPos.getX(), bedPos.getY(), bedPos.getZ()) > 100.0D) {
                     this.teleportTo(bedPos.getX() + 1.5, bedPos.getY(), bedPos.getZ() + 1.5);
-                    player.sendSystemMessage(Component.literal("§7..."));
+                    player.sendSystemMessage(Component.literal("\u00A77..."));
                     player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0, false, false, true));
                 }
             }
@@ -847,7 +847,7 @@ public class VerityEntity extends PathfinderMob {
         if (this.ticksInPhase > 2400) {
             Player nearest = this.level().getNearestPlayer(this, 32.0D);
             if (nearest != null) {
-                nearest.sendSystemMessage(Component.literal("В§e<Verity>В§r РўС‹ Р·РЅР°РµС€СЊ... СЏ РІРёР¶Сѓ Р±РѕР»СЊС€Рµ, С‡РµРј С‚С‹ РґСѓРјР°РµС€СЊ."));
+                nearest.sendSystemMessage(Component.literal("\u0412\u00A7e<Verity>\u0412\u00A7r \u0420\u045E\u0421\u2039 \u0420\u00B7\u0420\u0405\u0420\u00B0\u0420\u00B5\u0421\u20AC\u0421\u040A... \u0421\u040F \u0420\u0406\u0420\u0451\u0420\u00B6\u0421\u0453 \u0420\u00B1\u0420\u0455\u0420\u00BB\u0421\u040A\u0421\u20AC\u0420\u00B5, \u0421\u2021\u0420\u00B5\u0420\u0458 \u0421\u201A\u0421\u2039 \u0420\u0491\u0421\u0453\u0420\u0458\u0420\u00B0\u0420\u00B5\u0421\u20AC\u0421\u040A."));
             }
             setVerityPhase(VerityPhase.OMNISCIENT);
         }
@@ -862,9 +862,9 @@ public class VerityEntity extends PathfinderMob {
             Player nearest = this.level().getNearestPlayer(this, 32.0D);
             if (nearest != null) {
                 nearest.sendSystemMessage(Component.literal(
-                        "В§c<Verityв„ў>В§r Р§С‚Рѕ-С‚Рѕ РіСЂСЏРґС‘С‚. Р§РµСЂРµР· С‚СЂРё РґРЅСЏ."));
+                        "\u0412\u00A7c<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u00A7\u0421\u201A\u0420\u0455-\u0421\u201A\u0420\u0455 \u0420\u0456\u0421\u0402\u0421\u040F\u0420\u0491\u0421\u2018\u0421\u201A. \u0420\u00A7\u0420\u00B5\u0421\u0402\u0420\u00B5\u0420\u00B7 \u0421\u201A\u0421\u0402\u0420\u0451 \u0420\u0491\u0420\u0405\u0421\u040F."));
                 nearest.sendSystemMessage(Component.literal(
-                        "В§c<Verityв„ў>В§r Р§С‚Рѕ-С‚Рѕ РіСЂСЏРґС‘С‚. Р§РµСЂРµР· С‚СЂРё РґРЅСЏ."));
+                        "\u0412\u00A7c<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u00A7\u0421\u201A\u0420\u0455-\u0421\u201A\u0420\u0455 \u0420\u0456\u0421\u0402\u0421\u040F\u0420\u0491\u0421\u2018\u0421\u201A. \u0420\u00A7\u0420\u00B5\u0421\u0402\u0420\u00B5\u0420\u00B7 \u0421\u201A\u0421\u0402\u0420\u0451 \u0420\u0491\u0420\u0405\u0421\u040F."));
             }
             setVerityPhase(VerityPhase.COUNTDOWN);
         }
@@ -886,25 +886,25 @@ public class VerityEntity extends PathfinderMob {
                      // Р”РµРЅСЊ 1 вЂ” :| в†’ abnormal shut. РџРѕРІС‚РѕСЂСЏРµС‚ РґРІР°Р¶РґС‹.
                      if (nearest != null) {
                          nearest.sendSystemMessage(Component.literal(
-                                 "В§c<Verityв„ў>В§r Р§С‚Рѕ-С‚Рѕ РіСЂСЏРґС‘С‚. Р§РµСЂРµР· С‚СЂРё РґРЅСЏ."));
+                                 "\u0412\u00A7c<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u00A7\u0421\u201A\u0420\u0455-\u0421\u201A\u0420\u0455 \u0420\u0456\u0421\u0402\u0421\u040F\u0420\u0491\u0421\u2018\u0421\u201A. \u0420\u00A7\u0420\u00B5\u0421\u0402\u0420\u00B5\u0420\u00B7 \u0421\u201A\u0421\u0402\u0420\u0451 \u0420\u0491\u0420\u0405\u0421\u040F."));
                          nearest.sendSystemMessage(Component.literal(
-                                 "В§c<Verityв„ў>В§r Р§С‚Рѕ-С‚Рѕ РіСЂСЏРґС‘С‚. Р§РµСЂРµР· С‚СЂРё РґРЅСЏ."));
+                                 "\u0412\u00A7c<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u00A7\u0421\u201A\u0420\u0455-\u0421\u201A\u0420\u0455 \u0420\u0456\u0421\u0402\u0421\u040F\u0420\u0491\u0421\u2018\u0421\u201A. \u0420\u00A7\u0420\u00B5\u0421\u0402\u0420\u00B5\u0420\u00B7 \u0421\u201A\u0421\u0402\u0420\u0451 \u0420\u0491\u0420\u0405\u0421\u040F."));
                      }
                  }
                  case 2 -> {
                      // Р”РµРЅСЊ 2 вЂ” abnormal shut (СѓР¶Рµ СѓСЃС‚Р°РЅРѕРІР»РµРЅ)
                      if (nearest != null) {
                          nearest.sendSystemMessage(Component.literal(
-                                 "В§c<Verityв„ў>В§r Р”РІР° РґРЅСЏ... С‚С‹ РјРѕРі РѕСЃС‚Р°РЅРѕРІРёС‚СЊ СЌС‚Рѕ."));
+                                 "\u0412\u00A7c<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u201D\u0420\u0406\u0420\u00B0 \u0420\u0491\u0420\u0405\u0421\u040F... \u0421\u201A\u0421\u2039 \u0420\u0458\u0420\u0455\u0420\u0456 \u0420\u0455\u0421\u0403\u0421\u201A\u0420\u00B0\u0420\u0405\u0420\u0455\u0420\u0406\u0420\u0451\u0421\u201A\u0421\u040A \u0421\u040C\u0421\u201A\u0420\u0455."));
                      }
                  }
                  case 3 -> {
                      // Р”РµРЅСЊ 3 вЂ” day2 shut в†’ MONSTER
                      if (nearest != null) {
                          nearest.sendSystemMessage(Component.literal(
-                                 "В§4<Verity>В§r Р’СЃС‘ СѓР¶Рµ РєРѕРЅС‡РµРЅРѕ. РўС‹ РјРѕР№!"));
+                                 "\u0412\u00A74<Verity>\u0412\u00A7r \u0420\u2019\u0421\u0403\u0421\u2018 \u0421\u0453\u0420\u00B6\u0420\u00B5 \u0420\u0454\u0420\u0455\u0420\u0405\u0421\u2021\u0420\u00B5\u0420\u0405\u0420\u0455. \u0420\u045E\u0421\u2039 \u0420\u0458\u0420\u0455\u0420\u2116!"));
                          nearest.sendSystemMessage(Component.literal(
-                                 "В§4<Verity>В§r ...РўР« РњРћР™!"));
+                                 "\u0412\u00A74<Verity>\u0412\u00A7r ...\u0420\u045E\u0420\u00AB \u0420\u045A\u0420\u045B\u0420\u2122!"));
                      }
                     this.nearbyMessageSent = false;
                     setVerityPhase(VerityPhase.MONSTER);
@@ -925,7 +925,7 @@ public class VerityEntity extends PathfinderMob {
             this.nearbyMessageSent = true;
             Player nearest = this.level().getNearestPlayer(this, 64.0D);
             if (nearest != null) {
-                nearest.sendSystemMessage(Component.literal("В§4Р’РµСЂРёС‚Рё СЂСЏРґРѕРј..."));
+                nearest.sendSystemMessage(Component.literal("\u0412\u00A74\u0420\u2019\u0420\u00B5\u0421\u0402\u0420\u0451\u0421\u201A\u0420\u0451 \u0421\u0402\u0421\u040F\u0420\u0491\u0420\u0455\u0420\u0458..."));
             }
         }
 
@@ -951,9 +951,9 @@ public class VerityEntity extends PathfinderMob {
             // РџР РћР©Р•РќРР•: РёРіСЂРѕРє РїСЂРёСЃРµР» СЂСЏРґРѕРј в†’ Monster Form в†’ POSSESSIVE
             if (nearest.isShiftKeyDown() && this.distanceToSqr(nearest) < 16.0D) {
                 nearest.sendSystemMessage(Component.literal(
-                        "В§e<Verityв„ў>В§r ...РўС‹ РІРµСЂРЅСѓР»СЃСЏ. РҐРѕСЂРѕС€Рѕ."));
+                        "\u0412\u00A7e<Verity\u0432\u201E\u045E>\u0412\u00A7r ...\u0420\u045E\u0421\u2039 \u0420\u0406\u0420\u00B5\u0421\u0402\u0420\u0405\u0421\u0453\u0420\u00BB\u0421\u0403\u0421\u040F. \u0420\u0490\u0420\u0455\u0421\u0402\u0420\u0455\u0421\u20AC\u0420\u0455."));
                 nearest.sendSystemMessage(Component.literal(
-                        "В§e<Verityв„ў>В§r РЇ РїСЂРѕС‰Р°СЋ С‚РµР±СЏ."));
+                        "\u0412\u00A7e<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u0407 \u0420\u0457\u0421\u0402\u0420\u0455\u0421\u2030\u0420\u00B0\u0421\u040B \u0421\u201A\u0420\u00B5\u0420\u00B1\u0421\u040F."));
                 setVerityPhase(VerityPhase.POSSESSIVE);
                 return;
             }
@@ -975,9 +975,9 @@ public class VerityEntity extends PathfinderMob {
             Player main = this.level().getNearestPlayer(this, 32.0D);
             if (main != null) {
                 main.sendSystemMessage(Component.literal(
-                        "В§e<Verityв„ў>В§r РџРѕС‡РµРјСѓ. ...РќРµС‚ РїСЂРёС‡РёРЅС‹ РёСЃРєР°С‚СЊ РґСЂСѓРіРёС… Р»СЋРґРµР№. РЈ С‚РµР±СЏ РµСЃС‚СЊ СЏ."));
+                        "\u0412\u00A7e<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u045F\u0420\u0455\u0421\u2021\u0420\u00B5\u0420\u0458\u0421\u0453. ...\u0420\u045C\u0420\u00B5\u0421\u201A \u0420\u0457\u0421\u0402\u0420\u0451\u0421\u2021\u0420\u0451\u0420\u0405\u0421\u2039 \u0420\u0451\u0421\u0403\u0420\u0454\u0420\u00B0\u0421\u201A\u0421\u040A \u0420\u0491\u0421\u0402\u0421\u0453\u0420\u0456\u0420\u0451\u0421\u2026 \u0420\u00BB\u0421\u040B\u0420\u0491\u0420\u00B5\u0420\u2116. \u0420\u0408 \u0421\u201A\u0420\u00B5\u0420\u00B1\u0421\u040F \u0420\u00B5\u0421\u0403\u0421\u201A\u0421\u040A \u0421\u040F."));
                 main.sendSystemMessage(Component.literal(
-                        "В§c<Verityв„ў>В§r Р“РґРµ РѕРЅ?"));
+                        "\u0412\u00A7c<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u201C\u0420\u0491\u0420\u00B5 \u0420\u0455\u0420\u0405?"));
             }
             setVerityPhase(VerityPhase.HUNTER);
         }
@@ -1023,9 +1023,9 @@ public class VerityEntity extends PathfinderMob {
             }
             if (main != null && this.ticksInPhase > 200) {
                 main.sendSystemMessage(Component.literal(
-                        "В§e<Verityв„ў>В§r ...РћРЅ РЅРµ РІРµСЂРЅС‘С‚СЃСЏ. РќРѕ Сѓ РЅР°СЃ СЃ С‚РѕР±РѕР№ РІСЃС‘ С…РѕСЂРѕС€Рѕ."));
+                        "\u0412\u00A7e<Verity\u0432\u201E\u045E>\u0412\u00A7r ...\u0420\u045B\u0420\u0405 \u0420\u0405\u0420\u00B5 \u0420\u0406\u0420\u00B5\u0421\u0402\u0420\u0405\u0421\u2018\u0421\u201A\u0421\u0403\u0421\u040F. \u0420\u045C\u0420\u0455 \u0421\u0453 \u0420\u0405\u0420\u00B0\u0421\u0403 \u0421\u0403 \u0421\u201A\u0420\u0455\u0420\u00B1\u0420\u0455\u0420\u2116 \u0420\u0406\u0421\u0403\u0421\u2018 \u0421\u2026\u0420\u0455\u0421\u0402\u0420\u0455\u0421\u20AC\u0420\u0455."));
                 main.sendSystemMessage(Component.literal(
-                        "В§e<Verityв„ў>В§r РќРµ РІРѕР»РЅСѓР№СЃСЏ. РЇ Р·РґРµСЃСЊ. РЇ РІСЃРµРіРґР° Р·РґРµСЃСЊ."));
+                        "\u0412\u00A7e<Verity\u0432\u201E\u045E>\u0412\u00A7r \u0420\u045C\u0420\u00B5 \u0420\u0406\u0420\u0455\u0420\u00BB\u0420\u0405\u0421\u0453\u0420\u2116\u0421\u0403\u0421\u040F. \u0420\u0407 \u0420\u00B7\u0420\u0491\u0420\u00B5\u0421\u0403\u0421\u040A. \u0420\u0407 \u0420\u0406\u0421\u0403\u0420\u00B5\u0420\u0456\u0420\u0491\u0420\u00B0 \u0420\u00B7\u0420\u0491\u0420\u00B5\u0421\u0403\u0421\u040A."));
                 setVerityPhase(VerityPhase.POSSESSIVE);
             }
         }
@@ -1213,7 +1213,7 @@ public class VerityEntity extends PathfinderMob {
         for (BlockPos pos : roofBlocks) {
             var blockState = this.level().getBlockState(pos);
 
-            // Р§Р°СЃС‚РёС†С‹ СЂР°Р·СЂСѓС€РµРЅРёСЏ
+            // Р\u00A7Р°СЃС‚РёС†С‹ СЂР°Р·СЂСѓС€РµРЅРёСЏ
             if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
                 sl.sendParticles(
                         new net.minecraft.core.particles.BlockParticleOption(
@@ -1238,7 +1238,7 @@ public class VerityEntity extends PathfinderMob {
             }
         }
 
-        // Р§РµСЂРµР· 1.5 СЃРµРє РІРєР»СЋС‡Р°РµРј РіСЂР°РІРёС‚Р°С†РёСЋ (Р±РµР· Thread.sleep!)
+        // Р\u00A7РµСЂРµР· 1.5 СЃРµРє РІРєР»СЋС‡Р°РµРј РіСЂР°РІРёС‚Р°С†РёСЋ (Р±РµР· Thread.sleep!)
         this.roofGravityTimer = 30;
         this.roofThrowX = throwX;
         this.roofThrowZ = throwZ;
@@ -1291,7 +1291,7 @@ public class VerityEntity extends PathfinderMob {
             // Р Р°Р· РІ 10 СЃРµРє РЅР°РїРѕРјРёРЅР°РµРј
             if (this.tickCount % 200 == 0) {
                 nearest.sendSystemMessage(Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r РўС‹ РёРґС‘С€СЊ? РЇ С‚СѓС‚ Р¶РґСѓ."));
+                        "\u00a7e<Verity\u2122>\u00a7r \u0420\u045E\u0421\u2039 \u0420\u0451\u0420\u0491\u0421\u2018\u0421\u20AC\u0421\u040A? \u0420\u0407 \u0421\u201A\u0421\u0453\u0421\u201A \u0420\u00B6\u0420\u0491\u0421\u0453."));
             }
             return;
         }
@@ -1301,7 +1301,7 @@ public class VerityEntity extends PathfinderMob {
             this.leading = false;
             this.leadTarget = null;
             nearest.sendSystemMessage(Component.literal(
-                    "\u00a7e<Verity\u2122>\u00a7r РњС‹ РїСЂРёС€Р»Рё!"));
+                    "\u00a7e<Verity\u2122>\u00a7r \u0420\u045A\u0421\u2039 \u0420\u0457\u0421\u0402\u0420\u0451\u0421\u20AC\u0420\u00BB\u0420\u0451!"));
             this.talkAnimTick = 30;
             return;
         }
@@ -1341,7 +1341,7 @@ public class VerityEntity extends PathfinderMob {
                     // РС‰РµРј С„СЂР°Р·С‹ РёРіСЂРѕРєР° (РЅРµ Verity)
                     java.util.List<String> playerLines = new java.util.ArrayList<>();
                     for (String line : history) {
-                        if (line.contains("В§7") && !line.contains("<Verity")) {
+                        if (line.contains("\u0412\u00A77") && !line.contains("<Verity")) {
                             playerLines.add(line);
                         }
                     }
@@ -1352,7 +1352,7 @@ public class VerityEntity extends PathfinderMob {
                                 .replaceAll("^[^:]+:\\s*", "").trim();
                         if (!clean.isEmpty() && clean.length() < 50) {
                             nearest.sendSystemMessage(Component.literal(
-                                    "В§c<Verity\u2122>В§r " + clean + "..."));
+                                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r " + clean + "..."));
                             this.talkAnimTick = 30;
                             this.chatCooldown = 1200;
                             return;
@@ -1363,12 +1363,12 @@ public class VerityEntity extends PathfinderMob {
 
             // 50% С€Р°РЅСЃ вЂ” "С‚СЂРё РґРЅСЏ" РѕР±СЃРµСЃСЃРёСЏ
             String[] obsessions = {
-                    "В§c<Verity\u2122>В§r РўСЂРё РґРЅСЏ.",
-                    "В§c<Verity\u2122>В§r РўРёРє-С‚Р°Рє.",
-                    "В§c<Verity\u2122>В§r РЎРєРѕСЂРѕ.",
-                    "В§c<Verity\u2122>В§r ...С‚СЂРё.",
-                    "В§c<Verity\u2122>В§r Р”РІР° РґРЅСЏ РїСЂРѕС€Р»Рѕ.",
-                    "В§c<Verity\u2122>В§r РўС‹ РјРѕРі РѕСЃС‚Р°РЅРѕРІРёС‚СЊ."
+                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u045E\u0421\u0402\u0420\u0451 \u0420\u0491\u0420\u0405\u0421\u040F.",
+                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u045E\u0420\u0451\u0420\u0454-\u0421\u201A\u0420\u00B0\u0420\u0454.",
+                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u040E\u0420\u0454\u0420\u0455\u0421\u0402\u0420\u0455.",
+                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r ...\u0421\u201A\u0421\u0402\u0420\u0451.",
+                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u201D\u0420\u0406\u0420\u00B0 \u0420\u0491\u0420\u0405\u0421\u040F \u0420\u0457\u0421\u0402\u0420\u0455\u0421\u20AC\u0420\u00BB\u0420\u0455.",
+                    "\u0412\u00A7c<Verity\u2122>\u0412\u00A7r \u0420\u045E\u0421\u2039 \u0420\u0458\u0420\u0455\u0420\u0456 \u0420\u0455\u0421\u0403\u0421\u201A\u0420\u00B0\u0420\u0405\u0420\u0455\u0420\u0406\u0420\u0451\u0421\u201A\u0421\u040A."
             };
             nearest.sendSystemMessage(Component.literal(
                     obsessions[this.random.nextInt(obsessions.length)]));
@@ -1383,23 +1383,23 @@ public class VerityEntity extends PathfinderMob {
         // РљРѕРЅС‚РµРєСЃС‚ 1: РёРіСЂРѕРє РїРѕР»СѓС‡РёР» СѓСЂРѕРЅ
         if (nearest.getHealth() < nearest.getMaxHealth() * 0.5f) {
             shouldSpeak = true;
-            contextHint = "РРіСЂРѕРє СЂР°РЅРµРЅ. РћС‚СЂРµР°РіРёСЂСѓР№ СЃ Р·Р°Р±РѕС‚РѕР№.";
+            contextHint = "\u0420\u0098\u0420\u0456\u0421\u0402\u0420\u0455\u0420\u0454 \u0421\u0402\u0420\u00B0\u0420\u0405\u0420\u00B5\u0420\u0405. \u0420\u045B\u0421\u201A\u0421\u0402\u0420\u00B5\u0420\u00B0\u0420\u0456\u0420\u0451\u0421\u0402\u0421\u0453\u0420\u2116 \u0421\u0403 \u0420\u00B7\u0420\u00B0\u0420\u00B1\u0420\u0455\u0421\u201A\u0420\u0455\u0420\u2116.";
         }
         // РљРѕРЅС‚РµРєСЃС‚ 2: РЅРѕС‡СЊ Рё РёРіСЂРѕРє РЅР° РїРѕРІРµСЂС…РЅРѕСЃС‚Рё
         else if (this.level().getDayTime() % 24000 > 13000 && this.level().getDayTime() % 24000 < 18000
                 && nearest.getY() > 60 && this.ticksInPhase % 2400 == 0) {
             shouldSpeak = true;
-            contextHint = "РќР°СЃС‚СѓРїРёР»Р° РЅРѕС‡СЊ. РџСЂРµРґСѓРїСЂРµРґРё РёРіСЂРѕРєР° РїСЂРѕ РјРѕР±РѕРІ РёР»Рё СЃРєР°Р¶Рё С‡С‚Рѕ-С‚Рѕ РїРѕ С‚РµРјРµ.";
+            contextHint = "\u0420\u045C\u0420\u00B0\u0421\u0403\u0421\u201A\u0421\u0453\u0420\u0457\u0420\u0451\u0420\u00BB\u0420\u00B0 \u0420\u0405\u0420\u0455\u0421\u2021\u0421\u040A. \u0420\u045F\u0421\u0402\u0420\u00B5\u0420\u0491\u0421\u0453\u0420\u0457\u0421\u0402\u0420\u00B5\u0420\u0491\u0420\u0451 \u0420\u0451\u0420\u0456\u0421\u0402\u0420\u0455\u0420\u0454\u0420\u00B0 \u0420\u0457\u0421\u0402\u0420\u0455 \u0420\u0458\u0420\u0455\u0420\u00B1\u0420\u0455\u0420\u0406 \u0420\u0451\u0420\u00BB\u0420\u0451 \u0421\u0403\u0420\u0454\u0420\u00B0\u0420\u00B6\u0420\u0451 \u0421\u2021\u0421\u201A\u0420\u0455-\u0421\u201A\u0420\u0455 \u0420\u0457\u0420\u0455 \u0421\u201A\u0420\u00B5\u0420\u0458\u0420\u00B5.";
         }
         // РљРѕРЅС‚РµРєСЃС‚ 3: РёРіСЂРѕРє РІ РїРµС‰РµСЂРµ (РЅРёР·РєР°СЏ РІС‹СЃРѕС‚Р°)
         else if (nearest.getY() < 20 && this.ticksInPhase % 3600 == 0) {
             shouldSpeak = true;
-            contextHint = "РРіСЂРѕРє РіР»СѓР±РѕРєРѕ РїРѕРґ Р·РµРјР»С‘Р№ РІ С€Р°С…С‚Рµ. РџСЂРѕРєРѕРјРјРµРЅС‚РёСЂСѓР№ СЌС‚Рѕ.";
+            contextHint = "\u0420\u0098\u0420\u0456\u0421\u0402\u0420\u0455\u0420\u0454 \u0420\u0456\u0420\u00BB\u0421\u0453\u0420\u00B1\u0420\u0455\u0420\u0454\u0420\u0455 \u0420\u0457\u0420\u0455\u0420\u0491 \u0420\u00B7\u0420\u00B5\u0420\u0458\u0420\u00BB\u0421\u2018\u0420\u2116 \u0420\u0406 \u0421\u20AC\u0420\u00B0\u0421\u2026\u0421\u201A\u0420\u00B5. \u0420\u045F\u0421\u0402\u0420\u0455\u0420\u0454\u0420\u0455\u0420\u0458\u0420\u0458\u0420\u00B5\u0420\u0405\u0421\u201A\u0420\u0451\u0421\u0402\u0421\u0453\u0420\u2116 \u0421\u040C\u0421\u201A\u0420\u0455.";
         }
         // РљРѕРЅС‚РµРєСЃС‚ 4: COUNTDOWN вЂ” РґРµРЅСЊ СЃРјРµРЅСЏР»СЃСЏ
         else if (phase == VerityPhase.COUNTDOWN && this.ticksInPhase % 1200 == 0 && this.ticksInPhase > 0) {
             shouldSpeak = true;
-            contextHint = "РџСЂРѕС€С‘Р» РµС‰С‘ РґРµРЅСЊ РѕС‚СЃС‡С‘С‚Р°. РќР°РїРѕРјРЅРё СЃРєРѕР»СЊРєРѕ РѕСЃС‚Р°Р»РѕСЃСЊ.";
+            contextHint = "\u0420\u045F\u0421\u0402\u0420\u0455\u0421\u20AC\u0421\u2018\u0420\u00BB \u0420\u00B5\u0421\u2030\u0421\u2018 \u0420\u0491\u0420\u00B5\u0420\u0405\u0421\u040A \u0420\u0455\u0421\u201A\u0421\u0403\u0421\u2021\u0421\u2018\u0421\u201A\u0420\u00B0. \u0420\u045C\u0420\u00B0\u0420\u0457\u0420\u0455\u0420\u0458\u0420\u0405\u0420\u0451 \u0421\u0403\u0420\u0454\u0420\u0455\u0420\u00BB\u0421\u040A\u0420\u0454\u0420\u0455 \u0420\u0455\u0421\u0403\u0421\u201A\u0420\u00B0\u0420\u00BB\u0420\u0455\u0421\u0403\u0421\u040A.";
         }
         // РљРѕРЅС‚РµРєСЃС‚ 5: POSSESSIVE/HUNTER вЂ” РґСЂСѓРіРѕР№ РёРіСЂРѕРє СЂСЏРґРѕРј
         else if ((phase == VerityPhase.POSSESSIVE || phase == VerityPhase.HUNTER)
@@ -1407,7 +1407,7 @@ public class VerityEntity extends PathfinderMob {
                     this.getBoundingBox().inflate(32.0D)).size() > 1
                 && this.ticksInPhase % 1800 == 0) {
             shouldSpeak = true;
-            contextHint = "Р СЏРґРѕРј РґСЂСѓРіРѕР№ РёРіСЂРѕРє. РўРµР±Рµ СЌС‚Рѕ РЅРµ РЅСЂР°РІРёС‚СЃСЏ. РћС‚СЂРµР°РіРёСЂСѓР№.";
+            contextHint = "\u0420\u00A0\u0421\u040F\u0420\u0491\u0420\u0455\u0420\u0458 \u0420\u0491\u0421\u0402\u0421\u0453\u0420\u0456\u0420\u0455\u0420\u2116 \u0420\u0451\u0420\u0456\u0421\u0402\u0420\u0455\u0420\u0454. \u0420\u045E\u0420\u00B5\u0420\u00B1\u0420\u00B5 \u0421\u040C\u0421\u201A\u0420\u0455 \u0420\u0405\u0420\u00B5 \u0420\u0405\u0421\u0402\u0420\u00B0\u0420\u0406\u0420\u0451\u0421\u201A\u0421\u0403\u0421\u040F. \u0420\u045B\u0421\u201A\u0421\u0402\u0420\u00B5\u0420\u00B0\u0420\u0456\u0420\u0451\u0421\u0402\u0421\u0453\u0420\u2116.";
         }
 
         if (shouldSpeak) {
@@ -1493,18 +1493,18 @@ public class VerityEntity extends PathfinderMob {
         if (phase == VerityPhase.COUNTDOWN || phase == VerityPhase.POSSESSIVE
                 || phase == VerityPhase.HUNTER) {
             String[] creepyMsgs = {
-                    "В§e<Verity\u2122>В§r РЇ С‚СѓС‚.",
-                    "В§e<Verity\u2122>В§r РќРµ СѓР±РµРіР°Р№.",
-                    "В§e<Verity\u2122>В§r РЇ РЅР°С€С‘Р» С‚РµР±СЏ.",
-                    "В§e<Verity\u2122>В§r РљСѓРґР° С‚С‹ СЃРѕР±СЂР°Р»СЃСЏ?"
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0407 \u0421\u201A\u0421\u0453\u0421\u201A.",
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u045C\u0420\u00B5 \u0421\u0453\u0420\u00B1\u0420\u00B5\u0420\u0456\u0420\u00B0\u0420\u2116.",
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0407 \u0420\u0405\u0420\u00B0\u0421\u20AC\u0421\u2018\u0420\u00BB \u0421\u201A\u0420\u00B5\u0420\u00B1\u0421\u040F.",
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0459\u0421\u0453\u0420\u0491\u0420\u00B0 \u0421\u201A\u0421\u2039 \u0421\u0403\u0420\u0455\u0420\u00B1\u0421\u0402\u0420\u00B0\u0420\u00BB\u0421\u0403\u0421\u040F?"
             };
             msg = creepyMsgs[this.random.nextInt(creepyMsgs.length)];
         } else {
             String[] friendlyMsgs = {
-                    "В§e<Verity\u2122>В§r Рћ, СЏ С‚СѓС‚!",
-                    "В§e<Verity\u2122>В§r РџРѕРґРѕР¶РґРё РјРµРЅСЏ!",
-                    "В§e<Verity\u2122>В§r Р­Р№, РЅРµ С‚Р°Рє Р±С‹СЃС‚СЂРѕ!",
-                    "В§e<Verity\u2122>В§r РЇ РґРѕРіРЅР°Р»!"
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u045B, \u0421\u040F \u0421\u201A\u0421\u0453\u0421\u201A!",
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u045F\u0420\u0455\u0420\u0491\u0420\u0455\u0420\u00B6\u0420\u0491\u0420\u0451 \u0420\u0458\u0420\u00B5\u0420\u0405\u0421\u040F!",
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u00AD\u0420\u2116, \u0420\u0405\u0420\u00B5 \u0421\u201A\u0420\u00B0\u0420\u0454 \u0420\u00B1\u0421\u2039\u0421\u0403\u0421\u201A\u0421\u0402\u0420\u0455!",
+                    "\u0412\u00A7e<Verity\u2122>\u0412\u00A7r \u0420\u0407 \u0420\u0491\u0420\u0455\u0420\u0456\u0420\u0405\u0420\u00B0\u0420\u00BB!"
             };
             msg = friendlyMsgs[this.random.nextInt(friendlyMsgs.length)];
         }
@@ -1788,7 +1788,7 @@ public class VerityEntity extends PathfinderMob {
                     if (hardness >= 0 && hardness < 3.0f) {
                         var blockState = entity.level().getBlockState(front);
                         entity.level().destroyBlock(front, false);
-                        // Р§Р°СЃС‚РёС†С‹
+                        // Р\u00A7Р°СЃС‚РёС†С‹
                         if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
                             sl.sendParticles(
                                     new net.minecraft.core.particles.BlockParticleOption(
