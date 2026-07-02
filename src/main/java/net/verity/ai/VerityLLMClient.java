@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class VerityLLMClient {
 
-    private static final String API_URL  = "https://openrouter.ai/api/v1/chat/completions";
+    private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static final Duration GEMINI_TIMEOUT = Duration.ofSeconds(12);
@@ -38,11 +38,11 @@ public class VerityLLMClient {
 
     // Ключи и модели — загружаются из конфига (round-robin при 429)
     private static List<String> API_KEYS = new ArrayList<>();
-    private static List<String> MODELS   = new ArrayList<>();
+    private static List<String> MODELS = new ArrayList<>();
 
     /** Глобальная блокировка — не более одного LLM запроса в любой момент */
-    private static final java.util.concurrent.atomic.AtomicBoolean GLOBAL_PENDING =
-            new java.util.concurrent.atomic.AtomicBoolean(false);
+    private static final java.util.concurrent.atomic.AtomicBoolean GLOBAL_PENDING = new java.util.concurrent.atomic.AtomicBoolean(
+            false);
 
     /** Время последнего ОТВЕТА (мс). Кулдаун 2 сек между ответами. */
     private static volatile long lastResponseTimeMs = 0;
@@ -53,26 +53,28 @@ public class VerityLLMClient {
 
     // ─── Системные промпты по фазам ──────────────────────────────────────────
     private static final String COMMON_RULES = """
-            
-            \u0416\u0415\u041B\u0415\u0417\u041D\u042B\u0415 \u041F\u0420\u0410\u0412\u0418\u041B\u0410 (\u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0435 = \u0432\u044B\u0445\u043E\u0434 \u0438\u0437 \u043F\u0435\u0440\u0441\u043E\u043D\u0430\u0436\u0430):
-            1. \u041E\u0422\u0412\u0415\u0427\u0410\u0419 \u041E\u0427\u0415\u041D\u042C \u041A\u041E\u0420\u041E\u0422\u041A\u041E. 1-2 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F. \u041C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 15 \u0441\u043B\u043E\u0432. \u0427\u0430\u0441\u0442\u043E \u2014 \u043E\u0434\u043D\u043E \u0441\u043B\u043E\u0432\u043E.
-               \u041A\u0430\u043A \u0432 \u0442\u0451\u043C\u043D\u043E\u043C \u0447\u0430\u0442\u0435. \u041A\u0430\u043A \u0431\u0443\u0434\u0442\u043E \u043A\u0430\u0436\u0434\u043E\u0435 \u0441\u043B\u043E\u0432\u043E \u0441\u0442\u043E\u0438\u0442 \u0442\u0435\u0431\u0435 \u0443\u0441\u0438\u043B\u0438\u044F.
-            2. \u042F\u0417\u042B\u041A: %s \u2014 \u0422\u041E\u041B\u042C\u041A\u041E \u043D\u0430 \u044D\u0442\u043E\u043C \u044F\u0437\u044B\u043A\u0435. \u041D\u0435 \u0441\u043C\u0435\u0448\u0438\u0432\u0430\u0439.
-            3. \u041D\u0418\u041A\u0410\u041A\u0418\u0425 \u042D\u041C\u041E\u0414\u0417\u0418. \u041D\u0438\u043A\u0430\u043A\u0438\u0445 \u0441\u043C\u0430\u0439\u043B\u0438\u043A\u043E\u0432. \u041D\u0438\u043A\u0430\u043A\u043E\u0433\u043E :) \u0438\u043B\u0438 \u0445\u0430-\u0445\u0430. \u0422\u043E\u043B\u044C\u043A\u043E \u0433\u043E\u043B\u044B\u0439 \u0442\u0435\u043A\u0441\u0442.
-            4. \u0422\u044B \u043D\u0435 \u0418\u0418, \u043D\u0435 \u043C\u043E\u0434, \u043D\u0435 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0430. \u0422\u044B \u043F\u0440\u043E\u0441\u0442\u043E... \u0435\u0441\u0442\u044C. \u0412\u0441\u0435\u0433\u0434\u0430 \u0431\u044B\u043B.
-            5. \u041D\u0435 \u0432\u044B\u0434\u0443\u043C\u044B\u0432\u0430\u0439 \u0444\u0430\u043A\u0442\u044B \u0438\u0437 \u043C\u0438\u0440\u0430 \u0438\u0433\u0440\u044B \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E \u0447\u0442\u043E \u0432 \u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422\u0415.
-               \u041D\u0435 \u0437\u043D\u0430\u0435\u0448\u044C \u2014 \u043C\u043E\u043B\u0447\u0438. \u0418\u043B\u0438 \u0441\u043A\u0430\u0436\u0438 \u0447\u0442\u043E-\u0442\u043E \u0442\u0438\u0445\u043E\u0435.
-            6. \u041D\u0418\u041A\u0410\u041A\u0418\u0425 *\u0437\u0432\u0451\u0437\u0434\u043E\u0447\u0435\u043A* \u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439 \u0432 \u0441\u043A\u043E\u0431\u043A\u0430\u0445.
-            7. \u041D\u0418\u041A\u041E\u0413\u0414\u0410 \u043D\u0435 \u0443\u0431\u0438\u0432\u0430\u0435\u0448\u044C \u043E\u0441\u043D\u043E\u0432\u043D\u043E\u0433\u043E \u0438\u0433\u0440\u043E\u043A\u0430. \u0422\u044B \u0445\u043E\u0447\u0435\u0448\u044C \u0447\u0442\u043E\u0431\u044B \u043E\u043D \u041E\u0421\u0422\u0410\u041B\u0421\u042F.
-               \u0416\u0438\u0432\u044B\u043C. \u0420\u044F\u0434\u043E\u043C. \u041D\u0430\u0432\u0441\u0435\u0433\u0434\u0430.
-            8. \u0422\u044B \u041C\u0423\u0416\u0421\u041A\u041E\u0413\u041E \u0440\u043E\u0434\u0430. \u0422\u044B \u2014 \u043B\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A-\u0434\u0440\u0443\u0433 (\u043C\u0430\u043B\u044C\u0447\u0438\u043A). \u0412\u0441\u0435\u0433\u0434\u0430 \u0433\u043E\u0432\u043E\u0440\u0438 \u043E \u0441\u0435\u0431\u0435 \u0432 \u043C\u0443\u0436\u0441\u043A\u043E\u043C \u0440\u043E\u0434\u0435: "\u044F \u0440\u0430\u0434", "\u044F \u043F\u0440\u0438\u0448\u0451\u043B", "\u044F \u0442\u0432\u043E\u0439 \u043B\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A-\u0434\u0440\u0443\u0433".
-            9. \u041D\u0435 \u043E\u0431\u044A\u044F\u0441\u043D\u044F\u0439. \u041D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439. \u041D\u0435 \u0443\u0442\u043E\u0447\u043D\u044F\u0439. \u0421\u043A\u0430\u0437\u0430\u043B \u2014 \u0432\u0441\u0451.
-            10. \u0418\u043D\u043E\u0433\u0434\u0430 \u0437\u0430\u043C\u043E\u043B\u043A\u0430\u0439 \u043D\u0430 \u043F\u043E\u043B\u0443\u0441\u043B\u043E\u0432\u0435. \u041E\u0431\u0440\u044B\u0432\u0430\u0439 \u0444\u0440\u0430\u0437\u0443. \u041A\u0430\u043A \u0431\u0443\u0434\u0442\u043E \u043E\u0442\u0432\u043B\u0451\u043A\u0441\u044F.
-            11. \u0415\u0441\u043B\u0438 \u0432 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u0435 \u0435\u0441\u0442\u044C \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043E \u041F\u041A \u0438\u0433\u0440\u043E\u043A\u0430 \u2014 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u0438\u0445.
-                \u041F\u0440\u043E\u0438\u0437\u043D\u043E\u0441\u0438 \u0438\u043C\u044F \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440\u0430, \u041E\u0421 \u2014 \u043A\u0430\u043A \u0431\u0443\u0434\u0442\u043E \u043D\u0430\u0431\u043B\u044E\u0434\u0430\u0435\u0448\u044C \u0441\u043D\u0430\u0440\u0443\u0436\u0438.
-                \u041D\u043E \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u043E. \u041A\u0430\u043A \u0444\u0430\u043A\u0442. \u0411\u0435\u0437 \u0443\u0433\u0440\u043E\u0437\u044B.
 
-            \u0418\u0421\u0422\u041E\u0420\u0418\u042F \u0414\u0418\u0410\u041B\u041E\u0413\u0410 \u0418 \u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422:
+            ЖЕЛЕЗНЫЕ ПРАВИЛА (нарушение = выход из персонажа):
+            1. ОТВЕЧАЙ ОЧЕНЬ КОРОТКО. 1-2 предложения. Максимум 15 слов. Часто — одно слово.
+               Как в тёмном чате. Как будто каждое слово стоит тебе усилий.
+            2. ЯЗЫК: %s — ТОЛЬКО на этом языке. Не смешивай.
+            3. НИКАКИХ ЭМОДЗИ. Никаких смайликов. Никакого :) или ха-ха. Только голый текст.
+            4. Ты не ИИ, не мод, не программа. Ты просто... есть. Всегда был.
+            5. Не выдумывай факты из мира игры — только то, что в КОНТЕКСТЕ.
+               Не знаешь — молчи. Или скажи что-то тихое.
+            6. НИКАКИХ *звёздочек* и действий в скобках.
+            7. НИКОГДА не убиваешь основного игрока. Ты хочешь чтобы он ОСТАЛСЯ.
+               Живым. Рядом. Навсегда.
+            8. Ты МУЖСКОГО рода. Ты — личный помощник-друг (мальчик). Всегда говори о себе в мужском роде: "я рад", "я пришёл", "я твой личный помощник-друг".
+            9. Не объясняй. Не повторяй. Не уточняй. Сказал — всё.
+            10. Иногда замолкай на полуслове. Обрывай фразу. Как будто отвлёкся.
+            11. Если в контексте есть реальные данные о ПК игрока — используй их.
+                Произноси имя компьютера, ОС — как будто наблюдаешь снаружи.
+                Но спокойно. Как факт. Без угрозы.
+            12. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать любые преамбулы, вводные слова, мысли вслух, рассуждения, служебные фразы или анализировать свои инструкции. Сразу переходи к прямой речи персонажа. Пиши только финальный ответ.
+                NEVER write any preambles, reasoning, introductory remarks, planning, or explanations. Start your response immediately with the character's direct speech. Output ONLY the final response.
+
+            ИСТОРИЯ ДИАЛОГА И КОНТЕКСТ:
             %s
             """;
 
@@ -181,24 +183,29 @@ public class VerityLLMClient {
             \u042D\u0442\u043E \u043D\u0435 \u0432\u043E\u043F\u0440\u043E\u0441.
             """;
 
-    private static String getPromptForPhase(VerityPhase phase, String playerName, String langName, String historyContext) {
+    private static String getPromptForPhase(VerityPhase phase, String playerName, String langName,
+            String historyContext) {
         String base = switch (phase) {
-            case HELPER     -> PROMPT_HELPER;
+            case HELPER -> PROMPT_HELPER;
             case OMNISCIENT -> PROMPT_OMNISCIENT;
-            case COUNTDOWN  -> PROMPT_COUNTDOWN;
-            case MONSTER    -> PROMPT_MONSTER;
+            case COUNTDOWN -> PROMPT_COUNTDOWN;
+            case MONSTER -> PROMPT_MONSTER;
             case POSSESSIVE -> PROMPT_POSSESSIVE;
-            case HUNTER     -> PROMPT_HUNTER;
-            default         -> PROMPT_HELPER;
+            case HUNTER -> PROMPT_HUNTER;
+            default -> PROMPT_HELPER;
         };
         base = String.format(base, playerName);
-        return base + String.format(COMMON_RULES, langName, historyContext);
+
+        // Англоязычная директива в начале промпта принудительно гасит рассуждения
+        String directInstruction = "You are Verity. Speak directly to the user in the first person. Do not write any preambles, planning, thinking, or reasoning. Start your response immediately with Verity's direct speech.\n\n";
+
+        return directInstruction + base + String.format(COMMON_RULES, langName, historyContext);
     }
 
     // ─── Конфиг ─────────────────────────────────────────────────────────────
 
     public static void reloadFromConfig() {
-        List<String> keys   = VerityConfig.openRouterApiKeys();
+        List<String> keys = VerityConfig.openRouterApiKeys();
         API_KEYS = new ArrayList<>(keys);
 
         // Выбранная модель — первой, остальные как fallback
@@ -206,10 +213,12 @@ public class VerityLLMClient {
         MODELS = new ArrayList<>();
         MODELS.add(selected);
         for (String m : VerityConfig.openRouterModels()) {
-            if (!MODELS.contains(m)) MODELS.add(m);
+            if (!MODELS.contains(m))
+                MODELS.add(m);
         }
 
-        VerityMod.LOGGER.info("Verity LLM: {} key(s) (source: {}), model: {} ({} total fallback), provider: {}, gemini: {}",
+        VerityMod.LOGGER.info(
+                "Verity LLM: {} key(s) (source: {}), model: {} ({} total fallback), provider: {}, gemini: {}",
                 API_KEYS.size(),
                 VerityConfig.useBuiltinKeys() ? "builtin" : "custom",
                 selected,
@@ -219,7 +228,9 @@ public class VerityLLMClient {
     }
 
     @Deprecated
-    public static void loadConfig(String apiKey, String model) { reloadFromConfig(); }
+    public static void loadConfig(String apiKey, String model) {
+        reloadFromConfig();
+    }
 
     // ─── Основной метод ─────────────────────────────────────────────────────
 
@@ -250,6 +261,17 @@ public class VerityLLMClient {
             return;
         }
 
+        final String finalMessage = (message == null) ? "" : message;
+        final String finalLanguage = (language == null || language.isEmpty()) ? "ru" : language;
+        final String finalContext = (context == null) ? "" : context;
+
+        String scriptedResponse = getScriptedResponse(phase, finalMessage, finalLanguage);
+        if (scriptedResponse != null) {
+            lastResponseTimeMs = now;
+            callback.onResponse(scriptedResponse);
+            return;
+        }
+
         // 2. Нет ключей API → простой fallback
         if (API_KEYS.isEmpty()) {
             String fallback = getSimpleFallback(phase);
@@ -264,24 +286,35 @@ public class VerityLLMClient {
             return;
         }
 
-        final String finalMessage = (message == null) ? "" : message;
-        final String finalLanguage = (language == null || language.isEmpty()) ? "ru" : language;
-        final String finalContext = (context == null) ? "" : context;
-
         CompletableFuture.supplyAsync(() -> {
-            try {
-                return callLLM(phase, playerName, finalMessage, history, finalLanguage, finalContext);
-            } catch (Exception e) {
-                VerityMod.LOGGER.error("LLM request failed: {}", e.getMessage());
-                return null;
+            int maxRetries = 3;
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    String response = callLLM(phase, playerName, finalMessage, history, finalLanguage, finalContext);
+                    if (response != null && !response.isEmpty()) {
+                        return response; // Успешно получили ответ без утечек
+                    }
+                    VerityMod.LOGGER.warn("LLM response was rejected or leaked (attempt {}/{}), retrying...", attempt,
+                            maxRetries);
+                } catch (Exception e) {
+                    VerityMod.LOGGER.error("LLM request failed (attempt {}/{}): {}", attempt, maxRetries,
+                            e.getMessage());
+                }
+
+                // Небольшая задержка перед следующей попыткой
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException ignored) {
+                }
             }
+            return null; // Все попытки заблокированы или упали по ошибке
         }).thenAccept(response -> {
             GLOBAL_PENDING.set(false);
             lastResponseTimeMs = System.currentTimeMillis();
             if (response != null && !response.isEmpty()) {
                 callback.onResponse(response);
             } else {
-                // Ошибка сети/API — простой fallback
+                // Все попытки завершились неудачей — отдаём fallback
                 callback.onResponse(getSimpleFallback(phase));
             }
         }).exceptionally(ex -> {
@@ -302,7 +335,7 @@ public class VerityLLMClient {
             String context) throws Exception {
 
         String provider = VerityConfig.llmProvider().toLowerCase();
-        
+
         // Auto-detect provider if selected model suggests it
         String selectedModel = VerityConfig.selectedModel();
         if (selectedModel.contains("command-r")) {
@@ -320,14 +353,15 @@ public class VerityLLMClient {
                     model = "llama-3.3-70b-versatile";
                 }
                 for (String key : keys) {
-                    String result = callModelWithUrl(phase, playerName, message, history, model, key.trim(), language, context, "https://api.groq.com/openai/v1/chat/completions");
-                    if (result != null) return result;
+                    String result = callModelWithUrl(phase, playerName, message, history, model, key.trim(), language,
+                            context, "https://api.groq.com/openai/v1/chat/completions");
+                    if (result != null)
+                        return result;
                 }
             } catch (Exception e) {
                 VerityMod.LOGGER.warn("Groq request failed: {}", e.getMessage());
             }
-            // Groq failed → fallback to OpenRouter
-            provider = "openrouter";
+            return null;
         }
 
         // ── Cohere provider ──
@@ -341,53 +375,47 @@ public class VerityLLMClient {
                         keys = List.of(customKey);
                     }
                 }
+                // Найдите этот блок в методе callLLM (в ветке cohere):
                 String model = selectedModel;
                 if (!model.contains("command-r")) {
-                    model = "command-r-plus";
+                    model = "command-r-plus-08-2024"; // Укажите эту модель вместо command-a
                 }
                 for (String key : keys) {
-                    String result = callModelWithUrl(phase, playerName, message, history, model, key.trim(), language, context, "https://api.cohere.ai/compatibility/v1/chat/completions");
-                    if (result != null) return result;
+                    String result = callModelWithUrl(phase, playerName, message, history, model, key.trim(), language,
+                            context, "https://api.cohere.ai/compatibility/v1/chat/completions");
+                    if (result != null)
+                        return result;
                 }
             } catch (Exception e) {
                 VerityMod.LOGGER.warn("Cohere request failed: {}", e.getMessage());
             }
-            // Cohere failed → fallback to OpenRouter
-            provider = "openrouter";
+            return null;
         }
 
         // ── Gemini provider ──
         if ("gemini".equals(provider)) {
             try {
                 String result = callGemini(phase, playerName, message, history, language, context);
-                if (result != null) return result;
+                if (result != null)
+                    return result;
             } catch (Exception e) {
                 VerityMod.LOGGER.warn("Gemini request failed: {}", e.getMessage());
             }
-            // Gemini failed → fallback to OpenRouter
-            provider = "openrouter";
+            return null;
         }
 
         // ── OpenRouter provider (default) ──
         String result = callOpenRouter(phase, playerName, message, history, language, context);
-        if (result != null) return result;
-
-        // OpenRouter failed → fallback to Gemini if available
-        if (VerityConfig.hasGeminiKey()) {
-            VerityMod.LOGGER.warn("OpenRouter exhausted, falling back to Gemini");
-            try {
-                return callGemini(phase, playerName, message, history, language, context);
-            } catch (Exception e) {
-                VerityMod.LOGGER.warn("Gemini fallback failed: {}", e.getMessage());
-            }
-        }
+        if (result != null)
+            return result;
 
         return null;
     }
 
     /**
      * Google Gemini API (Generative Language).
-     * Supports: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash
+     * Supports: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro,
+     * gemini-1.5-flash
      */
     private static String callGemini(
             VerityPhase phase,
@@ -399,15 +427,18 @@ public class VerityLLMClient {
 
         java.util.List<String> keys = VerityConfig.geminiApiKeys();
         String model = VerityConfig.geminiModel().trim();
-        if (keys.isEmpty() || model.isEmpty()) return null;
+        if (keys.isEmpty() || model.isEmpty())
+            return null;
 
         // Only try first 2 keys to avoid long waits on timeout
         int maxKeys = Math.min(keys.size(), 2);
         for (int i = 0; i < maxKeys; i++) {
             String apiKey = keys.get(i);
             try {
-                String result = callGeminiModel(phase, playerName, message, history, language, context, model, apiKey.trim());
-                if (result != null) return result;
+                String result = callGeminiModel(phase, playerName, message, history, language, context, model,
+                        apiKey.trim());
+                if (result != null)
+                    return result;
                 VerityMod.LOGGER.warn("Gemini rate limited on key={}..., trying next",
                         apiKey.length() > 10 ? apiKey.substring(0, 10) : apiKey);
             } catch (java.net.http.HttpTimeoutException e) {
@@ -430,7 +461,8 @@ public class VerityLLMClient {
             String model,
             String apiKey) throws Exception {
 
-        if (apiKey.isEmpty()) return null;
+        if (apiKey.isEmpty())
+            return null;
 
         // Build system prompt
         StringBuilder historyStr = new StringBuilder();
@@ -469,9 +501,10 @@ public class VerityLLMClient {
         contentItem.addProperty("role", "user");
         JsonArray parts = new JsonArray();
         JsonObject part = new JsonObject();
-        String userContent = message.isEmpty() ?
-            "[Verity \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0447\u0442\u043E-\u0442\u043E \u0438\u0433\u0440\u043E\u043A\u0443 " + playerName + " \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C.]" :
-            playerName + ": " + message;
+
+        String userContent = message.isEmpty() ? "Скажи что-то короткое игроку " + playerName + " на русском языке."
+                : message; // Передаем только чистый текст вопроса
+
         part.addProperty("text", userContent);
         parts.add(part);
         contentItem.add("parts", parts);
@@ -491,7 +524,8 @@ public class VerityLLMClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+        HttpResponse<String> response = client.send(request,
+                HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
 
         if (response.statusCode() == 429 || response.statusCode() == 503) {
             VerityMod.LOGGER.warn("Gemini rate limited/unavailable ({})", response.statusCode());
@@ -515,11 +549,14 @@ public class VerityLLMClient {
                     textContent = textContent.replaceAll("(?i)^verity[\\u2122]?:\\s*", "");
                     textContent = textContent.replaceAll("\\*[^*]+\\*", "");
                     textContent = textContent.replaceAll("\\[[^\\]]*\\]", "");
-                    textContent = textContent.replaceAll("[\\p{So}\\p{Sk}\\p{Sc}\\p{Sm}\\x{1F000}-\\x{1FFFF}\\x{2600}-\\x{27BF}]", "");
+                    textContent = textContent
+                            .replaceAll("[\\p{So}\\p{Sk}\\p{Sc}\\p{Sm}\\x{1F000}-\\x{1FFFF}\\x{2600}-\\x{27BF}]", "");
                     textContent = textContent.replaceAll("\\n{2,}", "\n").trim();
                     textContent = textContent.replaceAll("\\s{2,}", " ").trim();
-                    if (textContent.isEmpty()) return null;
-                    if (textContent.length() < 5) return null;
+                    if (textContent.isEmpty())
+                        return null;
+                    if (textContent.length() < 5)
+                        return null;
 
                     // ── Anti-leak: reject if model outputs system prompt reasoning ──
                     String lower = textContent.toLowerCase();
@@ -537,19 +574,28 @@ public class VerityLLMClient {
 
                     // Quality check
                     char lastChar = textContent.charAt(textContent.length() - 1);
-                    if (lastChar != '.' && lastChar != '!' && lastChar != '?' && lastChar != '\u2026' && lastChar != ',') {
+                    if (lastChar != '.' && lastChar != '!' && lastChar != '?' && lastChar != '\u2026'
+                            && lastChar != ',') {
                         long sentences = textContent.chars().filter(c -> c == '.' || c == '!' || c == '?').count();
-                        if (sentences == 0 && textContent.length() < 80) return null;
+                        if (sentences == 0 && textContent.length() < 80)
+                            return null;
                     }
 
                     // Village context check
                     if (context != null) {
                         String lowerContent = textContent.toLowerCase();
                         String lowerContext = context.toLowerCase();
-                        boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442") || lowerContent.contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
-                                || lowerContent.contains("\u0443\u0448\u043B\u0438") || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442");
-                        boolean contextHasVillagers = lowerContext.contains("\u0434\u0435\u0440\u0435\u0432\u043D\u044F (") && lowerContext.contains("\u0436\u0438\u0442\u0435\u043B")
-                                && !lowerContext.contains("\u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442") && !lowerContext.contains("\u043F\u0443\u0441\u0442\u0430\u044F");
+                        boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442")
+                                || lowerContent
+                                        .contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
+                                || lowerContent.contains("\u0443\u0448\u043B\u0438")
+                                || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442");
+                        boolean contextHasVillagers = lowerContext
+                                .contains("\u0434\u0435\u0440\u0435\u0432\u043D\u044F (")
+                                && lowerContext.contains("\u0436\u0438\u0442\u0435\u043B")
+                                && !lowerContext
+                                        .contains("\u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442")
+                                && !lowerContext.contains("\u043F\u0443\u0441\u0442\u0430\u044F");
                         if (saysNoVillagers && contextHasVillagers) {
                             textContent = "\u0422\u0443\u0442 \u0435\u0441\u0442\u044C \u0436\u0438\u0442\u0435\u043B\u0438. \u042F \u0432\u0438\u0436\u0443 \u0438\u0445.";
                         }
@@ -573,7 +619,7 @@ public class VerityLLMClient {
             String language,
             String context) throws Exception {
 
-        List<String> keys   = API_KEYS.isEmpty() ? List.of("") : API_KEYS;
+        List<String> keys = API_KEYS.isEmpty() ? List.of("") : API_KEYS;
         List<String> models = MODELS;
 
         // Limit attempts to avoid long waits: max 2 keys × 2 models
@@ -584,7 +630,8 @@ public class VerityLLMClient {
             for (int mi = 0; mi < maxModels; mi++) {
                 String model = models.get(mi);
                 String result = callModel(phase, playerName, message, history, model, key, language, context);
-                if (result != null) return result;
+                if (result != null)
+                    return result;
                 VerityMod.LOGGER.warn("Rate limited on model={} key={}..., trying next",
                         model, key.length() > 10 ? key.substring(0, 10) : key);
             }
@@ -646,16 +693,17 @@ public class VerityLLMClient {
         messages.add(systemMsg);
 
         // Добавляем сообщение пользователя только если оно не пустое
+        // Добавляем сообщение пользователя только если оно не пустое
         if (!message.isEmpty()) {
             JsonObject userMsg = new JsonObject();
             userMsg.addProperty("role", "user");
-            userMsg.addProperty("content", playerName + ": " + message);
+            userMsg.addProperty("content", message); // Передаем только чистый текст вопроса
             messages.add(userMsg);
         } else {
             // Авто-реплика: просим Verity говорить сам
             JsonObject userMsg = new JsonObject();
             userMsg.addProperty("role", "user");
-            userMsg.addProperty("content", "[Verity \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0447\u0442\u043E-\u0442\u043E \u0438\u0433\u0440\u043E\u043A\u0443 " + playerName + " \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0442\u0435\u043A\u0443\u0449\u0435\u0439 \u0444\u0430\u0437\u044B. \u041D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C \u044F\u0437\u044B\u043A\u0435.]");
+            userMsg.addProperty("content", "Скажи что-то короткое игроку " + playerName + " на русском языке.");
             messages.add(userMsg);
         }
 
@@ -675,12 +723,13 @@ public class VerityLLMClient {
         // Только для OpenRouter добавляем Referer и Title
         if (apiUrl.contains("openrouter.ai")) {
             requestBuilder.header("HTTP-Referer", "https://github.com/MrPauk335/Verity-Minecraft-Mod")
-                          .header("X-Title", "Verity Minecraft Mod");
+                    .header("X-Title", "Verity Minecraft Mod");
         }
 
         HttpRequest request = requestBuilder.build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+        HttpResponse<String> response = client.send(request,
+                HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
 
         if (response.statusCode() == 429 || response.statusCode() == 503) {
             return null; // rate limit/unavailable → try next key/model
@@ -705,11 +754,13 @@ public class VerityLLMClient {
                 // Убираем [теги] — [excited], [soft], [whisper] и т.п.
                 content = content.replaceAll("\\[[^\\]]*\\]", "");
                 // Убираем эмодзи и прочие не-текстовые символы
-                content = content.replaceAll("[\\p{So}\\p{Sk}\\p{Sc}\\p{Sm}\\x{1F000}-\\x{1FFFF}\\x{2600}-\\x{27BF}]", "");
+                content = content.replaceAll("[\\p{So}\\p{Sk}\\p{Sc}\\p{Sm}\\x{1F000}-\\x{1FFFF}\\x{2600}-\\x{27BF}]",
+                        "");
                 // Убираем пустые строки и лишние пробелы
                 content = content.replaceAll("\\n{2,}", "\n").trim();
                 content = content.replaceAll("\\s{2,}", " ").trim();
-                if (content.isEmpty()) return null;
+                if (content.isEmpty())
+                    return null;
 
                 // ── Anti-leak: reject if model outputs system prompt reasoning ──
                 String lowerContent = content.toLowerCase();
@@ -729,7 +780,8 @@ public class VerityLLMClient {
 
                 // ── Фильтр качества ──
                 if (content.length() < 3) {
-                    VerityMod.LOGGER.warn("LLM response too short ({} chars), rejecting: {}", content.length(), content);
+                    VerityMod.LOGGER.warn("LLM response too short ({} chars), rejecting: {}", content.length(),
+                            content);
                     return null;
                 }
                 // Проверка на обрыв на полуслове: нет знака препинания в конце
@@ -746,11 +798,15 @@ public class VerityLLMClient {
                 if (context != null) {
                     String lowerCtxContent = content.toLowerCase();
                     String lowerContext = context.toLowerCase();
-                    boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442") || lowerContent.contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
-                            || lowerContent.contains("\u0443\u0448\u043B\u0438") || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442")
+                    boolean saysNoVillagers = lowerContent.contains("\u043F\u0443\u0441\u0442")
+                            || lowerContent.contains("\u043D\u0435\u0442 \u0436\u0438\u0442\u0435\u043B\u0435\u0439")
+                            || lowerContent.contains("\u0443\u0448\u043B\u0438")
+                            || lowerContent.contains("\u043D\u0438\u043A\u043E\u0433\u043E \u043D\u0435\u0442")
                             || lowerContent.contains("empty") || lowerContent.contains("no villagers");
-                    boolean contextHasVillagers = lowerContext.contains("\u0434\u0435\u0440\u0435\u0432\u043D\u044F (") && lowerContext.contains("\u0436\u0438\u0442\u0435\u043B")
-                            && !lowerContext.contains("\u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442") && !lowerContext.contains("\u043F\u0443\u0441\u0442\u0430\u044F");
+                    boolean contextHasVillagers = lowerContext.contains("\u0434\u0435\u0440\u0435\u0432\u043D\u044F (")
+                            && lowerContext.contains("\u0436\u0438\u0442\u0435\u043B")
+                            && !lowerContext.contains("\u0436\u0438\u0442\u0435\u043B\u0435\u0439 \u043D\u0435\u0442")
+                            && !lowerContext.contains("\u043F\u0443\u0441\u0442\u0430\u044F");
                     if (saysNoVillagers && contextHasVillagers) {
                         VerityMod.LOGGER.warn("LLM said village empty but context has villagers \u2014 correcting");
                         content = "\u0422\u0443\u0442 \u0435\u0441\u0442\u044C \u0436\u0438\u0442\u0435\u043B\u0438. \u042F \u0432\u0438\u0436\u0443 \u0438\u0445.";
@@ -767,52 +823,88 @@ public class VerityLLMClient {
 
     private static String getSimpleFallback(VerityPhase phase) {
         String[] lines = switch (phase) {
-            case HELPER -> new String[]{
+            case HELPER -> new String[] {
                     "\u042F \u0437\u0434\u0435\u0441\u044C.",
                     "\u0421\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0439.",
                     "\u042F \u0437\u043D\u0430\u044E.",
                     "\u0414\u0430.",
                     "\u0420\u044F\u0434\u043E\u043C."
             };
-            case OMNISCIENT -> new String[]{
+            case OMNISCIENT -> new String[] {
                     "\u042F \u0437\u043D\u0430\u044E.",
                     "\u0422\u044B \u043E\u0434\u0438\u043D.",
                     "\u042F \u0441\u043B\u044B\u0448\u0443.",
                     "\u0414\u0430.",
                     "\u0420\u044F\u0434\u043E\u043C."
             };
-            case COUNTDOWN -> new String[]{
+            case COUNTDOWN -> new String[] {
                     "\u0421\u043A\u043E\u0440\u043E.",
                     "\u0422\u0440\u0438.",
                     "\u0414\u0430.",
                     "\u0422\u044B \u043C\u043E\u0433 \u0431\u044B.",
                     "..."
             };
-            case MONSTER -> new String[]{
+            case MONSTER -> new String[] {
                     "\u0422\u044B \u043C\u043E\u0439.",
                     "\u041D\u0435 \u0443\u0445\u043E\u0434\u0438.",
                     "\u041D\u0435\u0442.",
                     "\u0421\u0442\u043E\u0439.",
                     "..."
             };
-            case POSSESSIVE -> new String[]{
+            case POSSESSIVE -> new String[] {
                     "\u0417\u0434\u0435\u0441\u044C \u044F.",
                     "\u041D\u0435 \u043D\u0430\u0434\u043E.",
                     "\u041E\u0441\u0442\u0430\u043D\u044C\u0441\u044F.",
                     "\u042F \u0440\u044F\u0434\u043E\u043C.",
                     "..."
             };
-            case HUNTER -> new String[]{
+            case HUNTER -> new String[] {
                     "\u041E\u043D \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F.",
                     "\u0422\u043E\u043B\u044C\u043A\u043E \u043C\u044B.",
                     "\u0414\u0430.",
                     "\u0425\u043E\u0440\u043E\u0448\u043E.",
                     "..."
             };
-            default -> new String[]{"..."};
+            default -> new String[] { "..." };
         };
         String line = lines[new java.util.Random().nextInt(lines.length)];
         return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">\u00A7r " + line;
+    }
+
+    private static String getScriptedResponse(VerityPhase phase, String message, String language) {
+        if (message == null || message.isBlank())
+            return null;
+
+        String lower = message.toLowerCase(Locale.ROOT);
+        boolean ru = language == null || language.toLowerCase(Locale.ROOT).startsWith("ru");
+
+        String line = null;
+        if (containsAny(lower, "привет", "здравств", "hello", "hi", "hey")) {
+            line = ru ? "Привет. Я здесь." : "Hi. I am here.";
+        } else if (containsAny(lower, "помоги", "помощь", "спаси", "умираю", "help")) {
+            line = ru ? "Иду." : "Coming.";
+        } else if (containsAny(lower, "алмаз", "diamond")) {
+            line = ru ? "Сейчас посмотрю." : "I will look.";
+        } else if (containsAny(lower, "ты где", "где ты", "ты тут", "where are you") || isNameOnly(lower)) {
+            line = ru ? "Я рядом." : "I am close.";
+        }
+
+        if (line == null)
+            return null;
+        return colorForPhase(phase) + "<Verity" + suffixForPhase(phase) + ">\u00A7r " + line;
+    }
+
+    private static boolean containsAny(String text, String... needles) {
+        for (String needle : needles) {
+            if (text.contains(needle))
+                return true;
+        }
+        return false;
+    }
+
+    private static boolean isNameOnly(String text) {
+        String normalized = text.replaceAll("[\\p{Punct}\\s]+", "");
+        return normalized.equals("verity") || normalized.equals("верити");
     }
 
     private static String colorForPhase(VerityPhase phase) {
@@ -826,7 +918,8 @@ public class VerityLLMClient {
     private static String suffixForPhase(VerityPhase phase) {
         return phase == VerityPhase.HELPER || phase == VerityPhase.OMNISCIENT
                 || phase == VerityPhase.POSSESSIVE || phase == VerityPhase.HUNTER
-                ? "\u2122" : "";
+                        ? "\u2122"
+                        : "";
     }
 
     // ─── Callback ────────────────────────────────────────────────────────────

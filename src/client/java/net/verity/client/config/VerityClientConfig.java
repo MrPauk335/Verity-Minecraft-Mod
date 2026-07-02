@@ -95,6 +95,7 @@ public final class VerityClientConfig {
     public static String ttsVoiceId()          { return getString("tts_voice_id", "b3c51bf6029f4201a342b40827250784"); }
     public static String ttsModel()            { return getString("tts_model", "s2.1-pro-free"); }
     public static float ttsSpeed()             { return getFloat("tts_speed", 1.0f); }
+    public static float ttsVolume()            { return Math.max(0.1f, Math.min(100.0f, getFloat("tts_volume", 100.0f))); }
 
     public static void setTtsEnabled(boolean v)   { setProperty("tts_enabled", String.valueOf(v)); }
     public static void setTtsApiKey(String v)     { setProperty("tts_api_key", v); }
@@ -175,6 +176,9 @@ public final class VerityClientConfig {
 
                 # \u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0440\u0435\u0447\u0438 (0.5-2.0, 1.0 = \u043D\u043E\u0440\u043C\u0430)
                 tts_speed=1.0
+
+                # \u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C \u043E\u0437\u0432\u0443\u0447\u043A\u0438 Verity (0.1-100.0)
+                tts_volume=100.0
                 """;
         Files.createDirectories(CONFIG_PATH.getParent());
         Files.writeString(CONFIG_PATH, defaultConfig);

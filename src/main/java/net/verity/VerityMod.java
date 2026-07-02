@@ -135,6 +135,9 @@ public class VerityMod implements ModInitializer {
 
     private static final Map<UUID, Integer> INTRO_TIMERS = new HashMap<>();
     private static final Map<UUID, Integer> HELD_TALK_COOLDOWNS = new HashMap<>();
+    private static final Map<UUID, String> LAST_VOICE_TEXT = new HashMap<>();
+    private static final Map<UUID, Long> LAST_VOICE_TEXT_MS = new HashMap<>();
+    private static final long VOICE_DUPLICATE_WINDOW_MS = 1_500L;
 
     // Статическое хранилище данных Verity когда он в руках (entity discarded)
     private static VerityEntity.VerityPhase heldPhase = VerityEntity.VerityPhase.HELPER;
@@ -370,7 +373,23 @@ public class VerityMod implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(VoiceChatPayload.TYPE, VoiceChatPayload.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(VoiceChatPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            String text = payload.text();
+            String rawText = payload.text();
+            if (rawText == null || rawText.isBlank()) return;
+            
+            final String text = rawText.trim();
+
+            long now = System.currentTimeMillis();
+            UUID playerId = player.getUUID();
+            String normalizedText = text.toLowerCase(java.util.Locale.ROOT);
+            String lastText = LAST_VOICE_TEXT.get(playerId);
+            long lastMs = LAST_VOICE_TEXT_MS.getOrDefault(playerId, 0L);
+            if (normalizedText.equals(lastText) && now - lastMs < VOICE_DUPLICATE_WINDOW_MS) {
+                LOGGER.debug("VoiceChat: duplicate '{}' ignored after {}ms", text, now - lastMs);
+                return;
+            }
+            LAST_VOICE_TEXT.put(playerId, normalizedText);
+            LAST_VOICE_TEXT_MS.put(playerId, now);
+
             String lang = player.clientInformation().language();
             if (lang == null || lang.isEmpty()) lang = "ru";
             else lang = lang.toLowerCase().startsWith("ru") ? "ru" : "en";

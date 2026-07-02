@@ -217,7 +217,7 @@ public class FishAudioTTSClient {
 
                 alSource = org.lwjgl.openal.AL10.alGenSources();
                 org.lwjgl.openal.AL10.alSourcei(alSource, org.lwjgl.openal.AL10.AL_BUFFER, alBuffer);
-                org.lwjgl.openal.AL10.alSourcef(alSource, org.lwjgl.openal.AL10.AL_GAIN, 1.0f);
+                org.lwjgl.openal.AL10.alSourcef(alSource, org.lwjgl.openal.AL10.AL_GAIN, VerityClientConfig.ttsVolume());
 
                 // ── 3. Играем ────────────────────────────────────────────────
                 org.lwjgl.openal.AL10.alSourcePlay(alSource);

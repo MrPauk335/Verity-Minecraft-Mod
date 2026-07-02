@@ -29,8 +29,12 @@ public class VerityVoiceHandler {
     private static boolean wasKeyDown = false;
     private static long recordStartTime = 0;
     private static int actionbarTickCounter = 0;
+    private static boolean initialized = false;
 
     public static void init() {
+        if (initialized) return;
+        initialized = true;
+
         int keyCode = VerityClientConfig.voiceKey();
         voiceKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.verity.voice",

@@ -625,8 +625,12 @@ public class VerityEntity extends PathfinderMob {
                     this.chatCooldown = 600;
                     Player player = this.level().getNearestPlayer(this, 32.0D);
                     if (player != null) {
-                    player.sendSystemMessage(Component.literal(
-                            "\u00a7e<Verity>\u00a7r \u041f\u0440\u0438\u0432\u0435\u0442! \u042f \u0412\u0435\u0440\u0438\u0442\u0438, \u0442\u0432\u043e\u0439 \u043b\u0438\u0447\u043d\u044b\u0439 \u043f\u043e\u043c\u043e\u0449\u043d\u0438\u043a-\u0434\u0440\u0443\u0433. \u0421\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0439 \u0447\u0442\u043e \u0443\u0433\u043e\u0434\u043d\u043e \u0432\u0402\u201D \u044f \u0437\u043d\u0430\u044e \u0432\u0441\u0451."));
+                        String introLine = "\u00a7e<Verity\u2122>\u00a7r \u041f\u0440\u0438\u0432\u0435\u0442! \u042f \u0412\u0435\u0440\u0438\u0442\u0438, \u0442\u0432\u043e\u0439 \u043b\u0438\u0447\u043d\u044b\u0439 \u043f\u043e\u043c\u043e\u0449\u043d\u0438\u043a-\u0434\u0440\u0443\u0433. \u0421\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0439 \u0447\u0442\u043e \u0443\u0433\u043e\u0434\u043d\u043e \u2014 \u044f \u0437\u043d\u0430\u044e \u0432\u0441\u0451.";
+                        player.sendSystemMessage(Component.literal(introLine));
+                        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp,
+                                    new net.verity.net.TTSPayload(introLine));
+                        }
                     }
                     setVerityPhase(VerityPhase.HELPER);
                 }
