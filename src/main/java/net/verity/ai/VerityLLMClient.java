@@ -651,6 +651,17 @@ public class VerityLLMClient {
                         return null;
 
                     // ── Anti-leak: reject if model outputs system prompt reasoning ──
+                    // Strip any leading "Verity:", "Verity™:", "<Verity>", "[Verity]" from LLM output
+                    if (textContent.startsWith("Verity™:") || textContent.startsWith("Verity:")) {
+                        textContent = textContent.substring(textContent.indexOf(':') + 1).trim();
+                    } else if (textContent.startsWith("<Verity") || textContent.startsWith("[Verity")) {
+                        int endIdx = Math.max(textContent.indexOf('>'), textContent.indexOf(']'));
+                        if (endIdx != -1 && endIdx < textContent.length() - 1) {
+                            textContent = textContent.substring(endIdx + 1).trim();
+                        }
+                    }
+                    textContent = textContent.replaceAll("(?i)^<verity[^>]*>\\s*", "");
+                    textContent = textContent.replaceAll("(?i)^(?:verity|вирити)[\\u2122]?\\b[:,]?\\s*", "");
                     String lower = textContent.toLowerCase();
                     if (lower.contains("минет") || lower.contains("член") || lower.contains("пизд") || lower.contains("ебать")) {
                         return null; // Reject inappropriate vulgar leaks

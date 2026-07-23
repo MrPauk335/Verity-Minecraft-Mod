@@ -1379,13 +1379,25 @@ public VerityPhase getVerityPhase() {
             return;
         }
 
-        // Идём к цели
-        if (this.getNavigation().isDone()) {
-            this.getNavigation().moveTo(
-                    this.leadTarget.getX() + 0.5,
-                    this.leadTarget.getY(),
-                    this.leadTarget.getZ() + 0.5,
-                    1.2D);
+        // Идём к цели (поддержка дальних маршрутов к деревням через промежуточные точки)
+        if (this.tickCount % 15 == 0) {
+            double targetX = this.leadTarget.getX() + 0.5D;
+            double targetY = this.leadTarget.getY();
+            double targetZ = this.leadTarget.getZ() + 0.5D;
+
+            double dx = targetX - this.getX();
+            double dz = targetZ - this.getZ();
+            double dist2D = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist2D > 32.0D) {
+                // Если деревня дальше 32 блоков — ведем по промежуточным точкам в направлении деревни
+                double wpX = this.getX() + (dx / dist2D) * 24.0D;
+                double wpZ = this.getZ() + (dz / dist2D) * 24.0D;
+                int wpY = this.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, (int) wpX, (int) wpZ);
+                this.getNavigation().moveTo(wpX, wpY, wpZ, 1.4D);
+            } else {
+                this.getNavigation().moveTo(targetX, targetY, targetZ, 1.3D);
+            }
         }
     }
 
@@ -1523,7 +1535,13 @@ public VerityPhase getVerityPhase() {
             return;
         }
 
-        Player nearest = this.level().getNearestPlayer(this, 512.0D);
+        Player nearest = this.level().getNearestPlayer(this, 8192.0D);
+        if (nearest == null && this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            var players = sl.players();
+            if (!players.isEmpty()) {
+                nearest = players.get(0);
+            }
+        }
         if (nearest == null) return;
 
         double distSq = this.distanceToSqr(nearest);
@@ -2439,4 +2457,35 @@ public VerityPhase getVerityPhase() {
             }
         }
     }
+
+    // ── ТЕЛЕПОРТАЦИЯ ВЕРИТИ И ИГРОКА ──
+
+
+    public void teleportToPlayer(net.minecraft.server.level.ServerPlayer player) {
+        if (player == null || this.level().isClientSide()) return;
+        net.minecraft.server.level.ServerLevel sLevel = (net.minecraft.server.level.ServerLevel) this.level();
+        sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, this.getX(), this.getY() + 1.0, this.getZ(), 40, 0.5, 1.0, 0.5, 0.1);
+        sLevel.playSound(null, this.getX(), this.getY(), this.getZ(), net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);
+
+        double tx = player.getX() + (this.random.nextDouble() - 0.5D) * 2.0D;
+        double ty = player.getY();
+        double tz = player.getZ() + (this.random.nextDouble() - 0.5D) * 2.0D;
+        this.teleportTo(tx, ty, tz);
+
+        sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, tx, ty + 1.0, tz, 40, 0.5, 1.0, 0.5, 0.1);
+        sLevel.playSound(null, tx, ty, tz, net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);
+    }
+
+    public void teleportPlayerAndVerity(net.minecraft.server.level.ServerPlayer player, net.minecraft.core.BlockPos targetPos) {
+        if (player == null || targetPos == null || this.level().isClientSide()) return;
+        net.minecraft.server.level.ServerLevel sLevel = (net.minecraft.server.level.ServerLevel) this.level();
+        sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, player.getX(), player.getY() + 1.0, player.getZ(), 40, 0.5, 1.0, 0.5, 0.1);
+
+        player.teleportTo(targetPos.getX() + 0.5D, targetPos.getY() + 1.0D, targetPos.getZ() + 0.5D);
+        this.teleportTo(targetPos.getX() + 1.5D, targetPos.getY() + 1.0D, targetPos.getZ() + 0.5D);
+
+        sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, targetPos.getX() + 0.5D, targetPos.getY() + 1.0D, targetPos.getZ() + 0.5D, 40, 0.5, 1.0, 0.5, 0.1);
+        sLevel.playSound(null, targetPos.getX(), targetPos.getY(), targetPos.getZ(), net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);
+    }
+
 }

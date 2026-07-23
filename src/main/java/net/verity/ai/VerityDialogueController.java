@@ -217,10 +217,8 @@ public class VerityDialogueController {
                         dimension = respawnDim.location().toString();
                     sb.append("Кровать игрока: X=").append(hx).append(" Y=").append(hy)
                             .append(" Z=").append(hz).append(" (").append(dimension).append(").\n");
-                    if (distToHome < 30) {
+                    if (distToHome < 30 && (playerMessage != null && (playerMessage.toLowerCase().contains("сп") || playerMessage.toLowerCase().contains("кроват") || playerMessage.toLowerCase().contains("ноч")))) {
                         sb.append("Игрок рядом со своей кроватью.\n");
-                    } else if (distToHome > 100) {
-                        sb.append("Игрок далеко от кровати (").append((int) distToHome).append(" блоков).\n");
                     }
                 }
 
@@ -476,30 +474,28 @@ public class VerityDialogueController {
                     entity.triggerWoodChopOrder();
                 }
 
-                boolean isLeadCommand = lowerMsg.contains("веди") || lowerMsg.contains("пошли") || lowerMsg.contains("покажи путь")
-                        || lowerMsg.contains("идем") || lowerMsg.contains("идём") || lowerMsg.contains("пойдём") || lowerMsg.contains("пойдем")
-                        || lowerMsg.contains("встал") || lowerMsg.contains("иди") || lowerMsg.contains("побежал")
-                        || lowerMsg.contains("привёл") || lowerMsg.contains("привел") || lowerMsg.contains("быстро")
-                        || lowerMsg.contains("неси") || lowerMsg.contains("приведи");
-                boolean asksAboutVillages = isVillageWord || lowerMsg.contains("villager") || lowerMsg.contains("торгов") || lowerMsg.contains("trade") || isLeadCommand;
+                boolean isExplicitVillageLeadOrder = isVillageWord && (lowerMsg.contains("веди") || lowerMsg.contains("пошли") || lowerMsg.contains("найди")
+                        || lowerMsg.contains("покажи") || lowerMsg.contains("где") || lowerMsg.contains("иди к") || lowerMsg.contains("приведи") || lowerMsg.contains("дорог"));
+                boolean asksAboutVillages = isVillageWord || lowerMsg.contains("villager") || lowerMsg.contains("торгов") || lowerMsg.contains("trade");
+                
                 if (asksAboutVillages) {
                     var closeVillagers = entity.level().getEntitiesOfClass(
                             net.minecraft.world.entity.npc.Villager.class,
                             nearestPlayer.getBoundingBox().inflate(64.0D));
                     if (!closeVillagers.isEmpty()) {
                         sb.append("Рядом с игроком деревня с ").append(closeVillagers.size())
-                                .append(" жителями. Деревня ЖИВАЯ. Скажи игроку правду — жители есть.\n");
+                                .append(" жителями. Деревня ЖИВАЯ.\n");
                     } else {
                         BlockPos vpos = findVillageBlockPos(nearestPlayer);
                         if (vpos != null) {
                             String villageInfo = findNearestVillage(nearestPlayer);
                             sb.append(villageInfo);
-                            sb.append("ТЫ УЖЕ НАЧАЛ ИДТИ И ВЕДЁШЬ ИГРОКА К ДЕРЕВНЕ! Скажи игроку: «Иду вперед, иди за мной!»\n");
-                            // Verity starts leading the player towards the village!
-                            entity.triggerLeadToVillageOrder(vpos);
+                            if (isExplicitVillageLeadOrder) {
+                                sb.append("ТЫ ВЕДЁШЬ ИГРОКА К ДЕРЕВНЕ! Скажи игроку: «Иду вперед, иди за мной!»\n");
+                                entity.triggerLeadToVillageOrder(vpos);
+                            }
                         } else {
-                            sb.append(
-                                    "Поблизости нет деревень. Если игрок спрашивает — скажи что не знаешь о деревнях рядом.\n");
+                            sb.append("Поблизости нет деревень.\n");
                         }
                     }
                 }
@@ -772,9 +768,16 @@ public class VerityDialogueController {
             return;
         }
 
-        // ── 0. ПРЯМОЙ ТРИГГЕР СНОСА/РАЗРУШЕНИЯ ДОМА (ФИЗИЧЕСКОЕ РАЗРУШЕНИЕ!) ──
-        if ((msgLower.contains("сломай") || msgLower.contains("разрушь") || msgLower.contains("снеси") || msgLower.contains("разобри"))
-                && (msgLower.contains("дом") || msgLower.contains("постройк") || msgLower.contains("крыш") || msgLower.contains("баз")) && nearestPlayer != null) {
+        // ── 0. ПРЯМОЙ ТРИГГЕР СНОСА/РАЗРУШЕНИЯ ДОМА (СНЕСТИ / СНЕСИ / СНОСИТЬ / СЛОМАТЬ / РАЗРУШИТЬ) ──
+        boolean isDestructionAction = msgLower.contains("снеси") || msgLower.contains("снести") || msgLower.contains("сноси") || msgLower.contains("сносить") || msgLower.contains("снись") || msgLower.contains("сниси") || msgLower.contains("снес")
+                || msgLower.contains("сломай") || msgLower.contains("сломать") || msgLower.contains("разрушь") || msgLower.contains("разрушить")
+                || msgLower.contains("уничтожь") || msgLower.contains("уничтожить") || msgLower.contains("разобри") || msgLower.contains("разобрать")
+                || msgLower.contains("убери");
+        boolean isHouseTarget = msgLower.contains("дом") || msgLower.contains("постройк") || msgLower.contains("крыш") || msgLower.contains("баз") || msgLower.contains("дуру") || msgLower.contains("дочь") || msgLower.contains("дон")
+                || msgLower.contains("хат") || msgLower.contains("сарай") || msgLower.contains("здани") || msgLower.contains("хижин")
+                || msgLower.contains("стене") || msgLower.contains("стену");
+
+        if (isDestructionAction && isHouseTarget && nearestPlayer != null) {
             entity.tearOffRoofPublic(nearestPlayer);
             String prefix = (entity.getVerityPhase() == VerityPhase.MONSTER || entity.getVerityPhase() == VerityPhase.HUNTER) ? "§4<Verity>" : "§e<Verity™>";
             nearestPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal(prefix + "§r Сношу этот дом!"));
@@ -787,8 +790,43 @@ public class VerityDialogueController {
             return;
         }
 
-        // ── 0. ПРЯМОЙ ТРИГГЕР РУБКИ И ВЫДАЧИ ДЕРЕВА (ВЫПОЛНЯЕТСЯ ПЕРВЫМ!) ──
-        boolean isWoodRequest = msgLower.contains("дерев") || msgLower.contains("дров") || msgLower.contains("руби") || msgLower.contains("сруби");
+                // ── 0.0 ПРЯМОЙ ТРИГГЕР ТЕЛЕПОРТАЦИИ ──
+        boolean isTeleportToPlayer = msgLower.contains("телепортируйся") || msgLower.contains("тп ко мне") || msgLower.contains("телепорт ко мне") || msgLower.contains("иди сюда") || msgLower.contains("сиди сюда") || msgLower.contains("прилети ко мне") || msgLower.contains("где ты") || msgLower.contains("ты где") || msgLower.contains("я умер") || msgLower.contains("потерял") || msgLower.contains("вернись");
+        boolean isTeleportToTarget = (msgLower.contains("телепортируй") || msgLower.contains("тп меня") || msgLower.contains("перемести меня")) && !isTeleportToPlayer;
+
+        if (isTeleportToPlayer && nearestPlayer instanceof net.minecraft.server.level.ServerPlayer sp) {
+            entity.teleportToPlayer(sp);
+            String prefix = (entity.getVerityPhase() == VerityPhase.MONSTER || entity.getVerityPhase() == VerityPhase.HUNTER) ? "§4<Verity>" : "§e<Verity™>";
+            nearestPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal(prefix + "§r Я мгновенно переместился к тебе!"));
+            addToHistory(prefix + "§r Я мгновенно переместился к тебе!");
+            return;
+        }
+
+        if (isTeleportToTarget && nearestPlayer instanceof net.minecraft.server.level.ServerPlayer sp) {
+            String prefix = (entity.getVerityPhase() == VerityPhase.MONSTER || entity.getVerityPhase() == VerityPhase.HUNTER) ? "§4<Verity>" : "§e<Verity™>";
+            if (msgLower.contains("алмаз")) {
+                net.minecraft.core.BlockPos diaPos = findNearestDiamondBlockPos(sp);
+                if (diaPos != null) {
+                    entity.teleportPlayerAndVerity(sp, diaPos);
+                    sp.sendSystemMessage(net.minecraft.network.chat.Component.literal(prefix + "§r Телепортировал нас прямо к алмазной руде!"));
+                    addToHistory(prefix + "§r Телепортировал нас прямо к алмазной руде!");
+                    return;
+                }
+            } else if (msgLower.contains("деревн")) {
+                net.minecraft.core.BlockPos vPos = findVillageBlockPos(sp);
+                if (vPos != null) {
+                    entity.teleportPlayerAndVerity(sp, vPos);
+                    sp.sendSystemMessage(net.minecraft.network.chat.Component.literal(prefix + "§r Телепортировал нас прямо к деревне!"));
+                    addToHistory(prefix + "§r Телепортировал нас прямо к деревне!");
+                    return;
+                }
+            }
+        }
+
+        // ── 0. ПРЯМОЙ ТРИГГЕР РУБКИ И ВЫДАЧИ ДЕРЕВА (ТОЛЬКО ЯВНЫЕ ПРИКАЗЫ!) ──
+        boolean isVillageWord = msgLower.contains("деревн") || msgLower.contains("village");
+        boolean isQuestion = msgLower.contains("?") || msgLower.contains("зачем") || msgLower.contains("почему") || msgLower.contains("как") || msgLower.contains("что") || msgLower.contains("чем") || msgLower.contains("како") || msgLower.contains("алмаз");
+        boolean isWoodRequest = !isVillageWord && !isQuestion && (msgLower.contains("наруби дров") || msgLower.contains("руби дерево") || msgLower.contains("сруби дерево") || msgLower.contains("поруби дерево") || msgLower.contains("добудь дерево") || msgLower.contains("наруби дерево") || msgLower.contains("иди рубить"));
         boolean isGiveRequest = msgLower.contains("отдай") || msgLower.contains("дай") || msgLower.contains("принеси") || msgLower.contains("забирай");
 
         if (isWoodRequest && !isGiveRequest) {
@@ -1167,11 +1205,10 @@ public class VerityDialogueController {
 
     private boolean isLeadRequest(String message) {
         String lower = message.toLowerCase();
-        return lower.contains("пошли за мной") || lower.contains("веди") ||
-                lower.contains("покажи где") || lower.contains("follow me") ||
-                lower.contains("lead me") || lower.contains("guide me") ||
-                lower.contains("show me") || lower.contains("отведи") ||
-                lower.contains("доведи") || lower.contains("проведи");
+        return lower.contains("веди") || lower.contains("пошли в деревню") || lower.contains("пошли к деревне") ||
+                lower.contains("пошли за мной") || lower.contains("покажи где") || lower.contains("покажи путь") ||
+                lower.contains("follow me") || lower.contains("lead me") || lower.contains("guide me") ||
+                lower.contains("show me") || lower.contains("отведи") || lower.contains("доведи") || lower.contains("проведи");
     }
 
     private boolean isStopLeadRequest(String message) {
@@ -1217,6 +1254,16 @@ public class VerityDialogueController {
                         target = respawn;
                         what = "дом";
                     }
+                }
+            }
+
+            if (target == null && this.cachedVillagePos != null) {
+                target = this.cachedVillagePos;
+                what = "деревню";
+            } else if (target == null) {
+                target = findVillageBlockPos(player);
+                if (target != null) {
+                    what = "деревню";
                 }
             }
 
@@ -2190,11 +2237,12 @@ public class VerityDialogueController {
         return null;
     }
 
-    // ─── УНИВЕРСАЛЬНОЕ УБИЙСТВО И ЗАЩИТА ИГРОКА ───
+    // ─── УНИВЕРСАЛЬНОЕ УБИЙСТВО И ЗАЩИТА ИГРОКА (ПОДДЕРЖКА МАССОВОГО УБИЙСТВА СУЩЕСТВ) ───
     private String scanAndKillUniversalTarget(Player player, String message) {
         if (entity.level().isClientSide) return null;
         String lower = (message != null) ? message.toLowerCase(java.util.Locale.ROOT) : "";
 
+        // Находим ВСЕХ живых существ в радиусе 32 блоков
         var livingEntities = entity.level().getEntitiesOfClass(
                 net.minecraft.world.entity.LivingEntity.class,
                 player.getBoundingBox().inflate(32.0D),
@@ -2202,155 +2250,71 @@ public class VerityDialogueController {
         );
 
         if (livingEntities.isEmpty()) {
-            return "Рядом нет подходящих целей! В радиусе 32 блоков никого не видно.";
+            return "Рядом нет живых существ! В радиусе 32 блоков никого не видно.";
         }
 
-        net.minecraft.world.entity.LivingEntity target = null;
+        // Сортируем сущности по расстоянию к игроку
+        livingEntities.sort((e1, e2) -> Double.compare(player.distanceToSqr(e1), player.distanceToSqr(e2)));
 
+        java.util.List<net.minecraft.world.entity.LivingEntity> targets = new java.util.ArrayList<>();
+
+        boolean isKillAllRequest = lower.contains("всех") || lower.contains("каждого") || lower.contains("все");
+        boolean asksForVillager = lower.contains("жител") || lower.contains("деревенск");
+        boolean asksForHorse = lower.contains("лошад") || lower.contains("конь") || lower.contains("коне") || lower.contains("лошак");
         boolean asksForCow = lower.contains("коров");
         boolean asksForPig = lower.contains("свин");
         boolean asksForSheep = lower.contains("овц");
         boolean asksForChicken = lower.contains("кур");
-        boolean isFoodRequest = lower.contains(" ед") || lower.contains(" еда") || lower.contains(" еду") || lower.contains(" еды") || lower.contains("мяс") || lower.contains("покушат") || lower.contains("поест") || lower.contains("голод");
+        boolean asksForZombie = lower.contains("зомби");
+        boolean asksForSkeleton = lower.contains("скелет");
+        boolean asksForCreeper = lower.contains("крипер");
 
-        // 1. Поиск по конкретно запрошенным мобам
+        // 1. Поиск целых групп сущностей при убойном приказе!
         for (var e : livingEntities) {
-            String mobId = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath();
-            if ((asksForCow && mobId.contains("cow"))
-                    || (asksForPig && mobId.contains("pig"))
-                    || (asksForSheep && mobId.contains("sheep"))
-                    || (asksForChicken && mobId.contains("chicken"))
-                    || (lower.contains("крипер") && mobId.contains("creeper"))
-                    || (lower.contains("зомби") && mobId.contains("zombie"))
-                    || (lower.contains("скелет") && mobId.contains("skeleton"))
-                    || (lower.contains("паук") && mobId.contains("spider"))
-                    || (lower.contains("эндер") && mobId.contains("enderman"))
-                    || (lower.contains("ведьм") && mobId.contains("witch"))
-                    || (lower.contains("варден") && mobId.contains("warden"))
-                    || (lower.contains("гаст") && mobId.contains("ghast"))) {
-                target = e;
-                break;
-            }
+            String mobId = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath().toLowerCase();
+
+            if (asksForVillager && mobId.contains("villager")) { targets.add(e); }
+            else if (asksForHorse && (mobId.contains("horse") || mobId.contains("donkey") || mobId.contains("mule") || mobId.contains("llama"))) { targets.add(e); }
+            else if (asksForCow && mobId.contains("cow")) { targets.add(e); }
+            else if (asksForPig && mobId.contains("pig")) { targets.add(e); }
+            else if (asksForSheep && mobId.contains("sheep")) { targets.add(e); }
+            else if (asksForChicken && mobId.contains("chicken")) { targets.add(e); }
+            else if (asksForZombie && mobId.contains("zombie")) { targets.add(e); }
+            else if (asksForSkeleton && mobId.contains("skeleton")) { targets.add(e); }
+            else if (asksForCreeper && mobId.contains("creeper")) { targets.add(e); }
         }
 
-        // Если просили конкретно корову, но коров рядом нет — рапортуем и НЕ трогаем лошадей/рыб!
-        if (target == null && asksForCow) {
-            return "Рядом в радиусе 32 блоков нет коров!";
-        }
-        if (target == null && asksForPig) {
-            return "Рядом в радиусе 32 блоков нет свиней!";
+        // Если приказ "убей всех" или "убей жителей", а списка нет — если "всех" без имени, берём ВООБЩЕ ВСЕХ существ в 32 блоках!
+        if (targets.isEmpty() && isKillAllRequest) {
+            targets.addAll(livingEntities);
         }
 
-        // 2. Если общий запрос еды — ищем строго СЪЕДОБНЫХ домашних животных (Корова, Свинья, Овца, Курица, Кролик)
-        // Категорически НЕ трогаем Лошадей, Ос лов, Мулов, Лам, Рыб, Слизней, Жителей!
-        if (target == null && isFoodRequest) {
-            for (var e : livingEntities) {
-                if (e instanceof net.minecraft.world.entity.animal.Cow || e instanceof net.minecraft.world.entity.animal.Pig
-                        || e instanceof net.minecraft.world.entity.animal.Sheep || e instanceof net.minecraft.world.entity.animal.Chicken
-                        || e instanceof net.minecraft.world.entity.animal.Rabbit) {
-                    target = e;
-                    break;
-                }
-            }
+        // Если конкретный класс не найден — берём ближайшее существо
+        if (targets.isEmpty()) {
+            targets.add(livingEntities.get(0));
         }
 
-        // 3. Защита от атаковавших мобов (строго Monster / Mob)
-        if (target == null && !isFoodRequest) {
-            for (var e : livingEntities) {
-                if (e instanceof net.minecraft.world.entity.Mob mob && mob.getTarget() == player) {
-                    target = e;
-                    break;
-                }
-            }
+        entity.setTalkAnimTick(30);
+        net.minecraft.server.level.ServerLevel sLevel = (net.minecraft.server.level.ServerLevel) entity.level();
+        int killedCount = 0;
+        String firstTargetName = targets.get(0).getName().getString();
+
+        for (var target : targets) {
+            sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE, target.getX(), target.getY() + 0.5, target.getZ(), 20, 0.3, 0.5, 0.3, 0.05);
+            sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME, target.getX(), target.getY() + 0.5, target.getZ(), 15, 0.2, 0.4, 0.2, 0.02);
+            sLevel.playSound(null, target.getX(), target.getY(), target.getZ(), net.minecraft.sounds.SoundEvents.WITHER_SHOOT, net.minecraft.sounds.SoundSource.NEUTRAL, 0.8F, 0.8F);
+
+            target.hurt(entity.damageSources().magic(), target.getMaxHealth() * 5.0F);
+            killedCount++;
         }
 
-        // 4. Враждебный монстр
-        if (target == null && !isFoodRequest) {
-            for (var e : livingEntities) {
-                if (e instanceof net.minecraft.world.entity.monster.Monster) {
-                    target = e;
-                    break;
-                }
-            }
+        if (killedCount > 1) {
+            return "Готово! Уничтожил " + killedCount + " целей вокруг!";
+        } else {
+            return "Готово! Уничтожил " + firstTargetName + "! Больше не помешает.";
         }
-
-        // Если запрашивали еду, но съедобных домашних животных нет — выдаём готовое мясо из резерва!
-        if (target == null && isFoodRequest) {
-            if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-                var foodStack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COOKED_BEEF, 4);
-                var foodEntity = new net.minecraft.world.entity.item.ItemEntity(sl, player.getX(), player.getY() + 0.5, player.getZ(), foodStack);
-                foodEntity.setPickUpDelay(0);
-                sl.addFreshEntity(foodEntity);
-                sl.playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
-            }
-            entity.setTalkAnimTick(30);
-            return "Держи жареное мясо! Я принёс тебе еды.";
-        }
-
-        if (target == null) {
-            return "Рядом нет подходящих целей для устранения!";
-        }
-
-        String mobId = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).getPath();
-        String translatedName = translateMobName(mobId);
-
-        net.minecraft.world.phys.Vec3 pos = target.position();
-        entity.teleportTo(pos.x, pos.y, pos.z);
-        target.hurt(entity.damageSources().mobAttack(entity), 250.0F);
-
-        entity.level().playSound(null, pos.x, pos.y, pos.z,
-                net.minecraft.sounds.SoundEvents.SLIME_ATTACK, net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);
-        if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, pos.x, pos.y + 0.5, pos.z, 25, 0.4, 0.4, 0.4, 0.15);
-        }
-
-        entity.setTalkAnimTick(40);
-
-        if (isFoodRequest || target instanceof net.minecraft.world.entity.animal.Animal) {
-            if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-                var foodStack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COOKED_BEEF, 4);
-                var foodEntity = new net.minecraft.world.entity.item.ItemEntity(sl, player.getX(), player.getY() + 0.5, player.getZ(), foodStack);
-                foodEntity.setPickUpDelay(0);
-                sl.addFreshEntity(foodEntity);
-                sl.playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
-            }
-            return "Готово! Добыл " + translatedName + "! Вот твоё мясо.";
-        }
-        return "Готово! Уничтожил " + translatedName + "! Я защитил тебя.";
     }
 
-
-    private String translateMobName(String id) {
-        return switch (id) {
-            case "creeper" -> "крипера";
-            case "zombie" -> "зомби";
-            case "skeleton" -> "скелета";
-            case "spider" -> "паука";
-            case "enderman" -> "эндермена";
-            case "witch" -> "ведьму";
-            case "warden" -> "вардена";
-            case "ghast" -> "гаста";
-            case "blaze" -> "ифрита";
-            case "cow" -> "корову";
-            case "pig" -> "свинью";
-            case "sheep" -> "овцу";
-            case "chicken" -> "курицу";
-            case "rabbit" -> "кролика";
-            case "goat" -> "козу";
-            case "llama" -> "ламу";
-            case "villager" -> "жителя";
-            case "pillager" -> "разбойника";
-            case "ravager" -> "разрушителя";
-            case "phantom" -> "фантома";
-            case "drowned" -> "утопленника";
-            case "husk" -> "кадавра";
-            case "stray" -> "зимогора";
-            default -> id.replace("_", " ");
-        };
-    }
-
-
-    // ─── ПОИСК АЛМАЗОВ ───
     private String findDiamonds(Player player) {
         BlockPos playerPos = player.blockPosition();
         BlockPos nearestDiamond = null;
@@ -2420,6 +2384,34 @@ public class VerityDialogueController {
             addToHistory(msg);
         }
         entity.setTalkAnimTick(30);
+    }
+
+
+    private net.minecraft.core.BlockPos findNearestDiamondBlockPos(net.minecraft.world.entity.player.Player player) {
+        net.minecraft.core.BlockPos playerPos = player.blockPosition();
+        net.minecraft.core.BlockPos nearestDiamond = null;
+        double minDistanceSqr = Double.MAX_VALUE;
+
+        if (player.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            for (int dx = -32; dx <= 32; dx += 2) {
+                for (int dz = -32; dz <= 32; dz += 2) {
+                    for (int y = sl.getMinBuildHeight(); y <= Math.min(sl.getMaxBuildHeight(), playerPos.getY() + 16); y += 2) {
+                        net.minecraft.core.BlockPos check = new net.minecraft.core.BlockPos(playerPos.getX() + dx, y, playerPos.getZ() + dz);
+                        if (!sl.hasChunkAt(check)) continue;
+                        var block = sl.getBlockState(check).getBlock();
+                        String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).getPath();
+                        if (id.contains("diamond_ore")) {
+                            double distSqr = playerPos.distSqr(check);
+                            if (distSqr < minDistanceSqr) {
+                                minDistanceSqr = distSqr;
+                                nearestDiamond = check;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return nearestDiamond;
     }
 
 }

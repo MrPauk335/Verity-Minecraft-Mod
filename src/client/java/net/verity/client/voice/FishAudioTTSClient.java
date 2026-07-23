@@ -118,16 +118,20 @@ public class FishAudioTTSClient {
                 .connectTimeout(Duration.ofSeconds(15))
                 .build();
 
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-
-        if (response.statusCode() != 200) {
-            String errBody = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
-            VerityMod.LOGGER.warn("TTS API returned {}: {}", response.statusCode(),
-                    errBody.substring(0, Math.min(200, errBody.length())));
-            return null;
+        HttpResponse<byte[]> response = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+                if (response.statusCode() == 200) {
+                    return response.body();
+                }
+                VerityMod.LOGGER.warn("TTS API returned status {} (Attempt {}/3)", response.statusCode(), attempt);
+            } catch (Exception e) {
+                VerityMod.LOGGER.warn("TTS request failed (Attempt {}/3): {}", attempt, e.getMessage());
+            }
+            try { Thread.sleep(300); } catch (InterruptedException ignored) {}
         }
-
-        return response.body();
+        return null;
     }
 
     private static void playWav(final byte[] rawWavData, final String text, final int entityId, final double x, final double y, final double z) {
