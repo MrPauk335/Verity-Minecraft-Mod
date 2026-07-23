@@ -82,38 +82,44 @@ public class VerityItemRenderer implements BuiltinItemRenderer {
         poseStack.pushPose();
         poseStack.translate(0.5f, 0.5f, 0.5f);
 
-        // Анимация говорения — только когда аудио реально играет
         ResourceLocation faceTex = tex3d;
         boolean mouthOpen = false;
 
         if (isPlaying) {
             long t = System.currentTimeMillis();
 
-            // Squish — лёгкая пульсация всё время пока говорит
+            // Squish — пульсация пока говорит
             float pulse = (float) Math.sin(t * 0.008f) * 0.04f;
             poseStack.scale(1.0f - pulse, 1.0f + pulse, 1.0f - pulse);
 
-            // Паттерн речи: открыт 200мс, закрыт 80-120мс, открыт 250мс, закрыт 100мс...
-            // Имитирует ритм реальной речи с паузами между словами
-            long cycle = t % 600; // цикл 600мс
+            long cycle = t % 600;
             if (cycle < 200) {
-                mouthOpen = true;           // "слог"
+                mouthOpen = true;
             } else if (cycle < 280) {
-                mouthOpen = false;          // пауза
+                mouthOpen = false;
             } else if (cycle < 450) {
-                mouthOpen = true;           // "слог"
+                mouthOpen = true;
             } else {
-                mouthOpen = false;          // пауза между словами
+                mouthOpen = false;
             }
 
-            // Дополнительная пауза каждые ~3 сек (между предложениями)
             long bigCycle = t % 3000;
             if (bigCycle > 2400) {
-                mouthOpen = false;          // длинная пауза
+                mouthOpen = false;
             }
 
-            if (mouthOpen && tex3d == TEX3D_SMILE) {
-                faceTex = TEX3D_SPEAK;
+            if (mouthOpen) {
+                if (tex3d.equals(TEX3D_SMILE)) {
+                    faceTex = TEX3D_SPEAK;
+                } else if (tex3d.equals(TEX3D_BORED)) {
+                    faceTex = TEX3D_DAY2_OPEN;
+                } else if (tex3d.equals(TEX3D_ABNORMAL_SHUT) || tex3d.equals(TEX3D_ABNORMAL_OPEN)) {
+                    faceTex = TEX3D_ABNORMAL_OPEN;
+                }
+            } else {
+                if (tex3d.equals(TEX3D_ABNORMAL_OPEN) || tex3d.equals(TEX3D_ABNORMAL_SHUT)) {
+                    faceTex = TEX3D_ABNORMAL_SHUT;
+                }
             }
         }
 
@@ -131,7 +137,11 @@ public class VerityItemRenderer implements BuiltinItemRenderer {
             ResourceLocation.parse("verity:textures/entity/verity_face_speak.png");
     public static final ResourceLocation TEX3D_BORED =
             ResourceLocation.parse("verity:textures/entity/verity_face_bored_p2.png");
-    public static final ResourceLocation TEX3D_ABNORMAL =
+    public static final ResourceLocation TEX3D_DAY2_OPEN =
+            ResourceLocation.parse("verity:textures/entity/verity_face_day2_open.png");
+    public static final ResourceLocation TEX3D_ABNORMAL_SHUT =
+            ResourceLocation.parse("verity:textures/entity/verity_face_abnormal_shut.png");
+    public static final ResourceLocation TEX3D_ABNORMAL_OPEN =
             ResourceLocation.parse("verity:textures/entity/verity_face_abnormal_open.png");
 
     public static final ResourceLocation TEX2D_1 =

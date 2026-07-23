@@ -185,6 +185,7 @@ public class VerityCommand {
             case MONSTER -> "\u00A74 MONSTER";
             case POSSESSIVE -> "\u00A7d POSSESSIVE";
             case HUNTER -> "\u00A7c HUNTER";
+            case FINAL -> "\u00A74\u00A7l FINAL";
         };
         source.sendSuccess(() -> Component.literal("\u00A76[Verity] \u00A7f\u0424\u0430\u0437\u0430: " + pn), false);
         source.sendSuccess(() -> Component.literal("\u00A77Monster: " + (nearest.isMonsterForm() ? "\u00A7a\u0414\u0430" : "\u00A77\u041D\u0435\u0442") + 
@@ -335,8 +336,7 @@ public class VerityCommand {
     // === PLAY MUSIC ===
     private static int playMusic(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) return 0;
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                VerityMod.SOUND_MYGAL_NORMAL, net.minecraft.sounds.SoundSource.RECORDS, 1.2F, 1.0F);
+        VerityMod.playMusic(player, "mygal_normal", 1.2F, 1.0F);
         source.sendSuccess(() -> Component.literal("\u00A7e My Gal \u0438\u0433\u0440\u0430\u0435\u0442..."), true);
         return 1;
     }

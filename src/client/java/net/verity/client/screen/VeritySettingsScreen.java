@@ -67,6 +67,14 @@ public class VeritySettingsScreen extends Screen {
         if (modelId.contains("nemotron-4-340b")) return "Nemotron 4 340B (free)";
         if (modelId.contains("hermes-3-llama")) return "Hermes 3 405B (free)";
         
+        // OpenCode Zen models
+        if (modelId.contains("deepseek-v4-flash-free")) return "DeepSeek V4 Flash (free)";
+        if (modelId.contains("big-pickle")) return "Big Pickle (free)";
+        if (modelId.contains("mimo-v2.5-free")) return "MiMo V2.5 (free)";
+        if (modelId.contains("deepseek-v4-flash")) return "DeepSeek V4 Flash";
+        if (modelId.contains("deepseek-v4-pro")) return "DeepSeek V4 Pro";
+        if (modelId.equals("gemini-3-flash")) return "Gemini 3 Flash (Zen)";
+
         // Gemini models
         if (modelId.contains("gemini-3.1-flash-live")) return "Gemini 3.1 Flash Live";
         if (modelId.contains("gemini-3-flash")) return "Gemini 3 Flash";
@@ -168,16 +176,17 @@ public class VeritySettingsScreen extends Screen {
         if (scrollY > maxScroll) scrollY = maxScroll;
         if (scrollY < 0) scrollY = 0;
 
-        // ── Provider selector (OpenRouter / Gemini / Groq / Cohere) ──────────
+        // ── Provider selector (OpenRouter / Gemini / Groq / Cohere / OpenCode Zen) ──
         this.addRenderableWidget(CycleButton.<String>builder(m -> {
             switch (m) {
                 case "gemini": return Component.literal("\u00a7bGemini (Google)");
                 case "groq": return Component.literal("\u00a7aGroq (Ultra-Fast)");
                 case "cohere": return Component.literal("\u00a7dCohere (Smart/Russian)");
+                case "opencode": return Component.literal("\u00a7cOpenCode Zen (Free Models)");
                 default: return Component.literal("\u00a7eOpenRouter");
             }
         })
-                .withValues("openrouter", "gemini", "groq", "cohere")
+                .withValues("openrouter", "gemini", "groq", "cohere", "opencode")
                 .withInitialValue(llmProvider)
                 .displayOnlyValue()
                 .create(cx - 115, yProvider, 230, BTN_H,
@@ -320,6 +329,9 @@ public class VeritySettingsScreen extends Screen {
                     break;
                 case "gemini":
                     apiKeyBox.setHint(Component.literal("\u00a78AI...  (aistudio.google.com/apikey)"));
+                    break;
+                case "opencode":
+                    apiKeyBox.setHint(Component.literal("\u00a78Zen API key (opencode.ai/auth \u2014 free models available)"));
                     break;
                 default:
                     apiKeyBox.setHint(Component.literal("\u00a78sk-or-v1-...  (openrouter.ai/keys)"));

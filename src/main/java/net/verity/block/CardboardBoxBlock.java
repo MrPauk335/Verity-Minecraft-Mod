@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.verity.VerityMod;
+import net.minecraft.server.level.ServerPlayer;
 import net.verity.entity.CardboardBoxEntity;
 import net.verity.entity.VerityEntity;
 
@@ -36,7 +37,9 @@ public class CardboardBoxBlock extends Block {
     private void triggerOpen(Level level, BlockPos pos, Player player) {
         if (!level.isClientSide) {
             // Play cardboard box punch/activation sound
-            level.playSound(null, pos, VerityMod.SOUND_PUNCH_BOX, SoundSource.BLOCKS, 1.2F, 1.0F);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                VerityMod.playSoundEffect(serverPlayer, "punchcardboardbox", "block", 1.2F, 1.0F);
+            }
 
             // Spawn Cardboard Box Entity
             CardboardBoxEntity boxEntity = new CardboardBoxEntity(VerityMod.CARDBOARD_BOX_ENTITY, level);

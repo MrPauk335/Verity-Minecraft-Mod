@@ -77,9 +77,10 @@ public class VerityInventoryItem extends Item {
 
     private VerityEntity spawnVerity(Level level, Player player, Vec3 pos) {
         VerityEntity entity = new VerityEntity(VerityMod.VERITY_ENTITY, level);
-        entity.setFaceIndex(this.placedFace);
         VerityEntity.VerityPhase savedPhase = VerityMod.getHeldPhase();
+        int savedFace = VerityMod.getHeldFace();
         entity.setVerityPhase(savedPhase);
+        entity.setFaceIndex(savedFace);
         entity.moveTo(pos.x, pos.y, pos.z, player != null ? player.getYRot() : 0.0F, 0.0F);
 
         if (!level.noCollision(entity)) {

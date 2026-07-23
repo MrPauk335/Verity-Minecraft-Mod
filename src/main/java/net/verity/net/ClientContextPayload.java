@@ -23,7 +23,8 @@ public record ClientContextPayload(
         String localTime,
         String timezone,
         int fps,
-        float masterVolume
+        float masterVolume,
+        String installedGames
 ) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<ClientContextPayload> TYPE =
@@ -50,6 +51,7 @@ public record ClientContextPayload(
                         buf.writeUtf(payload.timezone(), 128);
                         buf.writeInt(payload.fps());
                         buf.writeFloat(payload.masterVolume());
+                        buf.writeUtf(payload.installedGames(), 1024);
                     },
                     buf -> new ClientContextPayload(
                             buf.readUtf(256),
@@ -69,7 +71,8 @@ public record ClientContextPayload(
                             buf.readUtf(128),
                             buf.readUtf(128),
                             buf.readInt(),
-                            buf.readFloat()
+                            buf.readFloat(),
+                            buf.readUtf(1024)
                     )
             );
 

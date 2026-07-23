@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "verity:block/verity_anchor"
+    }
+  }
+}

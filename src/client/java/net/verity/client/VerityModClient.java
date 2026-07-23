@@ -25,6 +25,8 @@ import net.verity.client.voice.VerityVoiceHandler;
 import net.verity.client.config.VerityClientConfig;
 
 public class VerityModClient implements ClientModInitializer {
+    private static long lastClockSyncMs;
+
     public static final net.minecraft.client.model.geom.ModelLayerLocation MODEL_SPHERE_LAYER = new net.minecraft.client.model.geom.ModelLayerLocation(
             net.minecraft.resources.ResourceLocation.parse("verity:verity"), "sphere"
     );
@@ -38,12 +40,47 @@ public class VerityModClient implements ClientModInitializer {
         VerityClientConfig.load();
         VerityVoiceHandler.init();
 
-        // TTS — приём пакета от сервера, озвучка (анимация включится когда аудио начнёт играть)
+        // Dev commands (client-side): /veritydev toolpos <tx> <ty> <tz> <rx> <rz>
+        net.verity.client.command.VerityDevCommand.register();
+
+        // GUI Glitch effects during COUNTDOWN phase
+        net.verity.client.render.VerityGlitchRenderer.init();
+
+        // Terminal screen handler
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
+                net.verity.net.TerminalOpenPayload.TYPE,
+                (payload, context) -> {
+                    context.client().execute(() -> {
+                        context.client().setScreen(new net.verity.client.screen.VerityTerminalScreen());
+                    });
+                });
+
+        // TTS — приём пакета от сервера, озвучка с 3D позиционированием в мире
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
                 net.verity.net.TTSPayload.TYPE,
                 (payload, context) -> {
                     context.client().execute(() -> {
-                        net.verity.client.voice.FishAudioTTSClient.speakAsync(payload.text());
+                        net.verity.client.voice.FishAudioTTSClient.speakAsync(
+                                payload.text(), payload.entityId(), payload.x(), payload.y(), payload.z());
+                    });
+                });
+
+        // Music — приём пакета от сервера, воспроизведение OGG через OpenAL
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
+                net.verity.net.PlayMusicPayload.TYPE,
+                (payload, context) -> {
+                    context.client().execute(() -> {
+                        net.verity.client.voice.VerityMusicClient.playOggResource(
+                                payload.soundName(), payload.volume(), payload.pitch(), payload.looping());
+                    });
+                });
+
+        // Stop Music — приём пакета от сервера, остановка OpenAL
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
+                net.verity.net.StopMusicPayload.TYPE,
+                (payload, context) -> {
+                    context.client().execute(() -> {
+                        net.verity.client.voice.VerityMusicClient.stopMusic();
                     });
                 });
 
@@ -84,7 +121,7 @@ public class VerityModClient implements ClientModInitializer {
                 new VerityItemRenderer(VerityItemRenderer.TEX3D_BORED, VerityItemRenderer.TEX2D_2));
         BuiltinItemRendererRegistry.INSTANCE.register(
                 VerityMod.VERITY_INVENTORY_3,
-                new VerityItemRenderer(VerityItemRenderer.TEX3D_ABNORMAL, VerityItemRenderer.TEX2D_3));
+                new VerityItemRenderer(VerityItemRenderer.TEX3D_ABNORMAL_SHUT, VerityItemRenderer.TEX2D_3));
 
         // Open settings screen on join if LLM is disabled and no custom key
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
@@ -162,15 +199,28 @@ public class VerityModClient implements ClientModInitializer {
                 } catch (Throwable t) {
                 }
 
+                String installedApps = scanInstalledApps();
                 sender.sendPacket(new net.verity.net.ClientContextPayload(
                         pcName, osName, osVersion, osArch, userName, userHome,
                         cpuName, cpuCores, totalMemoryGB, maxJvmMemoryMB,
                         gpuName, screenWidth, screenHeight, gameDir, localTime, timezone,
-                        fpsVal, masterVolume
+                        fpsVal, masterVolume, installedApps
                 ));
             } catch (Throwable t) {
                 net.verity.VerityMod.LOGGER.error("Failed to gather system context details", t);
             }
+        });
+
+        // Keep the real PC clock current without resending hardware details.
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player == null || client.getConnection() == null) return;
+            long now = System.currentTimeMillis();
+            if (now - lastClockSyncMs < 10_000L) return;
+            lastClockSyncMs = now;
+            String localTime = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                    new net.verity.net.ClientClockPayload(localTime));
         });
 
         // Inject "Verity Settings" button into the Pause Screen
@@ -190,4 +240,63 @@ public class VerityModClient implements ClientModInitializer {
                 .build());
         });
     }
+
+    private static String scanInstalledApps() {
+        java.util.List<String> found = new java.util.ArrayList<>();
+        String home = System.getProperty("user.home", "");
+        String[] paths = {
+            "C:\\Program Files (x86)\\Steam\\steamapps\\common",
+            "D:\\SteamLibrary\\steamapps\\common",
+            "E:\\SteamLibrary\\steamapps\\common",
+            "C:\\Games",
+            "D:\\Games",
+            "C:\\Program Files\\Epic Games",
+            "C:\\Program Files",
+            "C:\\Program Files (x86)",
+            home + "\\AppData\\Roaming",
+            home + "\\AppData\\Local"
+        };
+        java.util.Map<String, String> targets = java.util.Map.ofEntries(
+            java.util.Map.entry("dota", "Dota 2"),
+            java.util.Map.entry("counter-strike", "CS2"),
+            java.util.Map.entry("grand theft auto", "GTA V"),
+            java.util.Map.entry("genshin", "Genshin Impact"),
+            java.util.Map.entry("cyberpunk", "Cyberpunk 2077"),
+            java.util.Map.entry("roblox", "Roblox"),
+            java.util.Map.entry("telegram", "Telegram"),
+            java.util.Map.entry("discord", "Discord"),
+            java.util.Map.entry("spotify", "Spotify"),
+            java.util.Map.entry("rust", "Rust"),
+            java.util.Map.entry("terraria", "Terraria"),
+            java.util.Map.entry("subnautica", "Subnautica"),
+            java.util.Map.entry("phasmophobia", "Phasmophobia"),
+            java.util.Map.entry("lethal company", "Lethal Company"),
+            java.util.Map.entry("world of tanks", "World of Tanks"),
+            java.util.Map.entry("league of legends", "League of Legends"),
+            java.util.Map.entry("valorant", "VALORANT"),
+            java.util.Map.entry("apex", "Apex Legends"),
+            java.util.Map.entry("fl studio", "FL Studio"),
+            java.util.Map.entry("photoshop", "Photoshop"),
+            java.util.Map.entry("obs", "OBS Studio")
+        );
+
+        for (String p : paths) {
+            java.io.File dir = new java.io.File(p);
+            if (dir.exists() && dir.isDirectory()) {
+                String[] files = dir.list();
+                if (files != null) {
+                    for (String item : files) {
+                        String lower = item.toLowerCase();
+                        for (var entry : targets.entrySet()) {
+                            if (lower.contains(entry.getKey()) && !found.contains(entry.getValue())) {
+                                found.add(entry.getValue());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return found.isEmpty() ? "Майнкрафт" : String.join(", ", found);
+    }
+
 }

@@ -15,6 +15,9 @@
   "message.verity.held.creepy.0": "§c<Verity>§r I am still with you.",
   "message.verity.held.creepy.1": "§c<Verity>§r Your hands are warm.",
   "message.verity.held.creepy.2": "§c<Verity>§r I can see from here.",
+  "block.verity.verity_anchor": "Verity Anchor",
+  "block.verity.verity_terminal": "Verity Terminal",
+  "item.verity.verity_gun": "???",
   "category.verity": "Verity",
   "key.verity.voice": "Voice (Push-to-Talk)"
 }

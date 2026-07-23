@@ -22,11 +22,16 @@ import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.verity.block.CardboardBoxBlock;
+import net.verity.block.VerityAnchorBlock;
+import net.verity.block.VerityAnchorBlockEntity;
+import net.verity.block.VerityTerminalBlock;
+import net.verity.block.VerityTerminalBlockEntity;
 import net.verity.entity.CardboardBoxEntity;
 import net.verity.entity.ClosedBoxEntity;
 import net.verity.entity.VerityEntity;
 import net.verity.entity.VerityMonsterEntity;
 import net.verity.item.VerityInventoryItem;
+import net.verity.item.VerityGunItem;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -65,7 +70,7 @@ public class VerityMod implements ModInitializer {
             BuiltInRegistries.ENTITY_TYPE,
             ResourceLocation.parse(MOD_ID + ":verity_monster"),
             EntityType.Builder.of(VerityMonsterEntity::new, MobCategory.MONSTER)
-                    .sized(1.2F, 2.4F) // Hitbox smaller than visual model — model is scaled 2x in renderer
+                    .sized(1.2F, 3.2F) // Hitbox smaller than visual model — model is scaled 2x in renderer
                     .build(MOD_ID + ":verity_monster"));
 
     public static final EntityType<CardboardBoxEntity> CARDBOARD_BOX_ENTITY = Registry.register(
@@ -88,6 +93,49 @@ public class VerityMod implements ModInitializer {
             ResourceLocation.parse(MOD_ID + ":cardboard_box"),
             new CardboardBoxBlock(Block.Properties.of().strength(1.0F).sound(SoundType.WOOD)));
 
+    public static final Block VERITY_ANCHOR = Registry.register(
+            BuiltInRegistries.BLOCK,
+            ResourceLocation.parse(MOD_ID + ":verity_anchor"),
+            new VerityAnchorBlock(Block.Properties.of()
+                    .strength(-1.0F, 3600000.0F) // Bedrock-level hardness
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .lightLevel(state -> 15)));
+
+    public static final Block VERITY_TERMINAL = Registry.register(
+            BuiltInRegistries.BLOCK,
+            ResourceLocation.parse(MOD_ID + ":verity_terminal"),
+            new VerityTerminalBlock(Block.Properties.of()
+                    .strength(2.0F, 3600000.0F)
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 7)));
+
+    public static final Item VERITY_TERMINAL_ITEM = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.parse(MOD_ID + ":verity_terminal"),
+            new BlockItem(VERITY_TERMINAL, new Item.Properties()));
+
+    public static final Item VERITY_GUN_ITEM = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.parse(MOD_ID + ":verity_gun"),
+            new VerityGunItem(new Item.Properties()
+                    .stacksTo(1)
+                    .durability(1)));
+
+    // Register Block Entity Types
+    public static final net.minecraft.world.level.block.entity.BlockEntityType<VerityAnchorBlockEntity> VERITY_ANCHOR_ENTITY =
+            Registry.register(
+                    BuiltInRegistries.BLOCK_ENTITY_TYPE,
+                    ResourceLocation.parse(MOD_ID + ":verity_anchor"),
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
+                            VerityAnchorBlockEntity::new, VERITY_ANCHOR).build(null));
+
+    public static final net.minecraft.world.level.block.entity.BlockEntityType<VerityTerminalBlockEntity> VERITY_TERMINAL_ENTITY =
+            Registry.register(
+                    BuiltInRegistries.BLOCK_ENTITY_TYPE,
+                    ResourceLocation.parse(MOD_ID + ":verity_terminal"),
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
+                            VerityTerminalBlockEntity::new, VERITY_TERMINAL).build(null));
+
     // Register Items & Spawn Eggs
     public static final Item CARDBOARD_BOX_ITEM = Registry.register(
             BuiltInRegistries.ITEM,
@@ -106,6 +154,11 @@ public class VerityMod implements ModInitializer {
             new SpawnEggItem(VERITY_MONSTER_ENTITY, 0x141414, 0xFF0000, new Item.Properties()) // Black base, red spots
     );
 
+    public static final Item VERITY_ANCHOR_ITEM = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.parse(MOD_ID + ":verity_anchor"),
+            new BlockItem(VERITY_ANCHOR, new Item.Properties()));
+
     public static final Item VERITY_INVENTORY_1 = Registry.register(
             BuiltInRegistries.ITEM,
             ResourceLocation.parse(MOD_ID + ":verity_inventory_1"),
@@ -119,7 +172,7 @@ public class VerityMod implements ModInitializer {
     public static final Item VERITY_INVENTORY_3 = Registry.register(
             BuiltInRegistries.ITEM,
             ResourceLocation.parse(MOD_ID + ":verity_inventory_3"),
-            new VerityInventoryItem(new Item.Properties().stacksTo(1), VerityEntity.FACE_ABNORMAL_OPEN, 2));
+            new VerityInventoryItem(new Item.Properties().stacksTo(1), VerityEntity.FACE_ABNORMAL_SHUT, 2));
 
     // === Sounds ===
     public static final SoundEvent SOUND_MYGAL_NORMAL = registerSound("mygal_normal");
@@ -128,6 +181,33 @@ public class VerityMod implements ModInitializer {
     private static SoundEvent registerSound(String name) {
         ResourceLocation id = ResourceLocation.parse(MOD_ID + ":" + name);
         return Registry.register(BuiltInRegistries.SOUND_EVENT, id, SoundEvent.createVariableRangeEvent(id));
+    }
+
+    /** Send music packet to client — client plays via OpenAL (looping by default) */
+    public static void playMusic(net.minecraft.server.level.ServerPlayer player, SoundEvent soundEvent, SoundSource category, float volume, float pitch) {
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
+                new net.verity.net.PlayMusicPayload(soundEvent.getLocation().getPath(), volume, pitch, true));
+    }
+
+    /** Play music shorthand (loops) */
+    public static void playMusic(net.minecraft.server.level.ServerPlayer player, String soundName, float volume, float pitch) {
+        playMusic(player, SOUND_MYGAL_NORMAL, SoundSource.RECORDS, volume, pitch);
+    }
+
+    /** Play one-shot sound effect (does NOT loop). Respects the requested sound name. */
+    public static void playSoundEffect(net.minecraft.server.level.ServerPlayer player, String soundName, String category, float volume, float pitch) {
+        SoundEvent ev = switch (soundName) {
+            case "punchcardboardbox" -> SOUND_PUNCH_BOX;
+            default -> SOUND_MYGAL_NORMAL;
+        };
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
+                new net.verity.net.PlayMusicPayload(ev.getLocation().getPath(), volume, pitch, false));
+    }
+
+    /** Stop music on client */
+    public static void stopMusic(net.minecraft.server.level.ServerPlayer player) {
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
+                new net.verity.net.StopMusicPayload());
     }
 
     /** UUID текущего Verity в мире (синглтон — только один!) */
@@ -139,20 +219,26 @@ public class VerityMod implements ModInitializer {
     private static final Map<UUID, Long> LAST_VOICE_TEXT_MS = new HashMap<>();
     private static final long VOICE_DUPLICATE_WINDOW_MS = 1_500L;
 
+    /** Время последнего выхода игрока из мира (для Save/Quit Reaction) */
+    private static final Map<UUID, Long> LAST_LOGOUT_TIMES = new HashMap<>();
+
     // Статическое хранилище данных Verity когда он в руках (entity discarded)
     private static VerityEntity.VerityPhase heldPhase = VerityEntity.VerityPhase.HELPER;
+    private static int heldFace = VerityEntity.FACE_SMILE;
     private static java.util.List<String> heldHistory = new java.util.ArrayList<>();
     private static java.util.List<String> heldFacts = new java.util.ArrayList<>();
 
     /** Сохранить данные Verity при поднятии в руки */
-    public static void saveHeldData(VerityEntity.VerityPhase phase, java.util.List<String> history, java.util.List<String> facts) {
+    public static void saveHeldData(VerityEntity.VerityPhase phase, int face, java.util.List<String> history, java.util.List<String> facts) {
         heldPhase = phase;
+        heldFace = face;
         heldHistory = new java.util.ArrayList<>(history);
         heldFacts = new java.util.ArrayList<>(facts);
     }
 
     /** Восстановить данные Verity при выкидывании из рук */
     public static VerityEntity.VerityPhase getHeldPhase() { return heldPhase; }
+    public static int getHeldFace() { return heldFace; }
     public static java.util.List<String> getHeldHistory() { return heldHistory; }
     public static java.util.List<String> getHeldFacts() { return heldFacts; }
 
@@ -174,7 +260,8 @@ public class VerityMod implements ModInitializer {
             String localTime,
             String timezone,
             int fps,
-            float masterVolume
+            float masterVolume,
+            String installedGames
     ) {}
 
     private static final Map<UUID, PlayerSystemContext> PLAYER_SYSTEM_CONTEXTS = new HashMap<>();
@@ -230,6 +317,9 @@ public class VerityMod implements ModInitializer {
 
         LOGGER.info("Initializing Verity Creepypasta Mod (Mojang Mappings)...");
 
+        // Инициализируем worldgen (Лаборатория Verity)
+        net.verity.worldgen.VerityStructures.init();
+
         // Загружаем конфиг
         loadLLMConfig();
         LOGGER.info("Verity config: LLM={}, chat={}, sounds={}, villagerEat={}, teleport={}, telekinesis={}",
@@ -246,9 +336,45 @@ public class VerityMod implements ModInitializer {
             content.accept(VERITY_SPAWN_EGG);
             content.accept(VERITY_MONSTER_SPAWN_EGG);
             content.accept(CARDBOARD_BOX_ITEM);
+            content.accept(VERITY_ANCHOR_ITEM);
+            content.accept(VERITY_TERMINAL_ITEM);
+            content.accept(VERITY_GUN_ITEM);
             content.accept(VERITY_INVENTORY_1);
             content.accept(VERITY_INVENTORY_2);
             content.accept(VERITY_INVENTORY_3);
+        });
+
+        // ─── Chat Interception: Verity перехватывает сообщения о его уничтожении ─
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, params) -> {
+            String msg = message.signedContent().toLowerCase();
+            // Проверяем ключевые слова о убийстве/удалении Verity
+            boolean hostile = msg.contains("kill") || msg.contains("убь") || msg.contains("убит") ||
+                    msg.contains("delete") || msg.contains("удал") || msg.contains("уничтож") ||
+                    msg.contains("trap") || msg.contains("ловушк") || msg.contains("запереть") ||
+                    msg.contains("izбав") || msg.contains("избав") || msg.contains("anchor") ||
+                    msg.contains("якор") || msg.contains("anchor");
+            if (!hostile) return true; // пропускаем
+
+            // Ищем Verity в мире и проверяем фазу
+            var verities = sender.level().getEntitiesOfClass(
+                    VerityEntity.class,
+                    sender.getBoundingBox().inflate(1024.0D),
+                    e -> e.isAlive());
+            if (!verities.isEmpty()) {
+                VerityEntity verity = verities.get(0);
+                VerityEntity.VerityPhase phase = verity.getVerityPhase();
+                // Перехватываем только начиная с OMNISCIENT
+                if (phase.ordinal() >= VerityEntity.VerityPhase.OMNISCIENT.ordinal()) {
+                    // Блокируем сообщение (игрок не видит его в чате)
+                    sender.sendSystemMessage(Component.literal(
+                            "\u00a7c<Verity\u2122>\u00a7r \u042f \u0441\u043b\u044b\u0448\u0443."));
+                    verity.setTalkAnimTick(40);
+                    verity.getDialogueController().addFactPublic(
+                            "\u0438\u0433\u0440\u043e\u043a \u043f\u043b\u0430\u043d\u0438\u0440\u0443\u0435\u0442 \u043f\u0440\u043e\u0442\u0438\u0432 Verity");
+                    return false; // отменяем отправку
+                }
+            }
+            return true;
         });
 
         // Слушаем сообщения игроков в чате — Verity всегда отвечает (включая Monster
@@ -270,6 +396,8 @@ public class VerityMod implements ModInitializer {
                     msg.contains("\u043C\u0443\u0437\u044B\u043A") || msg.contains("music") || msg.contains("my gal") ||
                     msg.contains("\u043F\u0435\u0441\u043D") || msg.contains("song") || msg.contains("\u0441\u043F\u043E\u0439") ||
                     msg.contains("gal") || msg.contains("\u043C\u0435\u043B\u043E\u0434") ||
+                    msg.contains("\u0437\u043D\u0430\u0435\u0448\u044C") || msg.contains("\u0440\u0430\u0441\u0441\u043A\u0430\u0436\u0438") ||
+                    msg.contains("\u043C\u043E\u0436\u0435\u0448\u044C") || msg.contains("\u0441\u043A\u0430\u0436\u0438") ||
                     msg.contains("\u043F\u043E\u0448\u043B\u0438") || msg.contains("\u0432\u0435\u0434\u0438") || msg.contains("follow") ||
                     msg.contains("\u043E\u0442\u0432\u0435\u0434\u0438") || msg.contains("\u0434\u043E\u0432\u0435\u0434\u0438") || msg.contains("\u043F\u0440\u043E\u0432\u0435\u0434\u0438") ||
                     msg.contains("\u0441\u0442\u043E\u0439") || msg.contains("\u0445\u0432\u0430\u0442\u0438\u0442") || msg.contains("show me");
@@ -307,8 +435,7 @@ public class VerityMod implements ModInitializer {
                 String lower = playerMsg.toLowerCase();
                 if (lower.contains("\u043C\u0443\u0437\u044B\u043A") || lower.contains("music") || lower.contains("my gal") ||
                     lower.contains("\u043F\u0435\u0441\u043D") || lower.contains("song") || lower.contains("\u0441\u043F\u043E\u0439") || lower.contains("\u043C\u0435\u043B\u043E\u0434")) {
-                    sender.level().playSound(null, sender.getX(), sender.getY(), sender.getZ(),
-                            SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 1.2F, 1.0F);
+                    playMusic(sender, "mygal_normal", 1.2F, 1.0F);
                     String prefix = (heldPhase == VerityEntity.VerityPhase.MONSTER || heldPhase == VerityEntity.VerityPhase.HUNTER)
                             ? "\u00A74<Verity>" : "\u00A7e<Verity\u2122>";
                     sender.sendSystemMessage(Component.literal(prefix + "\u00A7r \u266A My Gal..."));
@@ -340,6 +467,25 @@ public class VerityMod implements ModInitializer {
             }
         });
 
+        // ─── Terminal Open — регистрация S2C пакета ─────────────────────────
+        PayloadTypeRegistry.playS2C().register(net.verity.net.TerminalOpenPayload.TYPE, net.verity.net.TerminalOpenPayload.STREAM_CODEC);
+
+        // ─── Trigger Final Phase — C2S пакет ───────────────────────────────
+        PayloadTypeRegistry.playC2S().register(net.verity.net.TriggerFinalPhasePayload.TYPE, net.verity.net.TriggerFinalPhasePayload.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(net.verity.net.TriggerFinalPhasePayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            // Find nearest alive Verity entity and set it to FINAL phase
+            var entities = player.level().getEntitiesOfClass(
+                    net.verity.entity.VerityEntity.class,
+                    player.getBoundingBox().inflate(64.0D),
+                    e -> !e.isRemoved());
+            if (!entities.isEmpty()) {
+                net.verity.entity.VerityEntity verity = entities.get(0);
+                verity.setVerityPhase(net.verity.entity.VerityEntity.VerityPhase.FINAL);
+                LOGGER.info("Player {} triggered FINAL phase on Verity via terminal", player.getName().getString());
+            }
+        });
+
         // ─── Client PC Context — регистрация пакета и обработчика ───────────
         PayloadTypeRegistry.playC2S().register(net.verity.net.ClientContextPayload.TYPE, net.verity.net.ClientContextPayload.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(net.verity.net.ClientContextPayload.TYPE, (payload, context) -> {
@@ -362,11 +508,28 @@ public class VerityMod implements ModInitializer {
                     payload.localTime(),
                     payload.timezone(),
                     payload.fps(),
-                    payload.masterVolume()
+                    payload.masterVolume(),
+                    payload.installedGames()
             );
             setPlayerSystemContext(player.getUUID(), sysContext);
             LOGGER.info("Received system context for player {}: OS={}, PC={}, GPU={}", 
                     player.getName().getString(), sysContext.osName(), sysContext.pcName(), sysContext.gpuName());
+        });
+
+        PayloadTypeRegistry.playC2S().register(net.verity.net.ClientClockPayload.TYPE,
+                net.verity.net.ClientClockPayload.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(net.verity.net.ClientClockPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            PlayerSystemContext previous = getPlayerSystemContext(player.getUUID());
+            if (previous != null) {
+                setPlayerSystemContext(player.getUUID(), new PlayerSystemContext(
+                        previous.pcName(), previous.osName(), previous.osVersion(), previous.osArch(),
+                        previous.userName(), previous.userHome(), previous.cpuName(), previous.cpuCores(),
+                        previous.totalMemoryGB(), previous.maxJvmMemoryMB(), previous.gpuName(),
+                        previous.screenWidth(), previous.screenHeight(), previous.gameDirectory(),
+                        payload.localTime(), previous.timezone(), previous.fps(), previous.masterVolume(),
+                        previous.installedGames()));
+            }
         });
 
         // ─── Voice Chat (STT) — регистрация пакета и обработчика ────────────
@@ -414,8 +577,7 @@ public class VerityMod implements ModInitializer {
                 String lower = text.toLowerCase();
                 if (lower.contains("\u043C\u0443\u0437\u044B\u043A") || lower.contains("music") || lower.contains("my gal") ||
                     lower.contains("\u043F\u0435\u0441\u043D") || lower.contains("song") || lower.contains("\u0441\u043F\u043E\u0439") || lower.contains("\u043C\u0435\u043B\u043E\u0434")) {
-                    player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                            SOUND_MYGAL_NORMAL, SoundSource.RECORDS, 1.2F, 1.0F);
+                    playMusic(player, "mygal_normal", 1.2F, 1.0F);
                     String prefix = (heldPhase == VerityEntity.VerityPhase.MONSTER || heldPhase == VerityEntity.VerityPhase.HUNTER)
                             ? "\u00A74<Verity>" : "\u00A7e<Verity\u2122>";
                     player.sendSystemMessage(Component.literal(prefix + "\u00A7r \u266A My Gal..."));
@@ -448,6 +610,10 @@ public class VerityMod implements ModInitializer {
         // ─── TTS — регистрация S2C пакета (сервер → клиент) ──────────────────
         PayloadTypeRegistry.playS2C().register(net.verity.net.TTSPayload.TYPE, net.verity.net.TTSPayload.STREAM_CODEC);
 
+        // ─── Music — регистрация S2C пакета (сервер → клиент) ──────────────
+        PayloadTypeRegistry.playS2C().register(net.verity.net.PlayMusicPayload.TYPE, net.verity.net.PlayMusicPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(net.verity.net.StopMusicPayload.TYPE, net.verity.net.StopMusicPayload.STREAM_CODEC);
+
         ServerTickEvents.END_SERVER_TICK.register(VerityMod::tickHeldVerityItems);
 
         // Q-drop detection: convert dropped Verity items into thrown Verity entities
@@ -466,13 +632,13 @@ public class VerityMod implements ModInitializer {
                         // Don't convert if thrower is too far
                         if (itemEntity.distanceToSqr(player) > 256.0D) continue;
 
-                        // Spawn Verity entity at item position
+                        // Spawn Verity entity above the item (player's eye level) to avoid collision with player
                         VerityEntity entity = new VerityEntity(VERITY_ENTITY, level);
-                        entity.setFaceIndex(((VerityInventoryItem) stack.getItem()).getPlacedFace());
                         entity.setVerityPhase(getHeldPhase());
-                        entity.moveTo(itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                        entity.setFaceIndex(getHeldFace());
+                        double spawnY = Math.max(itemEntity.getY(), player.getY() + player.getEyeHeight() + 0.5);
+                        entity.moveTo(itemEntity.getX(), spawnY, itemEntity.getZ(),
                                 player.getYRot(), 0.0F);
-                        if (!level.noCollision(entity)) continue;
 
                         level.addFreshEntity(entity);
                         entity.getDialogueController().setDialogueHistory(getHeldHistory());
@@ -510,6 +676,29 @@ public class VerityMod implements ModInitializer {
             }
         });
 
+        // ─── Save/Quit Reaction — запоминаем время выхода ─────────────────────
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ServerPlayer player = handler.getPlayer();
+            LAST_LOGOUT_TIMES.put(player.getUUID(), System.currentTimeMillis());
+        });
+
+        // ─── Anchor Block — detect pickaxe attack attempt → trigger Final Phase ──
+        net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, level, hand, pos, direction) -> {
+            if (!level.isClientSide && level.getBlockState(pos).getBlock() == VERITY_ANCHOR) {
+                var verities = level.getEntitiesOfClass(
+                        net.verity.entity.VerityEntity.class,
+                        new net.minecraft.world.phys.AABB(pos).inflate(256.0),
+                        e -> e.isAlive());
+                if (!verities.isEmpty()) {
+                    verities.get(0).setVerityPhase(net.verity.entity.VerityEntity.VerityPhase.FINAL);
+                } else if (player instanceof ServerPlayer sp) {
+                    // No Verity alive — still trigger for the speech if possible
+                }
+                return net.minecraft.world.InteractionResult.FAIL;
+            }
+            return net.minecraft.world.InteractionResult.PASS;
+        });
+
         // Welcome message + spawn cardboard box when player joins
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.getPlayer();
@@ -538,6 +727,46 @@ public class VerityMod implements ModInitializer {
                 }
                 if (!verityExists(server.overworld())) {
                     INTRO_TIMERS.put(player.getUUID(), 1);
+                }
+            } else {
+                // ─── Save/Quit Reaction: игрок возвращается ───
+                Long lastLogout = LAST_LOGOUT_TIMES.remove(player.getUUID());
+                if (lastLogout != null && verityExists(server.overworld())) {
+                    long diffMs = System.currentTimeMillis() - lastLogout;
+                    long diffMin = diffMs / (1000 * 60);
+                    long diffHours = diffMin / 60;
+
+                    String timeStr;
+                    if (diffHours > 0) {
+                        timeStr = diffHours + " \u0447\u0430\u0441\u043e\u0432 " + (diffMin % 60) + " \u043c\u0438\u043d\u0443\u0442";
+                    } else if (diffMin > 0) {
+                        timeStr = diffMin + " \u043c\u0438\u043d\u0443\u0442";
+                    } else {
+                        timeStr = (diffMs / 1000) + " \u0441\u0435\u043a\u0443\u043d\u0434";
+                    }
+
+                    // Ищем ближайшего Verity в мире
+                    var verities = server.overworld().getEntitiesOfClass(
+                            VerityEntity.class,
+                            player.getBoundingBox().inflate(1024.0D),
+                            e -> e.isAlive());
+                    if (!verities.isEmpty()) {
+                        VerityEntity verity = verities.get(0);
+                        VerityEntity.VerityPhase phase = verity.getVerityPhase();
+
+                        String msg;
+                        if (phase == VerityEntity.VerityPhase.HELPER || phase == VerityEntity.VerityPhase.OMNISCIENT) {
+                            msg = "\u00a7e<Verity\u2122>\u00a7r \u0422\u044b \u0431\u044b\u043b \u0434\u0430\u043b\u0435\u043a\u043e " + timeStr + ". \u042f \u0436\u0434\u0430\u043b.";
+                        } else {
+                            msg = "\u00a7e<Verity\u2122>\u00a7r \u0422\u044b \u0443\u0448\u0451\u043b \u043d\u0430 " + timeStr + ". \u042f \u0441\u0447\u0438\u0442\u0430\u043b \u043a\u0430\u0436\u0434\u0443\u044e \u0441\u0435\u043a\u0443\u043d\u0434\u0443.";
+                        }
+                        player.sendSystemMessage(Component.literal(msg));
+                        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp,
+                                    new net.verity.net.TTSPayload(msg));
+                        }
+                        verity.setTalkAnimTick(40);
+                    }
                 }
             }
         });

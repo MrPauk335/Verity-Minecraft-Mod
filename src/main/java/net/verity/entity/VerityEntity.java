@@ -35,6 +35,14 @@ import java.util.EnumSet;
 import java.util.List;
 
 public class VerityEntity extends PathfinderMob {
+    @Override
+    public net.minecraft.world.entity.EntityDimensions getDefaultDimensions(net.minecraft.world.entity.Pose pose) {
+        if (this.isMonsterForm() || this.getVerityPhase() == VerityPhase.MONSTER) {
+            return net.minecraft.world.entity.EntityDimensions.scalable(1.2F, 3.2F);
+        }
+        return super.getDefaultDimensions(pose);
+    }
+
 
     // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ Р¤РђР—Р« FSM (Finite State Machine) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     public enum VerityPhase {
@@ -44,7 +52,7 @@ public class VerityEntity extends PathfinderMob {
         COUNTDOWN,   // 3 вЂ” РѕР±СЂР°С‚РЅС‹Р№ РѕС‚СЃС‡С‘С‚ "3 РґРЅСЏ", С‚РµР»РµРєРёРЅРµР·
         MONSTER,     // 4 вЂ” Monster Form, РїРѕРіРѕРЅСЏ
         POSSESSIVE,  // 5 вЂ” СЃРѕР±СЃС‚РІРµРЅРЅРёРє, "You have me"
-        HUNTER       // 6 вЂ” СѓР±РёР№С†Р° Twixxel, СѓСЃС‚СЂР°РЅРµРЅРёРµ РґСЂСѓРіРёС… РёРіСЂРѕРєРѕРІ
+        HUNTER, FINAL // 6 вЂ” СѓР±РёР№С†Р° Twixxel, СѓСЃС‚СЂР°РЅРµРЅРёРµ РґСЂСѓРіРёС… РёРіСЂРѕРєРѕРІ
     }
 
     // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ DATA TRACKERS (СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ СЃРµСЂРІРµСЂ в†” РєР»РёРµРЅС‚) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
@@ -100,6 +108,7 @@ public class VerityEntity extends PathfinderMob {
     private int villagerEatCooldown = 0; // РєСѓР»РґР°СѓРЅ РїСЂРѕРІРµСЂРєРё РґРµСЂРµРІРµРЅСЊ
     private boolean emptyVillageMessageSent = false;
     private boolean hunterChasing = false; // HUNTER: РїСЂРµСЃР»РµРґСѓРµС‚ С†РµР»СЊ (РґР»СЏ Р»РёС†Р°)
+    private boolean stayHere = false;
     private boolean leading = false;      // РІРµРґС‘С‚ РёРіСЂРѕРєР° ("РїРѕС€Р»Рё Р·Р° РјРЅРѕР№")
     private BlockPos leadTarget = null;   // РєСѓРґР° РІРµРґС‘С‚
     private boolean roofTorn = false;     // РєСЂС‹С€Р° СѓР¶Рµ СЃРѕСЂРІР°РЅР° РІ СЌС‚РѕР№ MONSTER С„Р°Р·Рµ
@@ -120,7 +129,7 @@ public class VerityEntity extends PathfinderMob {
     private float lastPlayerHealth = -1.0F;
     private int forgiveProgressTicks = 0;
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ LLM-РРќРўР•Р“Р РђР¦РРЇ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ LLM-Р˜РќРўР•Р“Р РђР¦Р˜РЇ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     private VerityDialogueController dialogueController;
 
     public VerityDialogueController getDialogueController() {
@@ -147,11 +156,14 @@ public class VerityEntity extends PathfinderMob {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(1, new VerityLeadToVillageGoal(this));
         this.goalSelector.addGoal(1, new VerityFollowGoal(this, 1.2D));
-        this.goalSelector.addGoal(2, new VerityStalkGoal(this, 0.8D));
+        this.goalSelector.addGoal(2, new VerityWorkGoal(this));
+        this.goalSelector.addGoal(3, new VerityStalkGoal(this, 0.8D));
         this.goalSelector.addGoal(3, new VerityMonsterAttackGoal(this, 1.5D));
+        this.goalSelector.addGoal(2, new VerityKillVillageGoal(this));
         this.goalSelector.addGoal(4, new VerityOpenDoorGoal(this, 6.0D));
-        this.goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 10.0F));
+        this.goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 16.0F, 1.0F));
     }
 
     // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РЎРРќРҐР РћРќРР—РђР¦РРЇ Р”РђРќРќР«РҐ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
@@ -167,7 +179,18 @@ public class VerityEntity extends PathfinderMob {
 
 
     // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ GETTERS / SETTERS в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-    public VerityPhase getVerityPhase() {
+        public boolean isStayHere() {
+        return this.stayHere;
+    }
+
+    public void setStayHere(boolean v) {
+        this.stayHere = v;
+        if (v) {
+            this.getNavigation().stop();
+        }
+    }
+
+public VerityPhase getVerityPhase() {
         return VerityPhase.values()[this.entityData.get(VERITY_PHASE)];
     }
 
@@ -245,6 +268,12 @@ public class VerityEntity extends PathfinderMob {
     public void setFaceIndex(int face) {
         this.entityData.set(FACE_INDEX, face);
     }
+
+    public float squashTimer = 0;
+    public float squashAmount = 0;
+    public int getRageForgiveTicks() { return this.rageForgiveTicks; }
+    public float getSquashTimer() { return this.squashTimer; }
+    public float getSquashAmount() { return this.squashAmount; }
 
     public boolean isFaceless() {
         return this.entityData.get(FACELESS);
@@ -388,7 +417,7 @@ public class VerityEntity extends PathfinderMob {
         VerityMod.armHeldTalk(player, 40);
 
         // РЎРѕС…СЂР°РЅСЏРµРј РґР°РЅРЅС‹Рµ Verity РїРµСЂРµРґ discard
-        VerityMod.saveHeldData(getVerityPhase(), getDialogueController().getDialogueHistory(), getDialogueController().getKnownFactsList());
+        VerityMod.saveHeldData(getVerityPhase(), faceIdx, getDialogueController().getDialogueHistory(), getDialogueController().getKnownFactsList());
 
         this.discard();
         return InteractionResult.CONSUME;
@@ -401,8 +430,8 @@ public class VerityEntity extends PathfinderMob {
      */
     public void throwVerity(Player player) {
         Vec3 lookDir = player.getLookAngle();
-        double power = 0.8D;
-        double upBoost = 0.35D;
+        double power = 1.65D;
+        double upBoost = 0.65D;
         this.setDeltaMovement(lookDir.x * power, lookDir.y * power + upBoost, lookDir.z * power);
         this.hurtMarked = true;
         this.thrown = true;
@@ -423,8 +452,8 @@ public class VerityEntity extends PathfinderMob {
      */
     public void kickVerity(Player player) {
         Vec3 lookDir = player.getLookAngle();
-        double power = 0.6D;
-        double upBoost = 0.3D;
+        double power = 1.5D;
+        double upBoost = 0.60D;
         this.setDeltaMovement(lookDir.x * power, lookDir.y * power + upBoost, lookDir.z * power);
         this.hurtMarked = true;
         this.thrown = true;
@@ -456,60 +485,85 @@ public class VerityEntity extends PathfinderMob {
     /**
      * Ball physics — bouncing, rolling, settling.
      */
-    private void tickBallPhysics() {
+    private void tickBallPhysics(Vec3 preMoveVel) {
         this.thrownTicks++;
         Vec3 vel = this.getDeltaMovement();
 
-        if (this.onGround() && this.thrownTicks > 2) {
-            if (vel.y < -0.08) {
-                double bounceY = -vel.y * 0.55D;
-                double friction = 0.7D;
-                this.setDeltaMovement(vel.x * friction, bounceY, vel.z * friction);
+        if (this.squashTimer > 0) {
+            this.squashTimer -= 0.15f;
+            if (this.squashTimer < 0) this.squashTimer = 0;
+        }
+
+        double preY = preMoveVel.y;
+        double preX = preMoveVel.x;
+        double preZ = preMoveVel.z;
+
+        if (this.onGround() && preY < -0.06D) {
+            this.bounceCount++;
+            if (this.bounceCount >= 4 || Math.abs(preY) < 0.05D) {
+                // Smooth settle after elastic bouncing chain
+                this.setDeltaMovement(preX * 0.75D, 0.0D, preZ * 0.75D);
+                this.thrown = false;
+                this.bounceCount = 0;
                 this.hurtMarked = true;
-                this.bounceCount++;
-                float pitch = 1.0F + this.bounceCount * 0.1F;
+                this.squashTimer = 0.5f;
+                this.squashAmount = 0.2F;
+                this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                        SoundEvents.WOOD_PLACE, SoundSource.NEUTRAL, 0.5F, 1.2F);
+            } else {
+                // Elastic bouncy ball rebounds: 1st=0.78x, 2nd=0.62x, 3rd=0.48x
+                double restitution = switch (this.bounceCount) {
+                    case 1 -> 0.78D;
+                    case 2 -> 0.62D;
+                    default -> 0.48D;
+                };
+                double bounceY = -preY * restitution;
+                double friction = 0.85D;
+                this.setDeltaMovement(preX * friction, bounceY, preZ * friction);
+                this.hurtMarked = true;
+                this.squashTimer = 1.0f;
+                this.squashAmount = (float) Math.min(0.75f, Math.abs(preY) * 0.85f);
+
+                float pitch = 1.0F + this.bounceCount * 0.15F;
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
                         SoundEvents.SLIME_JUMP, SoundSource.NEUTRAL,
-                        0.5F, Math.min(pitch, 1.8F));
-                if (this.bounceCount == 1) {
+                        0.8F, Math.min(pitch, 1.8F));
+                if (this.bounceCount == 1 && (getVerityPhase() == VerityPhase.HELPER || getVerityPhase() == VerityPhase.OMNISCIENT)) {
                     setFaceIndex(FACE_HURT);
-                    this.talkAnimTick = 10;
+                    this.talkAnimTick = 12;
                 }
-            } else {
-                double rollFriction = 0.92D;
-                this.setDeltaMovement(vel.x * rollFriction, 0.0D, vel.z * rollFriction);
-                this.hurtMarked = true;
             }
+        } else if (this.onGround()) {
+            double rollFriction = 0.88D;
+            this.setDeltaMovement(vel.x * rollFriction, 0.0D, vel.z * rollFriction);
+            this.hurtMarked = true;
         }
 
         if (this.horizontalCollision) {
-            Vec3 adjusted = this.getDeltaMovement();
-            double absX = Math.abs(adjusted.x);
-            double absZ = Math.abs(adjusted.z);
-            if (absX > absZ) {
-                this.setDeltaMovement(-adjusted.x * 0.5D, adjusted.y, adjusted.z * 0.8D);
-            } else {
-                this.setDeltaMovement(adjusted.x * 0.8D, adjusted.y, -adjusted.z * 0.5D);
-            }
+            double absX = Math.abs(preX);
+            double absZ = Math.abs(preZ);
+            double bounceX = (absX > 0.05) ? -preX * 0.85D : vel.x;
+            double bounceZ = (absZ > 0.05) ? -preZ * 0.85D : vel.z;
+            this.setDeltaMovement(bounceX, vel.y > 0 ? vel.y : 0.20D, bounceZ);
             this.hurtMarked = true;
             this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-                    SoundEvents.WOOD_HIT, SoundSource.NEUTRAL, 0.4F, 1.5F);
+                    SoundEvents.WOOD_HIT, SoundSource.NEUTRAL, 0.5F, 1.4F);
         }
 
-        if (this.thrownTicks < 40 && vel.lengthSqr() > 0.3) {
+        if (this.thrownTicks < 50 && preMoveVel.lengthSqr() > 0.15) {
             List<Entity> hitEntities = this.level().getEntities(this, this.getBoundingBox().inflate(0.3));
             for (Entity entity : hitEntities) {
                 if (entity instanceof Player && entity != this.level().getNearestPlayer(this, 64)) {
-                    Vec3 push = this.getDeltaMovement().normalize().scale(0.4);
-                    entity.push(push.x, 0.3, push.z);
+                    Vec3 push = preMoveVel.normalize().scale(0.5);
+                    entity.push(push.x, 0.35, push.z);
                     this.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
-                            SoundEvents.SLIME_ATTACK, SoundSource.NEUTRAL, 0.6F, 1.0F);
+                            SoundEvents.SLIME_ATTACK, SoundSource.NEUTRAL, 0.7F, 1.0F);
                 }
             }
         }
 
-        double speed = vel.x * vel.x + vel.z * vel.z;
-        if ((this.onGround() && speed < 0.005 && Math.abs(vel.y) < 0.05) || this.thrownTicks > 200) {
+        double speedSqr = vel.x * vel.x + vel.z * vel.z;
+        if ((this.onGround() && Math.abs(preY) < 0.22D && speedSqr < 0.005D) || this.thrownTicks > 200) {
             this.thrown = false;
             this.thrownTicks = 0;
             this.bounceCount = 0;
@@ -517,7 +571,7 @@ public class VerityEntity extends PathfinderMob {
             this.hurtMarked = true;
             setFaceIndex(getDefaultFaceForPhase(getVerityPhase()));
             this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-                    SoundEvents.WOOD_PLACE, SoundSource.NEUTRAL, 0.3F, 1.2F);
+                    SoundEvents.WOOD_PLACE, SoundSource.NEUTRAL, 0.4F, 1.2F);
         }
     }
 
@@ -541,7 +595,10 @@ public class VerityEntity extends PathfinderMob {
             // Fire/lava = rage incident (canonical "DON'T DO THAT!")
             if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
                 Player nearest = this.level().getNearestPlayer(this, 32.0D);
-                if (nearest != null) {
+                // Fire damage is applied every tick while Verity is burning.
+                // Treat that whole burn as one emotional incident, otherwise
+                // the two canonical lines flood the chat once per tick.
+                if (nearest != null && this.rageForgiveTicks == 0) {
                     Vec3 rotVec = nearest.getViewVector(1.0F).normalize();
                     double tx = nearest.getX() - rotVec.x * 2.0;
                     double ty = nearest.getY();
@@ -551,8 +608,8 @@ public class VerityEntity extends PathfinderMob {
                             "\u00A74<Verity\u2122>\u00A7r \u041D\u0415 \u0414\u0415\u041B\u0410\u0419 \u042D\u0422\u041E\u0413\u041E!"));
                     nearest.sendSystemMessage(Component.literal(
                             "\u00A74<Verity\u2122>\u00A7r \u042F \u0414\u0423\u041C\u0410\u041B, \u041C\u042B \u0425\u041E\u0420\u041E\u0428\u041E \u0413\u0423\u041B\u042F\u041B\u0418! \u0420\u0410\u0417\u0412\u0415 \u041C\u042B \u041D\u0415 \u0425\u041E\u0420\u041E\u0428\u041E \u0413\u0423\u041B\u042F\u041B\u0418?"));
-                    this.rageForgiveTicks = 3600;
                 }
+                this.rageForgiveTicks = Math.max(this.rageForgiveTicks, 3600);
                 return false;
             }
 
@@ -641,6 +698,7 @@ public class VerityEntity extends PathfinderMob {
             return;
         }
 
+        Vec3 preMoveVel = this.getDeltaMovement();
         super.tick();
         this.updateRollAngle();
 
@@ -654,7 +712,7 @@ public class VerityEntity extends PathfinderMob {
                     setFaceIndex(getDefaultFaceForPhase(getVerityPhase()));
                 }
             }
-            tickBallPhysics();
+            tickBallPhysics(preMoveVel);
             return;
         }
 
@@ -892,25 +950,11 @@ public class VerityEntity extends PathfinderMob {
                 this.roofTorn = true;
             }
 
-            // ПРОЩЕНИЕ у шара (страховочный вариант)
-            if (nearest.isShiftKeyDown() && distSq < 16.0D) {
+            // Безжалостное преследование — никакого авто-прощения при нажатии Shift
+            if (distSq < 16.0D && this.getRandom().nextInt(100) == 0) {
                 nearest.sendSystemMessage(Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r ...\u0422\u044b \u0432\u0435\u0440\u043d\u0443\u043b\u0441\u044f. \u0425\u043e\u0440\u043e\u0448\u043e."));
-                nearest.sendSystemMessage(Component.literal(
-                        "\u00a7e<Verity\u2122>\u00a7r \u042f \u043f\u0440\u043e\u0449\u0430\u044e \u0442\u0435\u0431\u044f."));
-                if (this.activeMonster != null && !this.activeMonster.isRemoved()) {
-                    this.activeMonster.discard();
-                }
-                this.activeMonster = null;
-                setVerityPhase(VerityPhase.POSSESSIVE);
-                return;
+                        "\u00a74<Verity>\u00a7r Прощения не будет, " + nearest.getName().getString() + "..."));
             }
-        }
-
-        // Если монстр был заспавнен, но теперь удален (сработало прощение у монстра)
-        if (this.nearbyMessageSent && (this.activeMonster == null || this.activeMonster.isRemoved())) {
-            this.activeMonster = null;
-            setVerityPhase(VerityPhase.POSSESSIVE);
         }
     }
 
@@ -1409,10 +1453,10 @@ public class VerityEntity extends PathfinderMob {
         boolean shouldSpeak = false;
         String contextHint = "";
 
-        // Контекст 1: игрок получил урон
-        if (nearest.getHealth() < nearest.getMaxHealth() * 0.5f) {
+        // Контекст 1: игрок сильно ранен (меньше 35% HP), кулдаун 5 минут
+        if (nearest.getHealth() < nearest.getMaxHealth() * 0.35f) {
             shouldSpeak = true;
-            contextHint = "Игрок ранен. Отреагируй с заботой.";
+            contextHint = "Игрок тяжело ранен. Отреагируй с заботой.";
         }
         // Контекст 2: ночь и игрок на поверхности
         else if (this.level().getDayTime() % 24000 > 13000 && this.level().getDayTime() % 24000 < 18000
@@ -1599,7 +1643,6 @@ public class VerityEntity extends PathfinderMob {
             tag.put("DialogueHistory", list);
         }
 
-        // РЎРѕС…СЂР°РЅСЏРµРј РёР·РІРµСЃС‚РЅС‹Рµ С„Р°РєС‚С‹
         var facts = dc.getKnownFactsList();
         if (!facts.isEmpty()) {
             var factList = new net.minecraft.nbt.ListTag();
@@ -1617,43 +1660,12 @@ public class VerityEntity extends PathfinderMob {
             this.entityData.set(VERITY_PHASE, VerityPhase.valueOf(tag.getString("VerityPhase")).ordinal());
         }
         this.ticksInPhase = tag.getInt("TicksInPhase");
-        this.dayCounter = tag.getInt("DayCounter");
-        this.chatCooldown = tag.getInt("ChatCooldown");
-        this.introTicks = tag.getInt("IntroTicks");
-        this.leading = tag.getBoolean("Leading");
-        this.thrown = tag.getBoolean("Thrown");
-        if (tag.contains("LeadTargetX")) {
-            this.leadTarget = new BlockPos(
-                    tag.getInt("LeadTargetX"),
-                    tag.getInt("LeadTargetY"),
-                    tag.getInt("LeadTargetZ"));
-        }
-
-        // Р—Р°РіСЂСѓР¶Р°РµРј РёСЃС‚РѕСЂРёСЋ РґРёР°Р»РѕРіР°
-        if (tag.contains("DialogueHistory")) {
-            var list = tag.getList("DialogueHistory", net.minecraft.nbt.Tag.TAG_STRING);
-            var history = new java.util.ArrayList<String>();
-            for (int i = 0; i < list.size(); i++) {
-                history.add(list.getString(i));
-            }
-            getDialogueController().setDialogueHistory(history);
-        }
-
-        // Р—Р°РіСЂСѓР¶Р°РµРј РёР·РІРµСЃС‚РЅС‹Рµ С„Р°РєС‚С‹
-        if (tag.contains("KnownFacts")) {
-            var factList = tag.getList("KnownFacts", net.minecraft.nbt.Tag.TAG_STRING);
-            var facts = new java.util.ArrayList<String>();
-            for (int i = 0; i < factList.size(); i++) {
-                facts.add(factList.getString(i));
-            }
-            getDialogueController().setKnownFacts(facts);
-        }
     }
 
-    // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ AI GOALS (РІРЅСѓС‚СЂРµРЅРЅРёРµ РєР»Р°СЃСЃС‹) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // ────── AI GOALS (внутренние классы) ──────
 
     /**
-     * РЎР»РµРґРѕРІР°РЅРёРµ Р·Р° РёРіСЂРѕРєРѕРј (HELPER, OMNISCIENT, POSSESSIVE)
+     * Следование за игроком (HELPER, OMNISCIENT, POSSESSIVE)
      */
     static class VerityFollowGoal extends Goal {
         private final VerityEntity entity;
@@ -1668,13 +1680,12 @@ public class VerityEntity extends PathfinderMob {
 
         @Override
         public boolean canUse() {
-            if (entity.isThrown()) return false;
+            if (entity.isStayHere() || entity.isThrown()) return false;
             VerityPhase p = entity.getVerityPhase();
-            if (p == VerityPhase.MONSTER || p == VerityPhase.HUNTER || p == VerityPhase.COUNTDOWN) {
-                return false;
-            }
-            if (entity.isLeading()) return false;
-            if (entity.stareTimer > 0) return false; // не следуем когда пристально смотрит
+            if (p == VerityPhase.MONSTER || p == VerityPhase.HUNTER) return false;
+            if (p == VerityPhase.COUNTDOWN && entity.getDayCounter() >= 2) return false; // День 3 - замер
+            if (entity.isLeadingToVillage()) return false;
+            if (entity.stareTimer > 0) return false;
             this.target = entity.level().getNearestPlayer(entity, 256.0D);
             return this.target != null && entity.distanceToSqr(this.target) > 16.0D;
         }
@@ -1705,7 +1716,7 @@ public class VerityEntity extends PathfinderMob {
     }
 
     /**
-     * РЎС‚Р°Р»РєРµСЂ вЂ” РґРµСЂР¶РёС‚СЃСЏ РЅР° СЂР°СЃСЃС‚РѕСЏРЅРёРё (COUNTDOWN)
+     * Сталкер — держится на расстоянии (COUNTDOWN)
      */
     static class VerityStalkGoal extends Goal {
         private final VerityEntity entity;
@@ -1736,8 +1747,7 @@ public class VerityEntity extends PathfinderMob {
                 return;
             }
 
-            if (distSq < 100.0D) { // 10 Р±Р»РѕРєРѕРІ вЂ” СЃР»РёС€РєРѕРј Р±Р»РёР·РєРѕ, РѕС‚С…РѕРґРёС‚
-                // РРґС‚Рё РІ РїСЂРѕС‚РёРІРѕРїРѕР»РѕР¶РЅСѓСЋ СЃС‚РѕСЂРѕРЅСѓ РѕС‚ РёРіСЂРѕРєР°
+            if (distSq < 100.0D) {
                 double dx = entity.getX() - target.getX();
                 double dz = entity.getZ() - target.getZ();
                 double len = Math.sqrt(dx * dx + dz * dz);
@@ -1750,22 +1760,16 @@ public class VerityEntity extends PathfinderMob {
                     );
                 }
                 cooldown = 20;
-            } else if (distSq > 400.0D) { // 20 Р±Р»РѕРєРѕРІ вЂ” СЃР»РёС€РєРѕРј РґР°Р»РµРєРѕ, РїРѕРґС…РѕРґРёС‚
+            } else if (distSq > 400.0D) {
                 entity.getNavigation().moveTo(target, speed);
                 cooldown = 20;
             } else {
-                // Р’ РѕРїС‚РёРјР°Р»СЊРЅРѕР№ РґРёСЃС‚Р°РЅС†РёРё вЂ” РїСЂРѕСЃС‚Рѕ СЃРјРѕС‚СЂРёС‚
                 entity.getNavigation().stop();
                 entity.getLookControl().setLookAt(target, 30.0F, 30.0F);
             }
         }
     }
 
-    /**
-     * РџРѕРіРѕРЅСЏ РІ MONSTER вЂ” РќР• СѓР±РёРІР°РµС‚ РѕСЃРЅРѕРІРЅРѕРіРѕ РёРіСЂРѕРєР°, С‚РѕР»СЊРєРѕ РїСѓРіР°РµС‚!
-     * Р’ HUNTER вЂ” Р°С‚Р°РєСѓРµС‚ С‚РѕР»СЊРєРѕ В«TwixxelВ» (РґСЂСѓРіРёС… РёРіСЂРѕРєРѕРІ).
-     * РџРѕ Р»РѕСЂСѓ: Verity С…РѕС‡РµС‚ РїРѕРґС‡РёРЅРµРЅРёСЏ, Р° РЅРµ СЃРјРµСЂС‚Рё РѕСЃРЅРѕРІРЅРѕРіРѕ РёРіСЂРѕРєР°.
-     */
     static class VerityMonsterAttackGoal extends Goal {
         private final VerityEntity entity;
         private Player target;
@@ -1779,7 +1783,6 @@ public class VerityEntity extends PathfinderMob {
 
         @Override
         public boolean canUse() {
-            // MONSTER вЂ” Verity СЃРёРґРёС‚ Рё РЅРµ РґРІРёРіР°РµС‚СЃСЏ, С‚РѕР»СЊРєРѕ СЃРјРѕС‚СЂРёС‚
             return false;
         }
 
@@ -1788,7 +1791,6 @@ public class VerityEntity extends PathfinderMob {
             if (target == null) return;
             double distSq = entity.distanceToSqr(target);
 
-            // РџСЂРµСЃР»РµРґСѓРµРј РёРіСЂРѕРєР° вЂ” РЅРѕ РќР• Р°С‚Р°РєСѓРµРј!
             if (distSq > 9.0D) {
                 entity.getNavigation().moveTo(target, speed);
             } else {
@@ -1801,22 +1803,17 @@ public class VerityEntity extends PathfinderMob {
 
             entity.getLookControl().setLookAt(target, 30.0F, 30.0F);
 
-            // РЈРјРЅС‹Р№ РїСѓС‚СЊ: Р»РѕРјР°РµРј Р±Р»РѕРєРё РўРћР›Р¬РљРћ РєРѕРіРґР° РЅР°РІРёРіР°С†РёСЏ Р·Р°СЃС‚СЂСЏР»Р°
-            // (РЅРµ РЅР° РєР°Р¶РґРѕРј С‚РёРєРµ вЂ” С‚РѕР»СЊРєРѕ РєРѕРіРґР° РїСѓС‚СЊ СЂРµР°Р»СЊРЅРѕ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ)
             boolean pathBlocked = entity.getNavigation().isDone() && distSq > 16.0D;
             if (pathBlocked && entity.getRandom().nextInt(10) == 0) {
-                // РЎРєР°РЅРёСЂСѓРµРј 3 Р±Р»РѕРєР° РїРµСЂРµРґ СЃРѕР±РѕР№ РїРѕ РІС‹СЃРѕС‚Рµ
                 net.minecraft.core.Direction facing = entity.getDirection();
                 for (int dy = 0; dy <= 2; dy++) {
                     BlockPos front = entity.blockPosition().relative(facing).above(dy);
                     BlockState frontState = entity.level().getBlockState(front);
                     if (frontState.isAir()) continue;
                     float hardness = frontState.getDestroySpeed(entity.level(), front);
-                    // Р›РѕРјР°РµРј С‚РѕР»СЊРєРѕ СЃР»Р°Р±С‹Рµ: СЃС‚РµРєР»Рѕ, РґРѕСЃРєРё, РґРІРµСЂСЊ, Р·Р°Р±РѕСЂ, Р·РµРјР»СЏ
                     if (hardness >= 0 && hardness < 3.0f) {
                         var blockState = entity.level().getBlockState(front);
                         entity.level().destroyBlock(front, false);
-                        // Р\u00A7Р°СЃС‚РёС†С‹
                         if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
                             sl.sendParticles(
                                     new net.minecraft.core.particles.BlockParticleOption(
@@ -1824,36 +1821,14 @@ public class VerityEntity extends PathfinderMob {
                                     front.getX() + 0.5, front.getY() + 0.5, front.getZ() + 0.5,
                                     4, 0.2, 0.2, 0.2, 0.1);
                         }
-                        // РџРµСЂРµСЃС‡РёС‚С‹РІР°РµРј РїСѓС‚СЊ
                         entity.getNavigation().moveTo(target, speed);
                         break;
-                    }
-                }
-
-                // РўР°РєР¶Рµ РїСЂРѕРІРµСЂРёРј РїРѕ Р±РѕРєР°Рј вЂ” РјРѕР¶РµС‚ РѕРєРЅРѕ СЃР±РѕРєСѓ
-                if (entity.getNavigation().isDone() && distSq > 16.0D) {
-                    for (net.minecraft.core.Direction side : new net.minecraft.core.Direction[]{
-                            facing.getClockWise(), facing.getCounterClockWise()}) {
-                        for (int dy = 0; dy <= 2; dy++) {
-                            BlockPos sidePos = entity.blockPosition().relative(side).above(dy);
-                            BlockState sideState = entity.level().getBlockState(sidePos);
-                            if (sideState.isAir()) continue;
-                            float hardness = sideState.getDestroySpeed(entity.level(), sidePos);
-                            if (hardness >= 0 && hardness < 3.0f) {
-                                entity.level().destroyBlock(sidePos, false);
-                                entity.getNavigation().moveTo(target, speed);
-                                break;
-                            }
-                        }
                     }
                 }
             }
         }
     }
 
-    /**
-     * РћС‚РєСЂС‹РІР°РЅРёРµ РґРІРµСЂРµР№ (С‚РµР»РµРєРёРЅРµР·) вЂ” РґР»СЏ COUNTDOWN
-     */
     static class VerityOpenDoorGoal extends Goal {
         private final VerityEntity entity;
         private final double range;
@@ -1862,7 +1837,7 @@ public class VerityEntity extends PathfinderMob {
         public VerityOpenDoorGoal(VerityEntity entity, double range) {
             this.entity = entity;
             this.range = range;
-            this.setFlags(EnumSet.noneOf(Flag.class)); // РЅРµ С‚СЂРµР±СѓРµС‚ РґРІРёР¶РµРЅРёСЏ
+            this.setFlags(EnumSet.noneOf(Flag.class));
         }
 
         @Override
@@ -1876,20 +1851,590 @@ public class VerityEntity extends PathfinderMob {
                 cooldown--;
                 return;
             }
-            cooldown = 40; // РєР°Р¶РґС‹Рµ 2 СЃРµРє
+            cooldown = 40;
 
-            // РС‰РµРј РґРІРµСЂРё РІ СЂР°РґРёСѓСЃРµ
             BlockPos entityPos = entity.blockPosition();
             for (int dx = -(int) range; dx <= range; dx++) {
                 for (int dz = -(int) range; dz <= range; dz++) {
                     for (int dy = -2; dy <= 2; dy++) {
                         BlockPos pos = entityPos.offset(dx, dy, dz);
                         if (entity.level().getBlockState(pos).getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
-                            // "РћС‚РєСЂС‹РІР°РµРј" РґРІРµСЂСЊ СЃРёР»РѕР№ РјС‹СЃР»Рё
                             entity.level().blockEvent(pos, entity.level().getBlockState(pos).getBlock(), 1, 1);
-                            return; // РѕРґРЅСѓ РґРІРµСЂСЊ Р·Р° СЂР°Р·
+                            return;
                         }
                     }
+                }
+            }
+        }
+    }
+
+    public void sayHelperText(String text) {
+        Player player = this.level().getNearestPlayer(this, 32.0D);
+        if (player != null) {
+            player.sendSystemMessage(Component.literal(text));
+            if (getDialogueController() != null) {
+                String clean = text.replaceAll("§[0-9a-fk-or]", "").replace("<Verity™>", "").trim();
+                getDialogueController().addToHistory("Verity: " + clean);
+            }
+            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp,
+                        new net.verity.net.TTSPayload(text, this.getId(), this.getX(), this.getEyeY(), this.getZ()));
+            }
+        }
+    }
+
+    public void triggerWoodChopOrder() {
+        if (getVerityPhase() == VerityPhase.HELPER || getVerityPhase() == VerityPhase.OMNISCIENT) {
+            this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(net.minecraft.world.item.Items.STONE_AXE));
+            if (this.goalSelector.getAvailableGoals() != null) {
+                for (var goal : this.goalSelector.getAvailableGoals()) {
+                    if (goal.getGoal() instanceof VerityWorkGoal workGoal) {
+                        workGoal.forceStartWork();
+                    }
+                }
+            }
+        }
+    }
+
+    public void triggerDeliverOrder() {
+        Player player = this.level().getNearestPlayer(this, 32.0D);
+        if (player != null) {
+            this.spawnAtLocation(new ItemStack(net.minecraft.world.item.Items.OAK_LOG, 4));
+            this.level().playSound(null, this.getX(), this.getY(), this.getZ(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 0.8F, 1.0F);
+            this.sayHelperText("§e<Verity™>§r Держи дерево! Вот, отдаю тебе.");
+            this.setTalkAnimTick(35);
+        }
+        if (this.goalSelector.getAvailableGoals() != null) {
+            for (var goal : this.goalSelector.getAvailableGoals()) {
+                if (goal.getGoal() instanceof VerityWorkGoal workGoal) {
+                    workGoal.forceDeliver();
+                    return;
+                }
+            }
+        }
+    }
+
+    public void triggerStopWorkOrder() {
+        if (this.goalSelector.getAvailableGoals() != null) {
+            for (var goal : this.goalSelector.getAvailableGoals()) {
+                if (goal.getGoal() instanceof VerityWorkGoal workGoal) {
+                    workGoal.forceStopWork();
+                }
+                if (goal.getGoal() instanceof VerityLeadToVillageGoal leadGoal) {
+                    leadGoal.stopLeading();
+                }
+            }
+        }
+    }
+
+    public void triggerLeadToVillageOrder(BlockPos villagePos) {
+        if (this.goalSelector.getAvailableGoals() != null) {
+            for (var goal : this.goalSelector.getAvailableGoals()) {
+                if (goal.getGoal() instanceof VerityLeadToVillageGoal leadGoal) {
+                    leadGoal.startLeading(villagePos);
+                    return;
+                }
+            }
+        }
+    }
+
+    public boolean isLeadingToVillage() {
+        if (this.goalSelector.getAvailableGoals() != null) {
+            for (var goal : this.goalSelector.getAvailableGoals()) {
+                if (goal.getGoal() instanceof VerityLeadToVillageGoal leadGoal) {
+                    return leadGoal.isLeading();
+                }
+            }
+        }
+        return false;
+    }
+
+    private static class VerityLeadToVillageGoal extends Goal {
+        private final VerityEntity entity;
+        private BlockPos villagePos = null;
+        private boolean active = false;
+        private int waitPlayerTicks = 0;
+
+        public VerityLeadToVillageGoal(VerityEntity entity) {
+            this.entity = entity;
+            this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
+        }
+
+        public void startLeading(BlockPos pos) {
+            if (pos == null) return;
+            this.villagePos = pos;
+            this.active = true;
+            this.waitPlayerTicks = 0;
+            moveTowardsVillage();
+        }
+
+        public void stopLeading() {
+            this.active = false;
+            this.villagePos = null;
+            entity.getNavigation().stop();
+        }
+
+        public boolean isLeading() {
+            return active && villagePos != null;
+        }
+
+        @Override
+        public boolean canUse() {
+            return active && villagePos != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return active && villagePos != null;
+        }
+
+        private void moveTowardsVillage() {
+            if (villagePos == null) return;
+            double dx = villagePos.getX() + 0.5 - entity.getX();
+            double dz = villagePos.getZ() + 0.5 - entity.getZ();
+            double dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > 0.001) {
+                double step = Math.min(dist, 24.0D);
+                double targetX = entity.getX() + (dx / dist) * step;
+                double targetZ = entity.getZ() + (dz / dist) * step;
+                int targetY = entity.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, (int) targetX, (int) targetZ);
+                entity.getNavigation().moveTo(targetX, targetY, targetZ, 1.3D);
+            }
+        }
+
+        @Override
+        public void tick() {
+            if (villagePos == null) return;
+            Player player = entity.level().getNearestPlayer(entity, 64.0D);
+            if (player != null) {
+                double pDistSq = entity.distanceToSqr(player);
+                if (pDistSq > 1600.0D) {
+                    entity.getNavigation().stop();
+                    entity.getLookControl().setLookAt(player, 30.0F, 30.0F);
+                    waitPlayerTicks++;
+                    if (waitPlayerTicks % 80 == 0) {
+                        entity.sayHelperText("§e<Verity™>§r Догоняй! Деревня в той стороне!");
+                        entity.setTalkAnimTick(30);
+                    }
+                    return;
+                }
+            }
+
+            double vDistSq = entity.distanceToSqr(villagePos.getX() + 0.5, entity.getY(), villagePos.getZ() + 0.5);
+            if (vDistSq <= 625.0D) {
+                entity.sayHelperText("§e<Verity™>§r Смотри! Вот мы и пришли к деревне!");
+                entity.setTalkAnimTick(40);
+                stopLeading();
+                return;
+            }
+
+            if (entity.getNavigation().isDone() || entity.tickCount % 15 == 0) {
+                moveTowardsVillage();
+            }
+        }
+
+        @Override
+        public void stop() {
+            stopLeading();
+        }
+    }
+
+        private static class VerityWorkGoal extends Goal {
+        private final VerityEntity entity;
+        private BlockPos targetPos = null;
+        private int miningTicks = 0;
+        private int blocksChopped = 0;
+        private int askCooldown = 0;
+        private int woodTripCooldown = 1200; // ~60 sec initial delay
+        private boolean isWood = true;
+        private boolean isWoodTrip = false;
+        private int woodTripTicks = 0;
+        private boolean isDelivering = false;
+        private int deliveryTicks = 0;
+        private int vacuumWaitTicks = 0;
+        private final java.util.List<ItemStack> gatheredItems = new java.util.ArrayList<>();
+
+        public void forceStopWork() {
+            this.targetPos = null;
+            this.miningTicks = 0;
+            this.blocksChopped = 0;
+            this.isDelivering = false;
+            this.deliveryTicks = 0;
+            this.vacuumWaitTicks = 0;
+            entity.getNavigation().stop();
+            entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+
+        public void forceDeliver() {
+            // Force delivery of whatever is already gathered
+            this.targetPos = null;
+            this.miningTicks = 0;
+            this.isDelivering = true;
+            this.deliveryTicks = 0;
+            this.vacuumWaitTicks = 15; // skip wait, go to player immediately
+            entity.getNavigation().stop();
+        }
+
+        public void forceStartWork() {
+            this.targetPos = findTargetBlock(true);
+            if (this.targetPos == null) {
+                this.targetPos = findTargetBlock(false);
+            }
+            if (this.targetPos != null) {
+                entity.getNavigation().moveTo(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, 1.25D);
+            } else {
+                this.isWoodTrip = true;
+                this.woodTripTicks = 0;
+                poofParticles();
+                entity.setInvisible(true);
+            }
+        }
+        public VerityWorkGoal(VerityEntity entity) {
+            this.entity = entity;
+            this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (entity.level().isClientSide) return false;
+            VerityPhase phase = entity.getVerityPhase();
+            if (phase != VerityPhase.HELPER && phase != VerityPhase.OMNISCIENT) {
+                return false;
+            }
+
+            if (this.askCooldown > 0) this.askCooldown--;
+            if (this.woodTripCooldown > 0) this.woodTripCooldown--;
+
+            Player player = entity.level().getNearestPlayer(entity, 16.0D);
+            ItemStack mainHand = entity.getMainHandItem();
+            boolean hasTool = !mainHand.isEmpty() && (mainHand.getItem() instanceof net.minecraft.world.item.DiggerItem);
+
+            // 1. Wood Trip: Occasionally disappear to gather wood & return with logs
+            if (player != null && this.woodTripCooldown == 0 && !hasTool && !isWoodTrip) {
+                BlockPos nearbyTree = findTargetBlock(true);
+                if (nearbyTree != null && entity.random.nextInt(3) == 0) {
+                    this.isWoodTrip = true;
+                    this.woodTripTicks = 0;
+                    this.woodTripCooldown = 3600; // 3 minutes between trips
+                    entity.sayHelperText("\u00a7e<Verity\u2122>\u00a7r Пойду наберу немного дерева нам!");
+                    entity.setTalkAnimTick(30);
+                    poofParticles();
+                    entity.setInvisible(true);
+                    return true;
+                }
+            }
+
+            if (isWoodTrip) return true;
+
+            // 2. Player mining detection: Offer to help!
+            if (player != null && isPlayerMining(player)) {
+                boolean playerHasAxe = player.getMainHandItem().getItem() instanceof net.minecraft.world.item.AxeItem;
+                boolean playerHasPick = player.getMainHandItem().getItem() instanceof net.minecraft.world.item.PickaxeItem;
+
+                if (!hasTool && this.askCooldown == 0) {
+                    if (playerHasAxe) {
+                        entity.sayHelperText("\u00a7e<Verity\u2122>\u00a7r Давай помогу! Дай топор.");
+                        entity.setTalkAnimTick(30);
+                        this.askCooldown = 600;
+                        entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(net.minecraft.world.item.Items.STONE_AXE));
+                        hasTool = true;
+                    } else if (playerHasPick) {
+                        entity.sayHelperText("\u00a7e<Verity\u2122>\u00a7r Давай помогу! Дай кирку.");
+                        entity.setTalkAnimTick(30);
+                        this.askCooldown = 600;
+                        entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(net.minecraft.world.item.Items.STONE_PICKAXE));
+                        hasTool = true;
+                    }
+                }
+            }
+
+            // 3. If Verity has a tool equipped, search for target block
+            if (hasTool) {
+                boolean hasAxe = mainHand.getItem() instanceof net.minecraft.world.item.AxeItem;
+                if (hasAxe) {
+                    targetPos = findTargetBlock(true);
+                    isWood = true;
+                } else {
+                    targetPos = findTargetBlock(false);
+                    isWood = false;
+                }
+                return targetPos != null;
+            }
+
+            return false;
+        }
+
+        private boolean isPlayerMining(Player player) {
+            if (player.swinging) {
+                net.minecraft.world.phys.HitResult hit = player.pick(5.0D, 0.0F, false);
+                if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                    BlockPos pos = ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos();
+                    BlockState state = entity.level().getBlockState(pos);
+                    return isLogBlock(state) || isMiningBlock(state);
+                }
+            }
+            return false;
+        }
+
+        private BlockPos findTargetBlock(boolean searchWood) {
+            BlockPos center = entity.blockPosition();
+            Level level = entity.level();
+            BlockPos best = null;
+            double bestDist = Double.MAX_VALUE;
+
+            for (int dx = -12; dx <= 12; dx++) {
+                for (int dy = -4; dy <= 10; dy++) {
+                    for (int dz = -12; dz <= 12; dz++) {
+                        BlockPos p = center.offset(dx, dy, dz);
+                        BlockState state = level.getBlockState(p);
+                        boolean match = searchWood ? isLogBlock(state) : isMiningBlock(state);
+                        if (match) {
+                            double d = entity.distanceToSqr(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5);
+                            if (d < bestDist) {
+                                bestDist = d;
+                                best = p;
+                            }
+                        }
+                    }
+                }
+            }
+            return best;
+        }
+
+        private boolean isLogBlock(BlockState state) {
+            return state.is(net.minecraft.tags.BlockTags.LOGS) ||
+                   (state.getBlock() instanceof net.minecraft.world.level.block.RotatedPillarBlock && state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE));
+        }
+
+        private boolean isMiningBlock(BlockState state) {
+            return state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) ||
+                   state.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) ||
+                   state.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL) ||
+                   state.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL) ||
+                   state.is(net.minecraft.world.level.block.Blocks.STONE) ||
+                   state.is(net.minecraft.world.level.block.Blocks.COBBLESTONE);
+        }
+
+        @Override
+        public void start() {
+            miningTicks = 0;
+            blocksChopped = 0;
+            isDelivering = false;
+            deliveryTicks = 0;
+            vacuumWaitTicks = 0;
+            gatheredItems.clear();
+            if (targetPos != null && !isWoodTrip) {
+                entity.getNavigation().moveTo(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, 1.25D);
+            }
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            if (isWoodTrip) return woodTripTicks < 140;
+            if (isDelivering) return deliveryTicks < 100;
+            if (targetPos == null) return false;
+            BlockState state = entity.level().getBlockState(targetPos);
+            boolean match = isWood ? isLogBlock(state) : isMiningBlock(state);
+            return match && miningTicks < 120;
+        }
+
+        @Override
+        public void tick() {
+            if (isWoodTrip) {
+                woodTripTicks++;
+                if (woodTripTicks % 20 == 0) {
+                    entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+                            SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.8F, 1.0F);
+                }
+                if (woodTripTicks >= 120) {
+                    isWoodTrip = false;
+                    entity.setInvisible(false);
+                    poofParticles();
+
+                    Player player = entity.level().getNearestPlayer(entity, 32.0D);
+                    if (player != null) {
+                        entity.teleportTo(player.getX() + player.getLookAngle().x * 2.0, player.getY(), player.getZ() + player.getLookAngle().z * 2.0);
+                        poofParticles();
+                        entity.spawnAtLocation(new ItemStack(net.minecraft.world.item.Items.OAK_LOG, 4 + entity.random.nextInt(5)));
+                        entity.sayHelperText("\u00a7e<Verity\u2122>\u00a7r Смотри! Набрал для нас дерева!");
+                        entity.setTalkAnimTick(35);
+                    }
+                    entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                }
+                return;
+            }
+
+            // Vacuum nearby dropped items on every tick (8 block radius covers 6-block reach)
+            if (entity.level() instanceof net.minecraft.server.level.ServerLevel slv) {
+                var dropped = slv.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, entity.getBoundingBox().inflate(8.0D));
+                for (var ie : dropped) {
+                    ItemStack st = ie.getItem().copy();
+                    if (!st.isEmpty()) {
+                        gatheredItems.add(st);
+                        ie.discard();
+                        slv.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.6F, 1.2F);
+                    }
+                }
+            }
+
+            if (isDelivering) {
+                deliveryTicks++;
+                // Wait a bit near broken blocks so items can fall and be vacuumed
+                if (vacuumWaitTicks < 15) {
+                    vacuumWaitTicks++;
+                    return;
+                }
+                Player player = entity.level().getNearestPlayer(entity, 32.0D);
+                if (player != null) {
+                    double pDist = entity.distanceToSqr(player);
+                    if (pDist > 9.0D && entity.getNavigation().isDone()) {
+                        entity.getNavigation().moveTo(player.getX(), player.getY(), player.getZ(), 1.4D);
+                    }
+                    if (pDist <= 9.0D || deliveryTicks >= 80) {
+                        entity.getNavigation().stop();
+                        if (gatheredItems.isEmpty()) {
+                            entity.spawnAtLocation(new ItemStack(net.minecraft.world.item.Items.OAK_LOG, 4));
+                        } else {
+                            for (ItemStack st : gatheredItems) {
+                                entity.spawnAtLocation(st);
+                            }
+                            gatheredItems.clear();
+                        }
+                        entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.8F, 1.0F);
+                        entity.sayHelperText(isWood ? "\u00a7e<Verity\u2122>\u00a7r Держи! Нарубил нам дерева." : "\u00a7e<Verity\u2122>\u00a7r Держи! Накопал нам ресурсов.");
+                        entity.setTalkAnimTick(35);
+                        isDelivering = false;
+                        entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                    }
+                } else {
+                    isDelivering = false;
+                    gatheredItems.clear();
+                    entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                }
+                return;
+            }
+
+            if (targetPos == null) return;
+
+            entity.getLookControl().setLookAt(targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5, 30.0F, 30.0F);
+            double distSqr = entity.distanceToSqr(targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5);
+
+            // Move toward target using ground nav (radius 6 blocks)
+            if (distSqr > 36.0D) {
+                if (entity.getNavigation().isDone()) {
+                    entity.getNavigation().moveTo(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, 1.25D);
+                }
+            } else {
+                entity.getNavigation().stop();
+                miningTicks++;
+
+                if (miningTicks % 4 == 0) {
+                    entity.swing(InteractionHand.MAIN_HAND);
+                    net.minecraft.sounds.SoundEvent hitSound = isWood ? SoundEvents.WOOD_HIT : SoundEvents.STONE_HIT;
+                    entity.level().playSound(null, targetPos, hitSound, SoundSource.BLOCKS, 0.8F, 1.0F);
+
+                    if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                        sl.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                net.minecraft.core.particles.ParticleTypes.BLOCK, entity.level().getBlockState(targetPos)),
+                                targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5,
+                                6, 0.2, 0.2, 0.2, 0.05);
+                    }
+                }
+
+                if (miningTicks >= 20) {
+                    Level level = entity.level();
+                    if (level instanceof net.minecraft.server.level.ServerLevel sl) {
+                        sl.destroyBlock(targetPos, true, entity);
+                    }
+                    this.blocksChopped++;
+                    miningTicks = 0;
+
+                    BlockPos next = findTargetBlock(isWood);
+                    if (next != null && this.blocksChopped < 16) {
+                        this.targetPos = next;
+                        entity.getNavigation().moveTo(next.getX() + 0.5, next.getY(), next.getZ() + 0.5, 1.25D);
+                    } else {
+                        this.targetPos = null;
+                        this.isDelivering = true;
+                        this.deliveryTicks = 0;
+                    }
+                }
+            }
+        }
+
+        private void poofParticles() {
+            if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF,
+                        entity.getX(), entity.getY() + 0.5, entity.getZ(),
+                        15, 0.3, 0.3, 0.3, 0.05);
+            }
+        }
+
+        @Override
+        public void stop() {
+            targetPos = null;
+            miningTicks = 0;
+            blocksChopped = 0;
+            isDelivering = false;
+            deliveryTicks = 0;
+            vacuumWaitTicks = 0;
+            gatheredItems.clear();
+            if (isWoodTrip) {
+                entity.setInvisible(false);
+                isWoodTrip = false;
+            }
+            entity.getNavigation().stop();
+            entity.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+    }
+
+    /**
+     * Цель убойных атак злого Verity на жителей и големов в деревне
+     */
+    static class VerityKillVillageGoal extends Goal {
+        private final VerityEntity entity;
+        private net.minecraft.world.entity.LivingEntity victim;
+
+        public VerityKillVillageGoal(VerityEntity entity) {
+            this.entity = entity;
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            VerityPhase p = entity.getVerityPhase();
+            if (p != VerityPhase.MONSTER && p != VerityPhase.HUNTER) return false;
+            var list = entity.level().getEntitiesOfClass(
+                    net.minecraft.world.entity.LivingEntity.class,
+                    entity.getBoundingBox().inflate(32.0D),
+                    e -> e.isAlive() && (e instanceof net.minecraft.world.entity.npc.Villager || e instanceof net.minecraft.world.entity.animal.IronGolem)
+            );
+            if (list.isEmpty()) return false;
+            this.victim = list.get(0);
+            return true;
+        }
+
+        @Override
+        public void start() {
+            if (this.victim != null) {
+                entity.getNavigation().moveTo(this.victim, 1.6D);
+            }
+        }
+
+        @Override
+        public void tick() {
+            if (this.victim == null || !this.victim.isAlive()) return;
+            entity.getLookControl().setLookAt(this.victim, 30.0F, 30.0F);
+            entity.getNavigation().moveTo(this.victim, 1.6D);
+            if (entity.distanceToSqr(this.victim) < 5.0D) {
+                this.victim.hurt(entity.damageSources().mobAttack(entity), 500.0F);
+                if (entity.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                    sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE, victim.getX(), victim.getY() + 1, victim.getZ(), 20, 0.5, 0.5, 0.5, 0.1);
+                    sl.playSound(null, victim.getX(), victim.getY(), victim.getZ(), net.minecraft.sounds.SoundEvents.WITHER_SHOOT, net.minecraft.sounds.SoundSource.HOSTILE, 1.0F, 0.5F);
+                }
+                Player player = entity.level().getNearestPlayer(entity, 32.0D);
+                if (player != null && entity.getRandom().nextInt(3) == 0) {
+                    player.sendSystemMessage(Component.literal("§4<Verity>§r Они больше не помешают нам, " + player.getName().getString() + "."));
                 }
             }
         }

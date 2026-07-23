@@ -48,16 +48,28 @@ public class BedrockMesh {
             JsonArray bones = geometry.getAsJsonArray("bones");
             
             JsonObject targetBone = null;
-            for (JsonElement boneElement : bones) {
-                JsonObject bone = boneElement.getAsJsonObject();
-                if (bone.get("name").getAsString().equals(boneName)) {
-                    targetBone = bone;
-                    break;
+            if (boneName != null) {
+                for (JsonElement boneElement : bones) {
+                    JsonObject bone = boneElement.getAsJsonObject();
+                    if (bone.has("name") && bone.get("name").getAsString().equals(boneName) && bone.has("poly_mesh")) {
+                        targetBone = bone;
+                        break;
+                    }
+                }
+            }
+            // Fallback: search any bone that contains poly_mesh
+            if (targetBone == null) {
+                for (JsonElement boneElement : bones) {
+                    JsonObject bone = boneElement.getAsJsonObject();
+                    if (bone.has("poly_mesh")) {
+                        targetBone = bone;
+                        break;
+                    }
                 }
             }
 
             if (targetBone == null || !targetBone.has("poly_mesh")) {
-                throw new IllegalArgumentException("Bone '" + boneName + "' with poly_mesh not found in " + resourcePath);
+                return;
             }
 
             JsonObject mesh = targetBone.getAsJsonObject("poly_mesh");

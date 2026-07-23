@@ -15,6 +15,9 @@
   "message.verity.held.creepy.0": "§c<Verity>§r Я всё ещё с тобой.",
   "message.verity.held.creepy.1": "§c<Verity>§r У тебя тёплые руки.",
   "message.verity.held.creepy.2": "§c<Verity>§r Я вижу и отсюда.",
+  "block.verity.verity_anchor": "Якорь Верити",
+  "block.verity.verity_terminal": "Терминал Верити",
+  "item.verity.verity_gun": "???",
   "category.verity": "Verity",
   "key.verity.voice": "Голос (Push-to-Talk)"
 }

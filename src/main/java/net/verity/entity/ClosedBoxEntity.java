@@ -13,6 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
 import net.verity.VerityMod;
+import net.minecraft.server.level.ServerPlayer;
 
 public class ClosedBoxEntity extends Entity {
     
@@ -27,6 +28,8 @@ public class ClosedBoxEntity extends Entity {
         builder.define(AGE, 0);
     }
 
+    private int muffledTimer = 0;
+
     @Override
     public void tick() {
         super.tick();
@@ -34,6 +37,22 @@ public class ClosedBoxEntity extends Entity {
         this.setDeltaMovement(Vec3.ZERO);
         this.setNoGravity(true);
         this.setPos(this.getX(), this.getY(), this.getZ());
+
+        // Muffled voice from inside the box: "еей еей здесь есть кто"
+        if (!this.level().isClientSide) {
+            muffledTimer++;
+            if (muffledTimer >= 80) { // ~4 seconds
+                muffledTimer = 0;
+                Player nearest = this.level().getNearestPlayer(this, 8.0D);
+                if (nearest != null && nearest instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    // Muffled (low volume) box sound — represents Verity calling from inside
+                    VerityMod.playSoundEffect(sp, "punchcardboardbox", "block", 0.35F, 0.6F);
+                    // Speak the line via TTS on the client
+                    net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp,
+                            new net.verity.net.TTSPayload("\u0435\u0435\u0439 \u0435\u0435\u0439 \u0437\u0434\u0435\u0441\u044c \u0435\u0441\u0442\u044c \u043a\u0442\u043e"));
+                }
+            }
+        }
     }
 
     @Override
@@ -74,8 +93,9 @@ public class ClosedBoxEntity extends Entity {
         this.level().addFreshEntity(boxEntity);
 
         // Play cardboard box punch/activation sound
-        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-                VerityMod.SOUND_PUNCH_BOX, net.minecraft.sounds.SoundSource.BLOCKS, 1.2F, 1.0F);
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            VerityMod.playSoundEffect(serverPlayer, "punchcardboardbox", "block", 1.2F, 1.0F);
+        }
 
         // Remove the closed box
         this.discard();

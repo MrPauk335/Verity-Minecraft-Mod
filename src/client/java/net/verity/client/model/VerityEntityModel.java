@@ -9,10 +9,14 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.verity.client.VerityClientConfig;
+import net.minecraft.world.phys.Vec3;
+import net.verity.client.config.VerityClientConfig;
 import net.verity.entity.VerityEntity;
 
-public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
+import net.minecraft.client.model.ArmedModel;
+import net.minecraft.world.entity.HumanoidArm;
+
+public class VerityEntityModel extends HierarchicalModel<VerityEntity> implements ArmedModel {
     private final ModelPart root;
     private final ModelPart sphere;
     // Load original Bedrock polygon meshes
@@ -47,6 +51,10 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
         this.sphere = root.getChild("sphere");
     }
 
+    public ModelPart getSphere() {
+        return this.sphere;
+    }
+
     public static LayerDefinition getTexturedModelData() {
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition rootDefinition = meshDefinition.getRoot();
@@ -73,7 +81,7 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
         this.root().getAllParts().forEach(ModelPart::resetPose);
 
         // yaw: Bedrock mesh "forward" needs an offset relative to Java's look yaw
-        float yawOffset = VerityClientConfig.getFaceYawOffsetDegrees();
+        float yawOffset = VerityClientConfig.faceYawOffsetDegrees();
 
         // roll pitch: forward/back rolling direction
         float rollAngle = entity.getRollAngle();
@@ -81,7 +89,7 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
         float rollStrafe = entity.getRollStrafe();
 
         // Ball has no head — pitch/look doesn't affect a sphere
-        this.sphere.xRot = rollAngle;
+        this.sphere.xRot = rollAngle + (headPitch * ((float) Math.PI / 180F));
         this.sphere.yRot = (netHeadYaw + yawOffset) * ((float) Math.PI / 180F);
         // Lateral lean — applied as zRot (inverted: right movement → lean right)
         this.sphere.zRot = -rollStrafe;
@@ -105,6 +113,16 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
             monsterMesh.render(poseStack, vertexConsumer, packedLight, packedOverlay, color);
         } else {
             // ── NORMAL FORM: шар ──
+            // Pure rolling along ground, no vertical hopping/jumping while rolling
+            if (this.currentEntity != null) {
+                // Subtle idle bob when completely stationary
+                float hSpeed = (float) this.currentEntity.getDeltaMovement().horizontalDistance();
+                if (hSpeed < 0.01F && !this.currentEntity.isThrown()) {
+                    float idleBob = (float) Math.sin(this.age * 0.12F) * 0.03F;
+                    poseStack.translate(0.0F, idleBob, 0.0F);
+                }
+            }
+
             this.sphere.translateAndRotate(poseStack);
 
             float baseScale = 0.5F;
@@ -132,9 +150,37 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> {
                 }
             }
 
+            // Ball physics squash/stretch on impact & fall
+            if (this.currentEntity != null) {
+                float st = this.currentEntity.getSquashTimer();
+                if (st > 0) {
+                    float decay = st / 6.0F;
+                    float s = this.currentEntity.getSquashAmount() * decay;
+                    // Horizontal squash & vertical compress on ground contact
+                    poseStack.scale(1.0F + s * 1.2F, 1.0F - s * 0.8F, 1.0F + s * 1.2F);
+                } else if (this.currentEntity.isThrown() || !this.currentEntity.onGround()) {
+                    Vec3 vel = this.currentEntity.getDeltaMovement();
+                    if (vel.y < -0.15) {
+                        float stretch = (float) Math.min(-vel.y * 0.15, 0.25);
+                        poseStack.scale(1.0F - stretch, 1.0F + stretch, 1.0F - stretch);
+                    }
+                }
+            }
+
             BALL_MESH.render(poseStack, vertexConsumer, packedLight, packedOverlay, color);
         }
 
         poseStack.popPose();
+    }
+
+    @Override
+    public void translateToHand(HumanoidArm arm, PoseStack poseStack) {
+        this.root().translateAndRotate(poseStack);
+        this.sphere.translateAndRotate(poseStack);
+        float side = (arm == HumanoidArm.RIGHT) ? 0.42F : -0.42F;
+        poseStack.translate(side, 0.65F, -0.15F);
+        poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(-25.0F));
+        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(15.0F));
+        poseStack.scale(0.75F, 0.75F, 0.75F);
     }
 }

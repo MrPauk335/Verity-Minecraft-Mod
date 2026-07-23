@@ -15,7 +15,15 @@ import java.util.Properties;
  */
 public final class VerityConfig {
 
-    private static final Path CONFIG_PATH = Path.of("config", "verity-server.properties");
+    private static final Path CONFIG_PATH = getConfigDir().resolve("verity-server.properties");
+
+    private static Path getConfigDir() {
+        try {
+            return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir();
+        } catch (Exception e) {
+            return Path.of("config");
+        }
+    }
     private static Properties props = new Properties();
     private static long lastModifiedMs = 0;
     private static boolean loaded = false;
@@ -54,14 +62,21 @@ public final class VerityConfig {
     public static boolean useBuiltinKeys()     { return "builtin".equalsIgnoreCase(keySource()); }
 
     // ─────── ДОСТУПНЫЕ МОДЕЛИ ────────────────────────────────────────────────
+    // Tested 2025-07-16: only working models listed
     public static final java.util.List<String> AVAILABLE_MODELS = java.util.List.of(
-            "openrouter/owl-alpha",
+            // Groq (WINNER — fast, reliable, builtin keys, 70B model knows recipes and prompt rules)
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            // OpenRouter (working but slow, may fail on short phases)
             "openrouter/free",
-            "google/gemma-2-9b-it:free",
+            // OpenCode Zen (free models — work on HELPER, 429 on short phases)
+            "big-pickle",
+            "mimo-v2.5-free",
+            // OpenRouter (rate-limited, might work intermittently)
             "meta-llama/llama-3.3-70b-instruct:free",
-            "qwen/qwen-2.5-72b-instruct:free",
-            "nvidia/nemotron-4-340b-instruct:free",
-            "nousresearch/hermes-3-llama-3.1-405b:free"
+            "nousresearch/hermes-3-llama-3.1-405b:free",
+            // Gemini (requires user-provided key)
+            "gemini-3-flash"
     );
 
     // ─── Encrypted key fields (stored as enc:Base64 in config) ──────────────
@@ -155,8 +170,8 @@ public final class VerityConfig {
     }
     public static String cohereModel()            { return getString("cohere_model", "command-r-plus"); }
 
-    /** LLM provider: "openrouter", "gemini", "groq", or "cohere" */
-    public static String llmProvider()            { return getString("llm_provider", "openrouter"); }
+    /** LLM provider: "openrouter", "gemini", "groq", "cohere", or "opencode" */
+    public static String llmProvider()            { return getString("llm_provider", "groq"); }
 
     /** Пользовательский API ключ (из настроек) */
     public static String customApiKey()           { return getEncryptedString("custom_api_key", ""); }
@@ -221,7 +236,7 @@ public final class VerityConfig {
                 .toList();
     }
     public static float llmTemperature()          { return getFloat("llm_temperature", 0.8f); }
-    public static int llmMaxTokens()              { return getInt("llm_max_tokens", 256); }
+    public static int llmMaxTokens()              { return getInt("llm_max_tokens", 1024); }
 
     // ─────── ПОВЕДЕНИЕ ФАЗ ──────────────────────────────────────────────────
     /** Через сколько тиков HELPER → OMNISCIENT (по умолч. 2400 = 2 мин) */
@@ -334,6 +349,21 @@ public final class VerityConfig {
                 saveConfig();
             }
 
+            // ── Migration: config_version < 7 → switch to Groq (best provider) ──
+            int cv7 = configVersion();
+            if (cv7 < 7) {
+                String currentProvider = props.getProperty("llm_provider", "openrouter");
+                String currentModel = props.getProperty("selected_model", "");
+                // Switch to Groq if user hasn't customized
+                if ("openrouter".equals(currentProvider)) {
+                    props.setProperty("llm_provider", "groq");
+                    props.setProperty("selected_model", "llama-3.1-8b-instant");
+                    VerityMod.LOGGER.info("Verity config v7: migrated provider \u2192 groq, model \u2192 llama-3.1-8b-instant");
+                }
+                props.setProperty("config_version", "7");
+                saveConfig();
+            }
+
             if (VerityMod.LOGGER != null) {
                 VerityMod.LOGGER.info("Verity config reloaded ({} properties)", props.size());
             }
@@ -370,11 +400,11 @@ public final class VerityConfig {
                 # Verity \u2014 \u043A\u043E\u043D\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044F \u0441\u0435\u0440\u0432\u0435\u0440\u0430
                 # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
                 # Config version (do not change)
-                config_version=6
+                config_version=7
                 
-                # \u2500\u2500\u2500 LLM (OpenRouter + Gemini) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-                # \u041F\u0440\u043E\u0432\u0430\u0439\u0434\u0435\u0440: openrouter \u0438\u043B\u0438 gemini
-                llm_provider=openrouter
+                # \u2500\u2500\u2500 LLM (Groq, OpenRouter, Gemini, OpenCode Zen) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u041F\u0440\u043E\u0432\u0430\u0439\u0434\u0435\u0440: groq, openrouter, gemini, cohere, opencode
+                llm_provider=groq
                 
                 # \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043A\u043B\u044E\u0447\u0435\u0439: builtin (\u043E\u0442 \u043C\u043E\u0434\u0430) \u0438\u043B\u0438 custom (\u0441\u0432\u043E\u0438)
                 key_source=builtin
@@ -391,6 +421,13 @@ public final class VerityConfig {
                 
                 # \u2500\u2500\u2500 OpenRouter \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 # API \u043A\u043B\u044E\u0447\u0438 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E (\u043F\u0440\u0438 429 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439)
+                openrouter_api_keys=
+                
+                # \u2500\u2500\u2500 Groq (best: fast, reliable, builtin keys) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u041C\u043E\u0434\u0435\u043B\u0438: llama-3.1-8b-instant, llama-3.3-70b-versatile
+                groq_model=llama-3.1-8b-instant
+                # \u0421\u0432\u043E\u0439 API \u043A\u043B\u044E\u0447 (get one at console.groq.com)
+                groq_api_key=
                 # \u041C\u043E\u0434 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442 2 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0445 \u043A\u043B\u044E\u0447\u0430 \u2014 \u043F\u043E\u043B\u0435 \u043C\u043E\u0436\u043D\u043E \u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043F\u0443\u0441\u0442\u044B\u043C.
                 # \u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0441\u0432\u043E\u0439 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: https://openrouter.ai/keys
                 openrouter_api_keys=
@@ -399,7 +436,7 @@ public final class VerityConfig {
                 custom_api_key=
                 
                 # \u0412\u044B\u0431\u0440\u0430\u043D\u043D\u0430\u044F \u043C\u043E\u0434\u0435\u043B\u044C (\u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0445 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445)
-                selected_model=meta-llama/llama-3.3-70b-instruct:free
+                selected_model=llama-3.1-8b-instant
                 
                 # \u041C\u043E\u0434\u0435\u043B\u0438 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E (fallback \u043F\u0440\u0438 429)
                 openrouter_models=meta-llama/llama-3.3-70b-instruct:free,nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-4-26b-a4b-it:free

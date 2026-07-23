@@ -8,6 +8,9 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import net.verity.client.VerityModClient;
 import net.verity.client.model.VerityEntityModel;
 import net.verity.entity.VerityEntity;
@@ -33,6 +36,7 @@ public class VerityEntityRenderer extends MobRenderer<VerityEntity, VerityEntity
 
     public VerityEntityRenderer(EntityRendererProvider.Context context) {
         super(context, new VerityEntityModel(context.bakeLayer(VerityModClient.MODEL_SPHERE_LAYER)), 0.25F);
+        this.addLayer(new VerityHeldItemLayer(this, context.getItemInHandRenderer()));
         this.addLayer(new VerityGlowLayer(this));
     }
 
@@ -87,6 +91,58 @@ public class VerityEntityRenderer extends MobRenderer<VerityEntity, VerityEntity
                     bufferSource.getBuffer(RenderType.entityTranslucentEmissive(glowTexture)),
                     fullBright, net.minecraft.client.renderer.entity.LivingEntityRenderer.getOverlayCoords(entity, 0.0F),
                     0xFFFFFFFF);
+        }
+    }
+
+    /**
+     * Точное позиционирование топора/киркой у правого бока лица Verity.
+     */
+    private static class VerityHeldItemLayer extends RenderLayer<VerityEntity, VerityEntityModel> {
+        private final ItemInHandRenderer itemInHandRenderer;
+
+        public VerityHeldItemLayer(RenderLayerParent<VerityEntity, VerityEntityModel> parent, ItemInHandRenderer itemInHandRenderer) {
+            super(parent);
+            this.itemInHandRenderer = itemInHandRenderer;
+        }
+
+        @Override
+        public void render(PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, VerityEntity entity,
+                           float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
+                           float netHeadYaw, float headPitch) {
+            ItemStack mainHand = entity.getMainHandItem();
+            if (mainHand.isEmpty() || entity.isMonsterForm() || entity.isInvisible()) {
+                return;
+            }
+
+            poseStack.pushPose();
+
+            // 1. Привязываем к трансформации сферы (yaw + roll)
+            this.getParentModel().root().translateAndRotate(poseStack);
+            this.getParentModel().getSphere().translateAndRotate(poseStack);
+
+            // Позиция и повороты из конфига — меняются командой /veritydev toolpos <tx> <ty> <tz> <rx> <rz>
+            poseStack.translate(
+                net.verity.client.config.VerityClientConfig.toolTX(),
+                net.verity.client.config.VerityClientConfig.toolTY(),
+                net.verity.client.config.VerityClientConfig.toolTZ()
+            );
+            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(net.verity.client.config.VerityClientConfig.toolRX()));
+            poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(net.verity.client.config.VerityClientConfig.toolRZ()));
+
+            float scale = 0.65F;
+            poseStack.scale(scale, scale, scale);
+
+            this.itemInHandRenderer.renderItem(
+                    entity,
+                    mainHand,
+                    ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
+                    false,
+                    poseStack,
+                    bufferSource,
+                    packedLight
+            );
+
+            poseStack.popPose();
         }
     }
 }

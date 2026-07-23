@@ -1,109 +1,19 @@
 {
-  "verity.ambient": {
-    "category": "neutral",
+  "mygal_normal": {
+    "category": "music",
     "sounds": [
-      "verity:hello",
-      "verity:whosthere",
-      "verity:askme"
+      {
+        "name": "verity:mygal_normal",
+        "stream": true
+      }
     ]
   },
-  "verity.hello": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:hello"}]
-  },
-  "verity.whosthere": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:whosthere"}]
-  },
-  "verity.askme": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:askme"}]
-  },
-  "verity.know_everything": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:know_everything"}]
-  },
-  "verity.opening": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:opening"}]
-  },
-  "verity.no": {
+  "punchcardboardbox": {
     "category": "neutral",
     "sounds": [
-      {"name": "verity:no1", "weight": 1},
-      {"name": "verity:no2", "weight": 1}
+      {
+        "name": "verity:punchcardboardbox"
+      }
     ]
-  },
-  "verity.no1": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:no1"}]
-  },
-  "verity.no2": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:no2"}]
-  },
-  "verity.gone": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:gone"}]
-  },
-  "verity.something_passed": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:something_passed"}]
-  },
-  "verity.something_hungry": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:something_hungry"}]
-  },
-  "verity.im_smiling_now": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:im_smiling_now"}]
-  },
-  "verity.always_looked_like_this": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:always_looked_like_this"}]
-  },
-  "verity.its_already_over": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:its_already_over"}]
-  },
-  "verity.you_are_mine": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:you_are_mine"}]
-  },
-  "verity.villagers_gone": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:villagers_gone"}]
-  },
-  "verity.yes_south": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:yes_south"}]
-  },
-  "verity.somethingiscomingin3days": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:somethingiscomingin3days"}]
-  },
-  "verity.loudmusic": {
-    "category": "music",
-    "sounds": [{"name": "verity:loudmusic"}]
-  },
-  "verity.chase": {
-    "category": "music",
-    "sounds": [{"name": "verity:chase"}]
-  },
-  "verity.mygal_forest": {
-    "category": "music",
-    "sounds": [{"name": "verity:mygal_forest"}]
-  },
-  "verity.mygal_normal": {
-    "category": "music",
-    "sounds": [{"name": "verity:mygal_normal", "stream": true}]
-  },
-  "verity.jumpscare": {
-    "category": "music",
-    "sounds": [{"name": "verity:jumpscare"}]
-  },
-  "verity.punchcardboardbox": {
-    "category": "neutral",
-    "sounds": [{"name": "verity:punchcardboardbox"}]
   }
 }

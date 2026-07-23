@@ -11,7 +11,15 @@ import java.util.Properties;
 
 public final class VerityClientConfig {
 
-    private static final Path CONFIG_PATH = Path.of("config", "verity-client.properties");
+    private static final Path CONFIG_PATH = getConfigDir().resolve("verity-client.properties");
+
+    private static Path getConfigDir() {
+        try {
+            return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir();
+        } catch (Exception e) {
+            return Path.of("config");
+        }
+    }
     private static Properties props = new Properties();
     private static boolean loaded = false;
 
@@ -27,9 +35,30 @@ public final class VerityClientConfig {
 
     public static boolean sttEnabled()         { return getBool("stt_enabled", true); }
 
+    /** Offset поворота лица (в градусах) относительно линии взгляда */
+    public static float faceYawOffsetDegrees() { return getFloat("face_yaw_offset_degrees", 180.0f); }
+    public static void setFaceYawOffsetDegrees(float v) { setProperty("face_yaw_offset_degrees", String.valueOf(v)); }
+
     /** Источник STT ключей: "builtin" или "custom" */
     public static String sttKeySource()        { return getString("stt_key_source", "builtin"); }
     public static boolean useBuiltinSttKeys()  { return "builtin".equalsIgnoreCase(sttKeySource()); }
+
+    // ──────── Позиция/поворот инструмента (топора, кирки) рядом со сферой Verity ────────
+    // Настраивается через /veritydev toolpos <tx> <ty> <tz> <rx> <rz>
+    public static float toolTX() { return getFloat("tool_tx", 0.30f); }
+    public static float toolTY() { return getFloat("tool_ty", 0.00f); }
+    public static float toolTZ() { return getFloat("tool_tz", 0.20f); }
+    public static float toolRX() { return getFloat("tool_rx", 180.0f); }
+    public static float toolRZ() { return getFloat("tool_rz", 10.0f); }
+
+    public static void setToolPos(float tx, float ty, float tz, float rx, float rz) {
+        props.setProperty("tool_tx", String.valueOf(tx));
+        props.setProperty("tool_ty", String.valueOf(ty));
+        props.setProperty("tool_tz", String.valueOf(tz));
+        props.setProperty("tool_rx", String.valueOf(rx));
+        props.setProperty("tool_rz", String.valueOf(rz));
+        saveConfig();
+    }
 
     /** Все STT ключи (builtin или custom) для ротации при 429 */
     public static List<String> sttApiKeys() {
@@ -135,6 +164,11 @@ public final class VerityClientConfig {
 
                 # \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u043E\u0432\u043E\u0439 \u0432\u0432\u043E\u0434 (push-to-talk)
                 stt_enabled=true
+
+                # \u2500\u2500\u2500 \u0412\u0438\u0437\u0443\u0430\u043B \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                # \u041E\u0442\u0432\u0435\u0440\u0442\u044B\u0432\u0430\u043D\u0438\u0435 \u043B\u0438\u0446\u0430 \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u043B\u0438\u043D\u0438\u0438 \u0432\u0437\u0433\u043B\u044F\u0434\u0430 (F3+B)
+                # \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435: -180, -90, 0, 90, 180
+                face_yaw_offset_degrees=180
 
                 # \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A STT \u043A\u043B\u044E\u0447\u0435\u0439: builtin (\u043E\u0442 \u043C\u043E\u0434\u0430) \u0438\u043B\u0438 custom (\u0441\u0432\u043E\u0438)
                 stt_key_source=builtin
