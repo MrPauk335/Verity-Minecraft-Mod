@@ -269,6 +269,13 @@ public VerityPhase getVerityPhase() {
         this.entityData.set(FACE_INDEX, face);
     }
 
+    private int playerHitCount = 0;
+    private int resentmentTicks = 0;
+
+    public int getPlayerHitCount() { return this.playerHitCount; }
+    public int getResentmentTicks() { return this.resentmentTicks; }
+    public boolean isResentful() { return this.resentmentTicks > 0; }
+
     public float squashTimer = 0;
     public float squashAmount = 0;
     public int getRageForgiveTicks() { return this.rageForgiveTicks; }
@@ -586,9 +593,35 @@ public VerityPhase getVerityPhase() {
                 return false;
             }
 
-            // Left-click by player = kick Verity like a ball
+            // Left-click by player = kick Verity & accumulate anger / resentment
             if (source.getEntity() instanceof Player player && !source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+                this.playerHitCount++;
+                // 10 real minutes base resentment + 5 minutes per additional hit!
+                this.resentmentTicks = 12000 + (this.playerHitCount * 6000);
+
                 kickVerity(player);
+
+                if (this.playerHitCount >= 5) {
+                    player.sendSystemMessage(Component.literal("§4<Verity>§r ХВАТИТ! ТЫ САМ ЭТО ВЫБРАЛ."));
+                    player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 300, 1, false, false, true));
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 1, false, false, true));
+                    this.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 2.0F, 0.5F);
+                    setVerityPhase(VerityPhase.MONSTER);
+                    setMonsterForm(true);
+                } else if (this.playerHitCount >= 3) {
+                    player.sendSystemMessage(Component.literal("§c<Verity™>§r Я больше не стану это терпеть. Не делай этого снова."));
+                    setFaceIndex(FACE_SERIOUS_3);
+                    this.talkAnimTick = 25;
+                } else if (this.playerHitCount >= 2) {
+                    player.sendSystemMessage(Component.literal("§e<Verity™>§r Прекрати! Я пытался помочь тебе... Зачем ты это делаешь?"));
+                    setFaceIndex(FACE_HURT);
+                    this.talkAnimTick = 25;
+                } else {
+                    player.sendSystemMessage(Component.literal("§e<Verity™>§r Ау! Мне больно... Зачем ты меня бьёшь?"));
+                    setFaceIndex(FACE_HURT);
+                    this.talkAnimTick = 25;
+                }
                 return false;
             }
 
@@ -1636,6 +1669,8 @@ public VerityPhase getVerityPhase() {
     // в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ РЎРћРҐР РђРќР•РќРР• Р’ NBT (persistence) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
+        tag.putInt("PlayerHitCount", this.playerHitCount);
+        tag.putInt("ResentmentTicks", this.resentmentTicks);
         super.addAdditionalSaveData(tag);
         tag.putString("VerityPhase", getVerityPhase().name());
         tag.putInt("TicksInPhase", this.ticksInPhase);
@@ -1673,6 +1708,8 @@ public VerityPhase getVerityPhase() {
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
+        if (tag.contains("PlayerHitCount")) this.playerHitCount = tag.getInt("PlayerHitCount");
+        if (tag.contains("ResentmentTicks")) this.resentmentTicks = tag.getInt("ResentmentTicks");
         super.readAdditionalSaveData(tag);
         if (tag.contains("VerityPhase")) {
             this.entityData.set(VERITY_PHASE, VerityPhase.valueOf(tag.getString("VerityPhase")).ordinal());
