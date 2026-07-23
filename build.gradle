@@ -3,6 +3,7 @@ plugins {
 	id 'maven-publish'
 }
 
+base { archivesName = "verity-1.21.1" }
 version = project.mod_version
 group = project.maven_group
 
