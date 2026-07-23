@@ -1,9 +1,13 @@
-# Verity — AI Horror Companion Mod
+# Verity — AI Horror Companion Mod (Minecraft 1.21.1)
 
 *"He just wanted to help... right?"*
 
-[![Telegram](https://img.shields.io/badge/Telegram-Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/VerityMod228)
+[![Minecraft Version](https://img.shields.io/badge/Minecraft-1.21.1-2EA44F?style=for-the-badge&logo=minecraft&logoColor=white)](https://minecraft.net)
+[![Mod Loader](https://img.shields.io/badge/Fabric-1.21.1-DBD0B4?style=for-the-badge&logo=fabric)](https://fabricmc.net)
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/VerityMod228)
 [![GitHub Release](https://img.shields.io/github/v/release/MrPauk335/Verity-Minecraft-Mod?style=for-the-badge&color=gold)](https://github.com/MrPauk335/Verity-Minecraft-Mod/releases)
+
+📌 **Game Version**: Minecraft **1.21.1** (Fabric Loader)
 
 A Fabric mod for Minecraft 1.21.1 that adds Verity — a yellow smiling sphere inspired by the Minecraft horror ARG genre. He follows you, talks to you, knows too much, and never lets you leave.
 
