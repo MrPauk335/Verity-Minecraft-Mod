@@ -89,7 +89,7 @@ public class VerityEntityModel extends HierarchicalModel<VerityEntity> implement
         float rollStrafe = entity.getRollStrafe();
 
         // Ball has no head — pitch/look doesn't affect a sphere
-        this.sphere.xRot = rollAngle + (headPitch * ((float) Math.PI / 180F));
+        this.sphere.xRot = rollAngle - (headPitch * ((float) Math.PI / 180F));
         this.sphere.yRot = (netHeadYaw + yawOffset) * ((float) Math.PI / 180F);
         // Lateral lean — applied as zRot (inverted: right movement → lean right)
         this.sphere.zRot = -rollStrafe;
